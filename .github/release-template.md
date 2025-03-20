@@ -54,9 +54,14 @@ pip install -e .
 
 ## ✨ Key Features
 
-- Feature 1
-- Feature 2
-- Feature 3
+- Thread-safe RPYC server implementation for DCC applications
+- Service discovery for finding DCC services on the network
+- Abstract base classes for creating DCC-specific adapters and services
+- Support for multiple DCC applications (Maya, Houdini, 3ds Max, Nuke, etc.)
+- Integration with the Model Context Protocol (MCP) for AI-driven DCC control
+- Connection pooling for efficient resource management
+- Transparent remote execution of DCC commands
+- Native API access without translation layers
 
 ## 📚 Documentation
 
