@@ -8,8 +8,8 @@ import os
 import time
 
 # Import local modules
-from dcc_mcp_rpyc.discovery import _load_pickle
-from dcc_mcp_rpyc.discovery import _save_pickle
+from dcc_mcp_rpyc.discovery import _load_registry_file
+from dcc_mcp_rpyc.discovery import _save_registry_file
 from dcc_mcp_rpyc.discovery import cleanup_stale_services
 from dcc_mcp_rpyc.discovery import discover_services
 from dcc_mcp_rpyc.discovery import find_service_registry_files
@@ -51,7 +51,7 @@ class TestDiscovery:
         assert os.path.exists(registry_file), "Registry file should exist"
 
         # Verify the registry file contains the service
-        registry = _load_pickle(registry_file)
+        registry = _load_registry_file(registry_file)
 
         assert "test_dcc" in registry, "Registry should contain the service"
         assert len(registry["test_dcc"]) == 1, "Registry should contain one service"
@@ -87,7 +87,7 @@ class TestDiscovery:
         )
 
         # Verify the service was registered
-        registry = _load_pickle(registry_file)
+        registry = _load_registry_file(registry_file)
         assert "test_dcc" in registry, "Registry should contain the service"
 
         # Unregister the service
@@ -95,7 +95,7 @@ class TestDiscovery:
         assert result, "Unregistering the service should succeed"
 
         # Verify the service was unregistered
-        registry = _load_pickle(registry_file)
+        registry = _load_registry_file(registry_file)
         assert "test_dcc" not in registry or not registry["test_dcc"], "Registry should not contain the service"
 
         # Reset the global registry cache
@@ -178,7 +178,7 @@ class TestDiscovery:
         )
 
         # Verify the service was registered
-        registry = _load_pickle(temp_registry_path)
+        registry = _load_registry_file(temp_registry_path)
         assert "test_dcc" in registry, "Registry should contain the service"
         assert len(registry["test_dcc"]) == 1, "Registry should contain one service"
 
@@ -186,7 +186,7 @@ class TestDiscovery:
         registry["test_dcc"][0]["timestamp"] = time.time() - 7200  # 2 hours ago
 
         # Save the modified registry
-        _save_pickle(registry, temp_registry_path)
+        _save_registry_file(registry, temp_registry_path)
 
         # Reset the global registry cache to ensure it reloads from disk
         discovery._registry_loaded = False
@@ -197,7 +197,7 @@ class TestDiscovery:
         assert result, "Cleaning up stale services should succeed"
 
         # Verify the service was removed
-        registry = _load_pickle(temp_registry_path)
+        registry = _load_registry_file(temp_registry_path)
         assert "test_dcc" not in registry or not registry["test_dcc"], "Registry should not contain the stale service"
 
         # Reset the global registry cache
@@ -235,10 +235,10 @@ class TestDiscovery:
         }
 
         # Save the registry
-        _save_pickle(registry, temp_registry_path)
+        _save_registry_file(registry, temp_registry_path)
 
         # Load the registry
-        loaded_registry = _load_pickle(temp_registry_path)
+        loaded_registry = _load_registry_file(temp_registry_path)
 
         # Verify the registry was loaded correctly
         assert "test_dcc" in loaded_registry, "Registry should contain the service"
@@ -281,7 +281,7 @@ class TestDiscovery:
         assert os.path.exists(temp_registry_path), "Registry file should exist"
 
         # Load the registry directly to verify it contains the DCC
-        registry = _load_pickle(temp_registry_path)
+        registry = _load_registry_file(temp_registry_path)
         assert "test_dcc" in registry, "Registry should contain the service"
 
         # Find registry files for a specific DCC using direct path

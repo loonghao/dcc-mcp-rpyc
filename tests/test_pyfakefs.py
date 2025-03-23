@@ -13,8 +13,8 @@ from pyfakefs.fake_filesystem_unittest import TestCase
 
 # Import local modules
 from dcc_mcp_rpyc.discovery import DEFAULT_REGISTRY_PATH
-from dcc_mcp_rpyc.discovery import _load_pickle
-from dcc_mcp_rpyc.discovery import _save_pickle
+from dcc_mcp_rpyc.discovery import _load_registry_file
+from dcc_mcp_rpyc.discovery import _save_registry_file
 from dcc_mcp_rpyc.discovery import cleanup_stale_services
 from dcc_mcp_rpyc.discovery import discover_services
 from dcc_mcp_rpyc.discovery import register_service
@@ -51,7 +51,7 @@ class TestWithPyfakefs(TestCase):
         self.assertTrue(os.path.exists(registry_file), "Registry file should exist")
 
         # Verify the registry file contains the service
-        registry = _load_pickle(registry_file)
+        registry = _load_registry_file(registry_file)
 
         self.assertIn("test_dcc", registry, "Registry should contain the service")
         self.assertEqual(len(registry["test_dcc"]), 1, "Registry should contain one service")
@@ -70,7 +70,7 @@ class TestWithPyfakefs(TestCase):
         self.assertTrue(result, "Unregistering the service should succeed")
 
         # Verify the registry file no longer contains the service
-        registry = _load_pickle(self.registry_path)
+        registry = _load_registry_file(self.registry_path)
 
         self.assertTrue(
             "test_dcc" not in registry or not registry["test_dcc"], "Registry should not contain the service"
@@ -108,7 +108,7 @@ class TestWithPyfakefs(TestCase):
         )
 
         # Verify the service was registered
-        registry = _load_pickle(self.registry_path)
+        registry = _load_registry_file(self.registry_path)
         assert "test_dcc" in registry, "Registry should contain the service"
         assert len(registry["test_dcc"]) == 1, "Registry should contain one service"
 
@@ -116,7 +116,7 @@ class TestWithPyfakefs(TestCase):
         registry["test_dcc"][0]["timestamp"] = time.time() - 7200  # 2 hours ago
 
         # Save the modified registry
-        _save_pickle(registry, self.registry_path)
+        _save_registry_file(registry, self.registry_path)
 
         # Reset the global registry cache to ensure it reloads from disk
         # Import local modules
@@ -130,7 +130,7 @@ class TestWithPyfakefs(TestCase):
         self.assertTrue(result, "Cleanup should succeed")
 
         # Verify the service was removed
-        registry = _load_pickle(self.registry_path)
+        registry = _load_registry_file(self.registry_path)
         self.assertTrue(
             "test_dcc" not in registry or not registry["test_dcc"], "Registry should not contain the stale service"
         )

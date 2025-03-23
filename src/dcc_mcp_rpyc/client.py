@@ -5,10 +5,11 @@ remote calls with connection management, timeout handling, and automatic reconne
 """
 
 # Import built-in modules
-import json
 import logging
 import os
 from typing import Any
+from typing import Callable
+from typing import ClassVar
 from typing import Dict
 from typing import Optional
 from typing import Tuple
@@ -23,7 +24,7 @@ from dcc_mcp_rpyc import discovery
 # Configure logging
 logger = logging.getLogger(__name__)
 
-__all__ = ["BaseDCCClient", "ConnectionPool"]
+__all__ = ["BaseDCCClient", "ClientRegistry", "ConnectionPool"]
 
 
 class BaseDCCClient:
@@ -78,47 +79,58 @@ class BaseDCCClient:
 
         """
         try:
-            # Try to discover services using the discovery module
-            services = discovery.discover_services(self.dcc_name)
-            if services:
-                # Sort by timestamp to get the newest service
-                services = sorted(services, key=lambda s: s.get("timestamp", 0), reverse=True)
-                self.port = services[0].get("port")
-                self.host = services[0].get("host", self.host or "localhost")
+            logger.info(f"Discovering {self.dcc_name} service...")
 
+            # Method 1: Discover services using the discovery module
+            services = discovery.discover_services(self.dcc_name, self.registry_path)
+            if services:
+                latest_service = discovery.get_latest_service(services)
+                self.port = latest_service.get("port")
+                self.host = latest_service.get("host", self.host or "localhost")
                 logger.info(f"Discovered {self.dcc_name} service at {self.host}:{self.port}")
                 return self.host, self.port
 
-            # If no services found, try to look for registry files
+            # Method 2: Find services directly from registry files
             registry_files = discovery.find_service_registry_files(self.dcc_name, self.registry_path)
-            if registry_files:
-                # Sort by modification time to get the newest file
-                registry_files = sorted(registry_files, key=os.path.getmtime, reverse=True)
+            if not registry_files:
+                logger.warning(f"No {self.dcc_name} service discovered")
+                return None, None
 
-                # Try to read the newest registry file
-                try:
-                    with open(registry_files[0]) as f:
-                        registry_data = json.load(f)
+            # Get the most recent registry file
+            latest_registry_file = max(registry_files, key=os.path.getmtime)
 
-                    # Get the host and port from the registry file
-                    self.port = registry_data.get("port")
-                    self.host = registry_data.get("host", self.host or "localhost")
+            try:
+                # Load registry file and get service information
+                registry_data = discovery._load_registry_file(latest_registry_file)
+                dcc_services = registry_data.get(self.dcc_name.lower(), [])
 
-                    logger.info(f"Found {self.dcc_name} service at {self.host}:{self.port} from registry file")
-                    return self.host, self.port
-                except Exception as e:
-                    logger.warning(f"Error reading registry file: {e}")
+                if not dcc_services:
+                    logger.warning(f"No services found for {self.dcc_name} in registry file")
+                    return None, None
 
-            logger.warning(f"No {self.dcc_name} service discovered")
-            return None, None
+                # Get the most recent service information
+                latest_service = discovery.get_latest_service(dcc_services)
+                self.port = latest_service.get("port")
+                self.host = latest_service.get("host", self.host or "localhost")
+
+                logger.info(f"Found {self.dcc_name} service at {self.host}:{self.port} from registry file")
+                return self.host, self.port
+            except Exception as e:
+                logger.warning(f"Error reading registry file: {e}")
+                return None, None
+
         except Exception as e:
             logger.error(f"Error discovering {self.dcc_name} service: {e}")
             return None, None
 
-    def connect(self) -> bool:
+    def connect(self, rpyc_connect_func=None) -> bool:
         """Connect to the DCC RPYC server.
 
-        Returns
+        Args:
+        ----
+            rpyc_connect_func: Optional function to use for connecting (default: None, uses rpyc.connect)
+
+        Returns:
         -------
             True if connected successfully, False otherwise
 
@@ -131,11 +143,21 @@ class BaseDCCClient:
             logger.warning(f"Cannot connect to {self.dcc_name} service: host or port not specified")
             return False
 
+        # Use provided connect function or default to rpyc.connect
+        connect_func = rpyc_connect_func or rpyc.connect
+
         try:
             logger.info(f"Connecting to {self.dcc_name} service at {self.host}:{self.port}")
-            self.connection = rpyc.connect(
+            self.connection = connect_func(
                 self.host, self.port, config={"sync_request_timeout": self.connection_timeout}
             )
+
+            # Check if the connection is valid by trying to ping the server
+            if not self.is_connected():
+                logger.error(f"Failed to establish a valid connection to {self.dcc_name} service")
+                self.connection = None
+                return False
+
             logger.info(f"Connected to {self.dcc_name} service at {self.host}:{self.port}")
             return True
         except Exception as e:
@@ -360,6 +382,54 @@ def create_client(
     )
 
 
+# Client registry for custom client classes
+class ClientRegistry:
+    """Registry for DCC client classes.
+
+    This class provides a registry for custom DCC client classes that can be used
+    with the connection pool. It allows registering custom client classes for
+    specific DCC applications and retrieving them later.
+
+    Attributes
+    ----------
+        _registry: Dictionary mapping DCC names to client classes
+
+    """
+
+    _registry: ClassVar[Dict[str, Type[BaseDCCClient]]] = {}
+
+    @classmethod
+    def register(cls, dcc_name: str, client_class: Type[BaseDCCClient]) -> None:
+        """Register a client class for a DCC.
+
+        Args:
+        ----
+            dcc_name: Name of the DCC to register the client class for
+            client_class: The client class to register
+
+        """
+        cls._registry[dcc_name.lower()] = client_class
+        logger.debug(f"Registered client class {client_class.__name__} for DCC {dcc_name}")
+
+    @classmethod
+    def get_client_class(cls, dcc_name: str) -> Type[BaseDCCClient]:
+        """Get the client class for a DCC.
+
+        Args:
+        ----
+            dcc_name: Name of the DCC to get the client class for
+
+        Returns:
+        -------
+            The client class for the specified DCC, or BaseDCCClient if no custom
+            client class is registered
+
+        """
+        client_class = cls._registry.get(dcc_name.lower(), BaseDCCClient)
+        logger.debug(f"Using client class {client_class.__name__} for DCC {dcc_name}")
+        return client_class
+
+
 # Connection pool for reusing connections
 class ConnectionPool:
     """Pool of RPYC connections to DCC servers.
@@ -385,6 +455,8 @@ class ConnectionPool:
         auto_connect: bool = True,
         connection_timeout: float = 5.0,
         registry_path: Optional[str] = None,
+        client_class: Optional[Type[BaseDCCClient]] = None,
+        client_factory: Optional[Callable[..., BaseDCCClient]] = None,
     ) -> BaseDCCClient:
         """Get a client from the pool or create a new one.
 
@@ -396,6 +468,8 @@ class ConnectionPool:
             auto_connect: Whether to automatically connect (default: True)
             connection_timeout: Timeout for connection attempts in seconds (default: 5.0)
             registry_path: Optional path to the registry file (default: None)
+            client_class: Optional client class to use (default: None, use registry)
+            client_factory: Optional factory function to create clients (default: None, use create_client)
 
         Returns:
         -------
@@ -404,27 +478,101 @@ class ConnectionPool:
         """
         dcc_name = dcc_name.lower()
 
-        # Create a new client to discover host and port if needed
-        client = create_client(dcc_name, host, port, auto_connect, connection_timeout, registry_path=registry_path)
+        # Try to get an existing client from the pool
+        client = self._get_existing_client(dcc_name, host, port)
+        if client:
+            return client
 
-        # If we have a connection with the same parameters in the pool, use that instead
-        if (dcc_name, client.host, client.port) in self.pool:
-            pooled_client = self.pool[(dcc_name, client.host, client.port)]
+        # Create a new client
+        client = self._create_new_client(
+            dcc_name, host, port, auto_connect, connection_timeout, registry_path, client_class, client_factory
+        )
 
-            # Check if the pooled client is still connected
-            if pooled_client.is_connected():
-                logger.debug(f"Using pooled connection to {dcc_name} at {client.host}:{client.port}")
-                return pooled_client
-            else:
-                # Remove the stale connection from the pool
-                logger.debug(f"Removing stale connection to {dcc_name} from pool")
-                del self.pool[(dcc_name, client.host, client.port)]
+        # Try again to get an existing client with the resolved host and port
+        # This handles the case where auto-discovery was used
+        client = self._get_existing_client(dcc_name, client.host, client.port) or client
 
-        # Add the new client to the pool
-        self.pool[(dcc_name, client.host, client.port)] = client
-        logger.debug(f"Added new connection to {dcc_name} at {client.host}:{client.port} to pool")
+        # Add the new client to the pool if it's not already there
+        if client not in self.pool.values():
+            self.pool[(dcc_name, client.host, client.port)] = client
+            logger.debug(f"Added new connection to {dcc_name} at {client.host}:{client.port} to pool")
 
         return client
+
+    def _get_existing_client(self, dcc_name: str, host: Optional[str], port: Optional[int]) -> Optional[BaseDCCClient]:
+        """Get an existing client from the pool if available.
+
+        Args:
+        ----
+            dcc_name: Name of the DCC to connect to
+            host: Host of the DCC RPYC server
+            port: Port of the DCC RPYC server
+
+        Returns:
+        -------
+            An existing client instance or None if not found
+
+        """
+        if host is not None and port is not None:
+            key = (dcc_name, host, port)
+            if key in self.pool:
+                pooled_client = self.pool[key]
+                # Check if the pooled client is still connected
+                if pooled_client.is_connected():
+                    logger.debug(f"Using pooled connection to {dcc_name} at {host}:{port}")
+                    return pooled_client
+                else:
+                    # Remove the stale connection from the pool
+                    logger.debug(f"Removing stale connection to {dcc_name} from pool")
+                    del self.pool[key]
+        return None
+
+    def _create_new_client(
+        self,
+        dcc_name: str,
+        host: Optional[str],
+        port: Optional[int],
+        auto_connect: bool,
+        connection_timeout: float,
+        registry_path: Optional[str],
+        client_class: Optional[Type[BaseDCCClient]],
+        client_factory: Optional[Callable[..., BaseDCCClient]],
+    ) -> BaseDCCClient:
+        """Create a new client instance.
+
+        Args:
+        ----
+            dcc_name: Name of the DCC to connect to
+            host: Host of the DCC RPYC server
+            port: Port of the DCC RPYC server
+            auto_connect: Whether to automatically connect
+            connection_timeout: Timeout for connection attempts in seconds
+            registry_path: Optional path to the registry file
+            client_class: Optional client class to use
+            client_factory: Optional factory function to create clients
+
+        Returns:
+        -------
+            A new client instance
+
+        """
+        # Get the client class from the registry if not specified
+        if client_class is None:
+            client_class = ClientRegistry.get_client_class(dcc_name)
+
+        # Use the provided factory or the default create_client function
+        factory = client_factory or create_client
+
+        # Create a new client
+        return factory(
+            dcc_name,
+            host,
+            port,
+            auto_connect,
+            connection_timeout,
+            client_class=client_class,
+            registry_path=registry_path,
+        )
 
     def release_client(self, client: BaseDCCClient) -> None:
         """Release a client back to the pool.
@@ -456,6 +604,8 @@ def get_client(
     auto_connect: bool = True,
     connection_timeout: float = 5.0,
     registry_path: Optional[str] = None,
+    client_class: Optional[Type[BaseDCCClient]] = None,
+    client_factory: Optional[Callable[..., BaseDCCClient]] = None,
 ) -> BaseDCCClient:
     """Get a client from the global connection pool.
 
@@ -467,13 +617,17 @@ def get_client(
         auto_connect: Whether to automatically connect (default: True)
         connection_timeout: Timeout for connection attempts in seconds (default: 5.0)
         registry_path: Optional path to the registry file (default: None)
+        client_class: Optional client class to use (default: None, use registry)
+        client_factory: Optional factory function to create clients (default: None, use create_client)
 
     Returns:
     -------
         A client instance for the specified DCC
 
     """
-    return _connection_pool.get_client(dcc_name, host, port, auto_connect, connection_timeout, registry_path)
+    return _connection_pool.get_client(
+        dcc_name, host, port, auto_connect, connection_timeout, registry_path, client_class, client_factory
+    )
 
 
 def close_all_connections() -> None:

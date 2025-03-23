@@ -9,15 +9,15 @@ import glob
 import json
 import logging
 import os
-import pickle
 import time
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
 
 # Import third-party modules
-from dcc_mcp_core.platform_utils import get_config_dir
+from dcc_mcp_core.utils.platform import get_config_dir
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -25,64 +25,63 @@ logger = logging.getLogger(__name__)
 # Default registry path using dcc-mcp-core
 config_dir = get_config_dir(ensure_exists=True)
 
-DEFAULT_REGISTRY_PATH = os.path.join(config_dir, "service_registry.pkl")
+DEFAULT_REGISTRY_PATH = os.path.join(config_dir, "service_registry.json")
 
 # Service registry cache
 _service_registry = {}
 _registry_loaded = False
 
 
-def _load_pickle(file_path: str) -> Any:
-    """Load data from a pickle or JSON file.
+def _load_registry_file(file_path: str) -> Dict[str, Any]:
+    """Load data from a registry file.
 
     Args:
     ----
-        file_path: Path to the pickle or JSON file
+        file_path: Path to the registry file (JSON format)
 
     Returns:
     -------
-        Loaded data
+        Loaded registry data as a dictionary
 
     Raises:
     ------
-        Exception: If the file cannot be loaded
+        FileNotFoundError: If the file does not exist
+        ValueError: If the file is empty or invalid JSON
 
     """
-    # Check if file exists and has content
-    if not os.path.exists(file_path) or os.path.getsize(file_path) == 0:
-        logger.error(f"File does not exist or is empty: {file_path}")
-        return {}
+    # Check if file exists
+    if not os.path.exists(file_path):
+        logger.error(f"Registry file does not exist: {file_path}")
+        raise FileNotFoundError(f"Registry file does not exist: {file_path}")
+
+    # Check if file has content
+    if os.path.getsize(file_path) == 0:
+        logger.error(f"Registry file is empty: {file_path}")
+        raise ValueError(f"Registry file is empty: {file_path}")
 
     try:
-        with open(file_path, "rb") as f:
-            return pickle.load(f)
-    except Exception as e:
-        # If pickle loading fails, try JSON format
-        try:
-            with open(file_path) as f:
-                return json.load(f)
-        except Exception as json_e:
-            # Log both errors but return empty dict instead of raising
-            logger.error(f"Failed to load file as pickle: {e}")
-            logger.error(f"Failed to load file as JSON: {json_e}")
-            return {}
+        with open(file_path, encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to load registry file as JSON: {e}")
+        raise ValueError(f"Invalid JSON format in registry file: {e}")
 
 
-def _save_pickle(data: Any, file_path: str) -> None:
-    """Save data to a pickle file.
+def _save_registry_file(data: Any, file_path: str) -> None:
+    """Save data to a registry file.
 
     Args:
     ----
         data: Data to save
-        file_path: Path to the pickle file
+        file_path: Path to the registry file
 
     Raises:
     ------
         Exception: If there is an error saving the file
 
     """
-    with open(file_path, "wb") as f:
-        pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4)
 
 
 def register_service(
@@ -114,7 +113,7 @@ def register_service(
     if registry_path is None:
         pid = os.getpid()
         registry_dir = os.path.dirname(DEFAULT_REGISTRY_PATH)
-        registry_filename = f"service_registry_{dcc_name}_{pid}.pkl"
+        registry_filename = f"service_registry_{dcc_name}_{pid}.json"
         registry_path = os.path.join(registry_dir, registry_filename)
 
         # Ensure the directory exists
@@ -142,13 +141,20 @@ def register_service(
         return ""
 
 
-def unregister_service(dcc_name: str, registry_path: Optional[str] = None) -> bool:
+def unregister_service(
+    dcc_name: str,
+    registry_path: Optional[str] = None,
+    registry_loader: Optional[Callable[[str], Dict[str, Any]]] = None,
+    registry_saver: Optional[Callable[[Dict[str, Any], str], None]] = None,
+) -> bool:
     """Unregister a DCC RPYC service.
 
     Args:
     ----
         dcc_name: Name of the DCC to unregister
         registry_path: Path to the registry file (default: None, uses default path)
+        registry_loader: Optional function to load registry data (default: None, uses _load_registry_file)
+        registry_saver: Optional function to save registry data (default: None, uses _save_registry_file)
 
     Returns:
     -------
@@ -163,9 +169,13 @@ def unregister_service(dcc_name: str, registry_path: Optional[str] = None) -> bo
         logger.warning(f"Registry file does not exist: {registry_path}")
         return True  # Nothing to unregister
 
+    # Use provided functions or defaults
+    load_func = registry_loader or _load_registry_file
+    save_func = registry_saver or _save_registry_file
+
     try:
         # Load the registry
-        registry = _load_pickle(registry_path)
+        registry = load_func(registry_path)
 
         # Check if the DCC is in the registry
         if dcc_name in registry:
@@ -173,7 +183,7 @@ def unregister_service(dcc_name: str, registry_path: Optional[str] = None) -> bo
             registry[dcc_name] = []
 
             # Save the updated registry
-            _save_pickle(registry, registry_path)
+            save_func(registry, registry_path)
 
             logger.info(f"Unregistered service for {dcc_name} at {registry_path}")
         else:
@@ -189,6 +199,8 @@ def discover_services(
     dcc_name: Optional[str] = None,
     registry_path: Optional[str] = None,
     max_age: Optional[float] = None,
+    registry_loader: Optional[Callable[[str], Dict[str, Any]]] = None,
+    registry_files_finder: Optional[Callable[[Optional[str]], List[str]]] = None,
 ) -> List[Dict[str, Any]]:
     """Discover DCC RPYC services from the registry.
 
@@ -197,6 +209,9 @@ def discover_services(
         dcc_name: Name of the DCC to discover services for (default: None, all DCCs)
         registry_path: Path to the registry file (default: None, uses default path)
         max_age: Maximum age of services in seconds (default: None, no limit)
+        registry_loader: Optional function to load registry data (default: None, uses _load_registry_file)
+        registry_files_finder: Optional function to find registry files
+                                    (default: None, uses find_service_registry_files)
 
     Returns:
     -------
@@ -204,6 +219,8 @@ def discover_services(
 
     """
     services = []
+    load_func = registry_loader or _load_registry_file
+    find_files_func = registry_files_finder or find_service_registry_files
 
     # If a specific registry path is provided, only use that one
     if registry_path is not None:
@@ -232,12 +249,12 @@ def discover_services(
             return []
 
     # If no specific registry path is provided, search all registry files
-    registry_files = find_service_registry_files(dcc_name)
+    registry_files = find_files_func(dcc_name)
 
     for registry_file in registry_files:
         try:
             # Load the registry
-            registry_data = _load_pickle(registry_file)
+            registry_data = load_func(registry_file)
 
             # Filter by DCC name if specified
             if dcc_name is not None:
@@ -348,7 +365,7 @@ def load_registry(registry_path: Optional[str] = None) -> bool:
 
     try:
         # Load the registry from the file
-        loaded_registry = _load_pickle(registry_path)
+        loaded_registry = _load_registry_file(registry_path)
 
         # Verify the loaded registry is a dictionary
         if not isinstance(loaded_registry, dict):
@@ -391,7 +408,7 @@ def save_registry(registry_path: Optional[str] = None) -> bool:
         os.makedirs(os.path.dirname(registry_path), exist_ok=True)
 
         # Save the registry
-        _save_pickle(_service_registry, registry_path)
+        _save_registry_file(_service_registry, registry_path)
 
         logger.debug(f"Saved service registry to {registry_path}")
         return True
@@ -423,7 +440,7 @@ def find_service_registry_files(dcc_name: Optional[str] = None, registry_path: O
 
             try:
                 # Try to load the registry file
-                registry = _load_pickle(registry_path)
+                registry = _load_registry_file(registry_path)
 
                 # Check if the registry contains the DCC name (case insensitive)
                 if dcc_name.lower() in {k.lower() for k in registry.keys()}:
@@ -443,7 +460,7 @@ def find_service_registry_files(dcc_name: Optional[str] = None, registry_path: O
         return []
 
     # Find all registry files using glob
-    registry_files = glob.glob(os.path.join(registry_dir, "**", "*.pkl"), recursive=True)
+    registry_files = glob.glob(os.path.join(registry_dir, "**", "*.json"), recursive=True)
 
     # If no DCC name specified, return all registry files
     if dcc_name is None:
@@ -456,7 +473,7 @@ def find_service_registry_files(dcc_name: Optional[str] = None, registry_path: O
     for file in registry_files:
         try:
             # Try to load the registry file
-            registry = _load_pickle(file)
+            registry = _load_registry_file(file)
 
             # Check if the registry contains the DCC name (case insensitive)
             if any(k.lower() == dcc_name for k in registry.keys()):
@@ -499,3 +516,22 @@ def unregister_dcc_service(registry_file: Optional[str] = None, registry_path: O
     except Exception as e:
         logger.error(f"Error unregistering service: {e}")
         return False
+
+
+def get_latest_service(services: list) -> dict:
+    """Get the latest service from a list of services.
+
+    Args:
+    ----
+        services: List of service dictionaries
+
+    Returns:
+    -------
+        Latest service dictionary or empty dict if no services
+
+    """
+    if not services:
+        return {}
+
+    # Sort by timestamp to get the newest service
+    return sorted(services, key=lambda s: s.get("timestamp", 0), reverse=True)[0]

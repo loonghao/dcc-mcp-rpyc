@@ -15,21 +15,21 @@
       <path d="M0,0 L0,6 L9,3 z" fill="#3B82F6" />
     </marker>
   </defs>
-  
+
   <!-- 背景 -->
   <rect width="200" height="200" rx="24" fill="url(#bg-gradient)" />
-  
+
   <!-- RPyC图形 -->
   <circle cx="70" cy="100" r="28" fill="#3B82F6" />
   <text x="70" y="105" font-family="Arial, sans-serif" font-weight="bold" font-size="14" text-anchor="middle" fill="white">RPyC</text>
-  
+
   <!-- DCC图形 -->
   <circle cx="140" cy="100" r="28" fill="url(#dcc-gradient)" />
   <text x="140" y="105" font-family="Arial, sans-serif" font-weight="bold" font-size="14" text-anchor="middle" fill="white">DCC</text>
-  
+
   <!-- 连接箭头 -->
   <line x1="98" y1="100" x2="112" y2="100" stroke="#3B82F6" stroke-width="3" marker-end="url(#arrow)" />
-  
+
   <!-- 项目名称 -->
   <text x="100" y="170" font-family="Arial, sans-serif" font-weight="bold" font-size="16" text-anchor="middle" fill="white">DCC-MCP-RPyC</text>
 </svg>
