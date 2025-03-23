@@ -28,17 +28,13 @@ from rpyc.utils.server import ThreadedServer
 
 # Import local modules
 from dcc_mcp_rpyc import discovery
-from dcc_mcp_rpyc.discovery import _load_pickle
+from dcc_mcp_rpyc.discovery import _load_registry_file
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
 # Type variable for the decorator
 F = TypeVar("F", bound=Callable[..., Any])
-
-
-# Configure logging
-logger = logging.getLogger(__name__)
 
 
 class BaseRPyCService(rpyc.SlaveService):
@@ -90,6 +86,16 @@ class DCCRPyCService(BaseRPyCService, ABC):
 
         """
 
+    @abstractmethod
+    def get_session_info(self) -> Dict[str, Any]:
+        """Get information about the current session.
+
+        Returns
+        -------
+            Dict with session information
+
+        """
+
     @staticmethod
     def with_scene_info(func: F) -> F:
         """Add scene information to the return value of a function.
@@ -116,13 +122,63 @@ class DCCRPyCService(BaseRPyCService, ABC):
                 # Get current scene info
                 scene_info = self.get_scene_info()
 
-                # If the result is already a dict, add scene_info to it
-                if isinstance(result, dict):
-                    result["scene_info"] = scene_info
-                    return result
+                # Check if result is an ActionResultModel and convert to dict if needed
+                if hasattr(result, "dict") and callable(getattr(result, "dict")):
+                    result_dict = result.dict()
+                elif isinstance(result, dict):
+                    result_dict = result
                 else:
-                    # Otherwise, create a new dict with result and scene_info
-                    return {"result": result, "scene_info": scene_info}
+                    # Otherwise, wrap the result
+                    result_dict = {"result": result}
+
+                # Add scene_info to the result dict
+                result_dict["scene_info"] = scene_info
+                return result_dict
+            except Exception as e:
+                logger.error(f"Error in {func.__name__}: {e}")
+                logger.exception("Detailed exception information:")
+                raise
+
+        return cast(F, wrapper)
+
+    @staticmethod
+    def with_session_info(func: F) -> F:
+        """Add session information to the return value of a function.
+
+        This decorator wraps a function to add the current session information to its return value.
+        The wrapped function's result will be returned as a dictionary with 'result' and 'session_info' keys.
+
+        Args:
+        ----
+            func: The function to wrap
+
+        Returns:
+        -------
+            The wrapped function
+
+        """
+
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            try:
+                # Call the original function
+                result = func(self, *args, **kwargs)
+
+                # Get current session info
+                session_info = self.get_session_info()
+
+                # Check if result is an ActionResultModel and convert to dict if needed
+                if hasattr(result, "dict") and callable(getattr(result, "dict")):
+                    result_dict = result.dict()
+                elif isinstance(result, dict):
+                    result_dict = result
+                else:
+                    # Otherwise, wrap the result
+                    result_dict = {"result": result}
+
+                # Add session_info to the result dict
+                result_dict["session_info"] = session_info
+                return result_dict
             except Exception as e:
                 logger.error(f"Error in {func.__name__}: {e}")
                 logger.exception("Detailed exception information:")
@@ -350,36 +406,42 @@ def unregister_dcc_service(registry_file: Optional[str] = None, registry_path: O
         True if successful, False otherwise
 
     """
-    # For backward compatibility, extract dcc_name from registry_file if possible
-    dcc_name = None
+    try:
+        if registry_file:
+            is_file_path = os.path.exists(registry_file)
 
-    # If registry_file is a string without path separators, treat it as a DCC name
-    if registry_file and not any(sep in registry_file for sep in ["/", "\\"]):
-        dcc_name = registry_file
-    elif registry_file and os.path.exists(registry_file):
-        try:
-            registry = _load_pickle(registry_file)
-            # Find the DCC name in the registry
-            for name in registry.keys():
-                dcc_name = name
-                break
-        except Exception as e:
-            logger.error(f"Error loading registry file: {e}")
+            if is_file_path:
+                try:
+                    registry_data = _load_registry_file(registry_file)
+                    if registry_data and isinstance(registry_data, dict) and registry_data:
+                        dcc_name = next(iter(registry_data.keys()))
+                    else:
+                        dcc_name = "unknown_dcc"
+                        logger.warning(f"Could not extract DCC name from registry file, using {dcc_name}")
 
-    if not dcc_name:
-        # If we couldn't extract a dcc_name, use a default
+                    return discovery.unregister_service(dcc_name, registry_path=registry_path)
+                except Exception as e:
+                    logger.error(f"Error loading registry file: {e}")
+                    return False
+            # if registry_file is a string without path separators, treat it as a DCC name
+            elif not any(sep in registry_file for sep in ["/", "\\"]):
+                dcc_name = registry_file
+                return discovery.unregister_service(dcc_name, registry_path=registry_path)
+
+        # If we cannot determine the DCC name, use the default value
         dcc_name = "unknown_dcc"
         logger.warning(f"Could not determine DCC name from registry file, using {dcc_name}")
-
-    # Use the new unregister_service function
-    # Import local modules
-    from dcc_mcp_rpyc.discovery import unregister_service
-
-    return unregister_service(dcc_name, registry_path=registry_path)
+        return discovery.unregister_service(dcc_name, registry_path=registry_path)
+    except Exception as e:
+        logger.error(f"Error unregistering service: {e}")
+        return False
 
 
 def cleanup_server(
-    server_instance: Optional[ThreadedServer], registry_file: Optional[str], timeout: float = 5.0
+    server_instance: Optional[ThreadedServer],
+    registry_file: Optional[str],
+    timeout: float = 5.0,
+    server_closer: Optional[Callable[[Any], None]] = None,
 ) -> bool:
     """Clean up a server instance and unregister its service.
 
@@ -390,6 +452,7 @@ def cleanup_server(
         server_instance: The server instance to stop
         registry_file: The path to the registry file
         timeout: Timeout for cleanup operations in seconds (default: 5.0)
+        server_closer: Optional custom function to close the server (default: None)
 
     Returns:
     -------
@@ -403,7 +466,7 @@ def cleanup_server(
         try:
             logger.info("Stopping RPYC server")
 
-            # Wait for any active clients to finish
+            # Wait for clients to disconnect if possible
             if hasattr(server_instance, "clients"):
                 max_wait = min(timeout, 3.0)  # Maximum seconds to wait for clients
                 wait_interval = 0.1
@@ -412,21 +475,29 @@ def cleanup_server(
                     time.sleep(wait_interval)
                     waited += wait_interval
 
-            # Use a separate thread to close the server with timeout
-            # Import built-in modules
-            import threading
+            # Use custom server closer if provided
+            if server_closer:
+                try:
+                    server_closer(server_instance)
+                except Exception as e:
+                    logger.error(f"Error using custom server closer: {e}")
+                    success = False
+            else:
+                # Use default closing mechanism with timeout
+                # Import built-in modules
+                import threading
 
-            def close_with_timeout():
-                server_instance.close()
+                def close_with_timeout():
+                    server_instance.close()
 
-            close_thread = threading.Thread(target=close_with_timeout)
-            close_thread.daemon = True  # Allow the thread to be killed if timeout occurs
-            close_thread.start()
-            close_thread.join(timeout)  # Wait for the thread to finish with timeout
+                close_thread = threading.Thread(target=close_with_timeout)
+                close_thread.daemon = True  # Allow the thread to be killed if timeout occurs
+                close_thread.start()
+                close_thread.join(timeout)  # Wait for the thread to finish with timeout
 
-            if close_thread.is_alive():
-                logger.warning(f"Server close operation timed out after {timeout} seconds")
-                success = False
+                if close_thread.is_alive():
+                    logger.warning(f"Server close operation timed out after {timeout} seconds")
+                    success = False
         except Exception as e:
             logger.error(f"Error stopping server: {e}")
             success = False
@@ -474,15 +545,16 @@ def create_raw_threaded_server(
     if protocol_config is None:
         protocol_config = {
             "allow_public_attrs": True,
+            "allow_all_attrs": True,
             "allow_pickle": True,
             "sync_request_timeout": timeout,
         }
 
     # Create and return the server
     return ThreadedServer(
-        service=service_class,
+        service_class,
         hostname=hostname,
-        port=0 if port is None else port,  # Use 0 to let OS choose a port
+        port=0 if port is None else port,
         protocol_config=protocol_config,
     )
 
@@ -512,7 +584,7 @@ def create_dcc_server(
 
     """
     return DCCServer(
-        dcc_name=dcc_name,
+        dcc_name,
         service_class=service_class,
         host=host,
         port=port,

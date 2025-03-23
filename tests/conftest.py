@@ -13,10 +13,12 @@ from typing import Generator
 from typing import Tuple
 
 # Import third-party modules
+from dcc_mcp_core.models import ActionResultModel
 import pytest
 import rpyc
 
 # Import local modules
+import dcc_mcp_rpyc.discovery as discovery
 from dcc_mcp_rpyc.server import BaseRPyCService
 from dcc_mcp_rpyc.server import DCCServer
 
@@ -29,9 +31,6 @@ def temp_registry_path():
         temp_path = temp_file.name
 
     # Reset the global registry cache
-    # Import local modules
-    import dcc_mcp_rpyc.discovery as discovery
-
     discovery._registry_loaded = False
     discovery._service_registry = {}
 
@@ -110,6 +109,20 @@ def rpyc_server() -> Generator[Tuple[DCCServer, int], None, None]:
 class TestDCCService(BaseRPyCService):
     """Test DCC RPYC service for testing."""
 
+    def exposed_get_scene_info(self) -> Dict[str, Any]:
+        """Get information about the current scene.
+
+        Returns
+        -------
+            Dict with scene information
+
+        """
+        return ActionResultModel(
+            success=True,
+            message="Successfully retrieved scene information",
+            context={"name": "test_scene", "path": "/path/to/test_scene", "modified": False, "objects": 0},
+        ).model_dump()
+
     def get_scene_info(self) -> Dict[str, Any]:
         """Get information about the current scene.
 
@@ -118,7 +131,56 @@ class TestDCCService(BaseRPyCService):
             Dict with scene information
 
         """
-        return {"name": "test_scene", "path": "/path/to/test_scene", "modified": False, "objects": 0}
+        return self.exposed_get_scene_info()
+
+    def get_session_info(self) -> Dict[str, Any]:
+        """Get information about the current session.
+
+        Returns
+        -------
+            Dict with session information
+
+        """
+        return self.exposed_get_session_info()
+
+    def exposed_get_session_info(self) -> Dict[str, Any]:
+        """Get information about the current session.
+
+        Returns
+        -------
+            Dict with session information
+
+        """
+        return ActionResultModel(
+            success=True,
+            message="Successfully retrieved session information",
+            context={
+                "application": "test_dcc",
+                "version": "1.0.0",
+                "user": "test_user",
+                "workspace": "/path/to/workspace",
+                "scene": {"name": "test_scene", "path": "/path/to/test_scene", "modified": False, "objects": 0},
+            },
+        ).model_dump()
+
+    def exposed_get_actions(self) -> Dict[str, Any]:
+        """Get all available actions for the DCC application.
+
+        Returns
+        -------
+            Dict with action information
+
+        """
+        return ActionResultModel(
+            success=True,
+            message="Successfully retrieved actions",
+            context={
+                "actions": [
+                    {"name": "create_sphere", "category": "Create", "description": "Create a sphere"},
+                    {"name": "create_cube", "category": "Create", "description": "Create a cube"},
+                ]
+            },
+        ).model_dump()
 
     def exposed_echo(self, arg):
         """Echo the argument back.
