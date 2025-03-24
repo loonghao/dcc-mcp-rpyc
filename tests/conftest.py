@@ -96,7 +96,7 @@ def rpyc_server() -> Generator[Tuple[DCCServer, int], None, None]:
         except (ConnectionRefusedError, EOFError):
             if i == max_retries - 1:
                 raise
-            print(f"Retrying connection to server at 127.0.0.1:{port}, attempt {i+1}/{max_retries}")
+            print(f"Retrying connection to server at 127.0.0.1:{port}, attempt {i + 1}/{max_retries}")
             time.sleep(retry_delay)
 
     try:
@@ -269,7 +269,7 @@ def dcc_rpyc_server() -> Generator[Tuple[DCCServer, int], None, None]:
         except (ConnectionRefusedError, EOFError):
             if i == max_retries - 1:
                 raise
-            print(f"Retrying connection to server at 127.0.0.1:{port}, attempt {i+1}/{max_retries}")
+            print(f"Retrying connection to server at 127.0.0.1:{port}, attempt {i + 1}/{max_retries}")
             time.sleep(retry_delay)
 
     try:
@@ -327,7 +327,7 @@ def dcc_server(temp_registry_path: str) -> Generator[Tuple[DCCServer, int], None
         except (ConnectionRefusedError, EOFError):
             if i == max_retries - 1:
                 raise
-            print(f"Retrying connection to server at 127.0.0.1:{port}, attempt {i+1}/{max_retries}")
+            print(f"Retrying connection to server at 127.0.0.1:{port}, attempt {i + 1}/{max_retries}")
             time.sleep(retry_delay)
 
     try:

@@ -10,6 +10,7 @@ def lint(session: nox.Session) -> None:
 
 def lint_fix(session: nox.Session) -> None:
     session.install("isort", "ruff", "pre-commit", "autoflake")
+    session.run("ruff", "format", ".")
     session.run("ruff", "check", "--fix")
     session.run("isort", "src", "tests", "nox_actions")
     session.run("pre-commit", "run", "--all-files")
