@@ -37,7 +37,7 @@ class DCCAdapter(ABC):
         dcc_name: Name of the DCC application
         client: Client instance for communicating with the DCC application
         action_manager: Manager for actions in the DCC application
-        action_paths: List of paths to search for actions
+        _action_paths: List of paths to search for actions
 
     """
 
@@ -52,7 +52,7 @@ class DCCAdapter(ABC):
         self.dcc_name = dcc_name
         self.client: Optional[BaseDCCClient] = None
         self.action_manager = None
-        self.action_paths: list = []
+        self._action_paths = []
 
         # Initialize the client
         self._initialize_client()
@@ -80,6 +80,36 @@ class DCCAdapter(ABC):
         to search for actions for the specific DCC application.
 
         """
+        self.action_manager.set_actions_search_path(self.action_paths)
+
+    @property
+    def action_paths(self) -> list:
+        """Get the paths to search for actions.
+
+        This property returns the list of paths where the adapter will search for actions.
+        Subclasses should override this property to provide DCC-specific action paths.
+        These paths can be extended in the DCC implementation to include additional
+        directories for custom actions and plugins.
+
+        Returns
+        -------
+            list: List of paths to search for actions
+
+        """
+        return self._action_paths
+
+    @action_paths.setter
+    def action_paths(self, paths: list) -> None:
+        """Set the paths to search for actions.
+
+        Args:
+        ----
+            paths: List of paths to search for actions
+
+        """
+        self._action_paths = paths
+        if self.action_manager:
+            self.action_manager.set_action_search_paths(paths)
 
     def ensure_connected(self) -> None:
         """Ensure that the client is connected to the DCC application.
@@ -103,7 +133,7 @@ class DCCAdapter(ABC):
                 raise ConnectionError(f"Failed to connect to {self.dcc_name}: {e}")
 
     def get_session_info(self) -> Dict[str, Any]:
-        """Get information about the current session.
+        """Get information about the current mcp session.
 
         Returns
         -------
