@@ -20,6 +20,7 @@ import rpyc
 
 # Import local modules
 from dcc_mcp_rpyc import discovery
+from dcc_mcp_rpyc.parameters import execute_remote_command as _execute_remote_command
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -322,6 +323,28 @@ class BaseDCCClient:
         if not self.is_connected():
             if not self.reconnect():
                 raise ConnectionError(f"Not connected to {self.dcc_name} service")
+
+    def execute_remote_command(self, command: str, *args, **kwargs) -> Any:
+        """Execute a command on the remote DCC with proper parameter handling.
+        
+        This method uses the parameters module to ensure proper serialization
+        and delivery of arguments to the remote command.
+        
+        Args:
+            command: Command to execute on the remote DCC
+            *args: Positional arguments for the command
+            **kwargs: Keyword arguments for the command
+            
+        Returns:
+            Result of the remote command execution
+            
+        Raises:
+            ConnectionError: If not connected to the DCC
+        """
+        if not self.ensure_connected():
+            raise ConnectionError(f"Not connected to {self.dcc_name}")
+            
+        return _execute_remote_command(self.connection.root, command, *args, **kwargs)
 
     def __enter__(self):
         """Enter context manager.
