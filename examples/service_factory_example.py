@@ -13,10 +13,10 @@ from typing import Dict, Any, List
 import rpyc
 
 # Import local modules
-from dcc_mcp_rpyc.parameters import create_service_factory
-from dcc_mcp_rpyc.parameters import create_shared_service_instance
-from dcc_mcp_rpyc.parameters import get_rpyc_config
 from dcc_mcp_rpyc.parameters import process_rpyc_parameters
+from dcc_mcp_rpyc.server import create_service_factory
+from dcc_mcp_rpyc.server import create_shared_service_instance
+from dcc_mcp_rpyc.server import get_rpyc_config
 from dcc_mcp_rpyc.server import create_raw_threaded_server
 
 # Configure logging

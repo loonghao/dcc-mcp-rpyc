@@ -98,6 +98,44 @@ server = create_dcc_server(
 server.start(threaded=True)
 ```
 
+### Using Service Factories
+
+```python
+from dcc_mcp_rpyc.server import create_service_factory, create_shared_service_instance, create_raw_threaded_server
+
+# Create a shared state manager
+class SceneManager:
+    def __init__(self):
+        self.scenes = {}
+    
+    def add_scene(self, name, data):
+        self.scenes[name] = data
+
+# Method 1: Create a service factory (new instance per connection)
+scene_manager = SceneManager()
+service_factory = create_service_factory(MayaService, scene_manager)
+
+# Method 2: Create a shared service instance (single instance for all connections)
+shared_service = create_shared_service_instance(MayaService, scene_manager)
+
+# Create a server with the service factory
+server = create_raw_threaded_server(service_factory, port=18812)
+server.start()
+```
+
+### Parameter Handling
+
+```python
+from dcc_mcp_rpyc.parameters import process_rpyc_parameters, execute_remote_command
+
+# Process parameters for RPyC calls
+params = {"radius": 5.0, "create": True, "name": "mySphere"}
+processed = process_rpyc_parameters(params)
+
+# Execute a command on a remote connection with proper parameter handling
+result = execute_remote_command(connection, "create_sphere", radius=5.0, create=True)
+```
+
 ### Client-side
 
 ```python
