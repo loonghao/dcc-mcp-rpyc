@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "dcc-mcp-rpyc"
-version = "0.2.1"
+version = "0.3.0"
 description = "RPYC implementation for DCC software integration with Model Context Protocol"
 authors = ["Long Hao <hal.long@outlook.com>"]
 readme = "README.md"
@@ -37,7 +37,7 @@ dcc-mcp-rpyc = "dcc_mcp_rpyc.cli:main"
 
 [tool.commitizen]
 name = "cz_conventional_commits"
-version = "0.2.1"
+version = "0.3.0"
 tag_format = "$version"
 version_files = [
     "pyproject.toml:version",
