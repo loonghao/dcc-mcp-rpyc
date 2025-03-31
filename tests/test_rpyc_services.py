@@ -10,7 +10,7 @@ import sys
 from dcc_mcp_core.models import ActionResultModel
 
 # Import local modules
-from tests.conftest import MockDCCService
+from dcc_mcp_rpyc.testing.mock_services import MockDCCService
 
 
 class TestDCCRPyCService:

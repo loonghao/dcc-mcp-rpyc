@@ -35,6 +35,10 @@ By leveraging RPyC, DCC-MCP-RPYC provides a unified framework that preserves the
 - Abstract base classes for creating DCC-specific adapters and services
 - Support for multiple DCC applications (Maya, Houdini, 3ds Max, Nuke, etc.)
 - Integration with the Model Context Protocol (MCP) for AI-driven DCC control
+- Action system for standardized command execution across different DCCs
+- Mock DCC services for testing and development without actual DCC applications
+- Asynchronous client for non-blocking operations
+- Comprehensive error handling and connection management
 
 ## Architecture
 
@@ -47,6 +51,8 @@ graph TD
     A --> D[DCC-MCP<br>Core API]
     D --> E[DCC-MCP-RPYC<br>Transport]
     E --> C
+    F[Action System] --> E
+    G[Mock DCC Services] -.-> E
 ```
 
 Key components:
@@ -56,6 +62,8 @@ Key components:
 - **BaseDCCClient**: Client-side interface for connecting to and controlling DCC applications
 - **DCCAdapter**: Abstract base class for DCC-specific adapters
 - **ConnectionPool**: Manages and reuses connections to DCC servers
+- **ActionAdapter**: Connects the Action system with RPYC services
+- **MockDCCService**: Simulates DCC applications for testing and development
 
 ## Installation
 
@@ -151,13 +159,21 @@ client = BaseDCCClient(
 # Connect to the server
 client.connect()
 
-# Call a remote method
-result = client.call("execute_cmd", "sphere", radius=5)
+# Execute Python code in the DCC
+result = client.execute_python("import maya.cmds as cmds; _result = cmds.ls()")
+print(result)
+
+# Execute DCC-specific command
+result = client.execute_dcc_command("sphere -name test_sphere;")
 print(result)
 
 # Get scene information
-scene_info = client.call("get_scene_info")
+scene_info = client.get_scene_info()
 print(scene_info)
+
+# Get DCC application information
+dcc_info = client.get_dcc_info()
+print(dcc_info)
 
 # Disconnect when done
 client.disconnect()
@@ -174,10 +190,96 @@ pool = ConnectionPool()
 # Get a client from the pool (creates a new connection if needed)
 with pool.get_client("maya", host="localhost") as client:
     # Call methods on the client
-    result = client.call("execute_cmd", "sphere", radius=5)
+    result = client.execute_python("import maya.cmds as cmds; _result = cmds.sphere()")
     print(result)
 
 # Connection is automatically returned to the pool
+```
+
+### Using the Action System
+
+```python
+from dcc_mcp_rpyc.action_adapter import ActionAdapter, get_action_adapter
+from dcc_mcp_core.actions.base import Action
+from dcc_mcp_core.models import ActionResultModel
+from pydantic import BaseModel, Field
+
+# Define an Action input model
+class CreateSphereInput(BaseModel):
+    radius: float = Field(default=1.0, description="Sphere radius")
+    name: str = Field(default="sphere1", description="Sphere name")
+
+# Define an Action
+class CreateSphereAction(Action):
+    name = "create_sphere"
+    input_model = CreateSphereInput
+    
+    def execute(self, input_data: CreateSphereInput) -> ActionResultModel:
+        # Implementation would use DCC-specific API
+        return ActionResultModel(
+            success=True,
+            message=f"Created sphere {input_data.name} with radius {input_data.radius}",
+            context={"name": input_data.name, "radius": input_data.radius}
+        )
+
+# Get or create an action adapter
+adapter = get_action_adapter("maya")
+
+# Register the action
+adapter.register_action(CreateSphereAction)
+
+# Call the action
+result = adapter.call_action("create_sphere", radius=2.0, name="mySphere")
+print(result.message)  # "Created sphere mySphere with radius 2.0"
+```
+
+### Using Mock DCC Services for Testing
+
+```python
+import threading
+import rpyc
+from rpyc.utils.server import ThreadedServer
+from dcc_mcp_rpyc.client import BaseDCCClient
+from dcc_mcp_rpyc.utils.discovery import register_service
+
+# Create a mock DCC service
+class MockDCCService(rpyc.Service):
+    def exposed_get_dcc_info(self, conn=None):
+        return {
+            "name": "mock_dcc",
+            "version": "1.0.0",
+            "platform": "windows",
+        }
+    
+    def exposed_execute_python(self, code, conn=None):
+        # Safe execution of Python code in a controlled environment
+        local_vars = {}
+        exec(code, {}, local_vars)
+        if "_result" in local_vars:
+            return local_vars["_result"]
+        return None
+
+# Start the mock service
+server = ThreadedServer(
+    MockDCCService,
+    port=18812,
+    protocol_config={"allow_public_attrs": True}
+)
+
+# Register the service for discovery
+register_service("mock_dcc", "localhost", 18812)
+
+# Start in a separate thread
+thread = threading.Thread(target=server.start, daemon=True)
+thread.start()
+
+# Connect a client to the mock service
+client = BaseDCCClient("mock_dcc", host="localhost", port=18812)
+client.connect()
+
+# Use the client as if it were connected to a real DCC
+dcc_info = client.get_dcc_info()
+print(dcc_info)  # {"name": "mock_dcc", "version": "1.0.0", "platform": "windows"}
 ```
 
 ### Creating a DCC Adapter
@@ -197,7 +299,7 @@ class MayaAdapter(DCCAdapter):
 
     def create_sphere(self, radius=1.0):
         self.ensure_connected()
-        return self.dcc_client.call("execute_cmd", "sphere", r=radius)
+        return self.dcc_client.execute_dcc_command(f"sphere -r {radius};")
 ```
 
 ## Development
@@ -223,7 +325,7 @@ nox -s pytest
 nox -s lint
 
 # Fix linting issues
-nox -s lint_fix
+nox -s lint-fix
 ```
 
 ## License
