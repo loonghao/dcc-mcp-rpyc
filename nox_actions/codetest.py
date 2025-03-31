@@ -28,7 +28,9 @@ def pytest(session: nox.Session) -> None:
     # Install project and dependencies
     session.install(".")
     # Install testing dependencies
-    session.install("pytest", "pytest_cov", "pytest_mock", "pyfakefs", "pytest-timeout", "rpyc>=6.0.0")
+    session.install(
+        "pytest", "pytest_cov", "pytest_mock", "pyfakefs", "pytest-timeout", "rpyc>=6.0.0", "pytest-asyncio"
+    )
     test_root = os.path.join(THIS_ROOT, "tests")
 
     # Get any additional arguments passed after --

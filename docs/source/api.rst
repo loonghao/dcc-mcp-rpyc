@@ -1,22 +1,46 @@
 API Reference
 =============
 
-This part of the documentation covers all the interfaces of your-project-name.
+This part of the documentation covers all the interfaces of DCC-MCP-RPYC.
 
-your_project_name
+dcc_mcp_rpyc
 ----------------
 
-.. automodule:: your_project_name
+.. automodule:: dcc_mcp_rpyc
    :members:
 
-your_project_name.cli
+dcc_mcp_rpyc.client
 --------------------
 
-.. automodule:: your_project_name.cli
+.. automodule:: dcc_mcp_rpyc.client
    :members:
 
-your_project_name.config
+dcc_mcp_rpyc.server
 -----------------------
 
-.. automodule:: your_project_name.config
+.. automodule:: dcc_mcp_rpyc.server
+   :members:
+
+dcc_mcp_rpyc.adapter
+-----------------------
+
+.. automodule:: dcc_mcp_rpyc.adapter
+   :members:
+
+dcc_mcp_rpyc.application
+-----------------------
+
+.. automodule:: dcc_mcp_rpyc.application
+   :members:
+
+dcc_mcp_rpyc.utils
+-----------------------
+
+.. automodule:: dcc_mcp_rpyc.utils
+   :members:
+
+dcc_mcp_rpyc.action_adapter
+-----------------------
+
+.. automodule:: dcc_mcp_rpyc.action_adapter
    :members:

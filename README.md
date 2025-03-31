@@ -107,7 +107,7 @@ from dcc_mcp_rpyc.server import create_service_factory, create_shared_service_in
 class SceneManager:
     def __init__(self):
         self.scenes = {}
-    
+
     def add_scene(self, name, data):
         self.scenes[name] = data
 
