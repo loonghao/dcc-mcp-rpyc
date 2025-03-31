@@ -1,4 +1,4 @@
-Welcome to your-project-name's documentation!
+Welcome to DCC-MCP-RPYC's documentation!
 ======================================
 
 .. toctree::
