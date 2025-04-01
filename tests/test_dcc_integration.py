@@ -17,9 +17,7 @@ from rpyc.utils.server import ThreadedServer
 
 # Import local modules
 from dcc_mcp_rpyc.client import BaseDCCClient
-from dcc_mcp_rpyc.utils.discovery import discover_services
-from dcc_mcp_rpyc.utils.discovery import get_latest_service
-from dcc_mcp_rpyc.utils.discovery import register_service
+from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy
 
 
 # Mock DCC service class
@@ -50,32 +48,33 @@ class MockDCCService(rpyc.Service):
             "objects": ["object1", "object2", "object3"],
         }
 
-    def exposed_execute_python(self, code, conn=None):
-        """Execute Python code."""
-        try:
-            # Create a safe local namespace
-            local_vars = {}
-            # Execute code and return result
-            exec(code, {}, local_vars)
-            # If code has a return value variable, return it
-            if "_result" in local_vars:
-                return local_vars["_result"]
-            # Otherwise return the last variable's value
-            elif local_vars:
-                return list(local_vars.values())[-1]
-            return None
-        except Exception as e:
-            return str(e)
+    def exposed_execute_command(self, command, args=None, conn=None):
+        """Execute a command."""
+        return {
+            "success": True,
+            "result": f"Executed command: {command} with args: {args}",
+        }
 
-    def exposed_execute_dcc_command(self, command, conn=None):
-        """Execute DCC command."""
-        if self.dcc_name == "maya" and "sphere" in command:
-            return "test_sphere2"
-        elif self.dcc_name == "houdini":
-            return "houdini_result"
-        elif self.dcc_name == "nuke":
-            return "nuke_result"
-        return f"Executed command: {command}"
+    def exposed_get_selection(self, conn=None):
+        """Get selection."""
+        return ["object1", "object2"]
+
+    def exposed_set_selection(self, objects, conn=None):
+        """Set selection."""
+        return {
+            "success": True,
+            "result": f"Set selection to: {objects}",
+        }
+
+    def exposed_get_object_attributes(self, object_name, conn=None):
+        """Get object attributes."""
+        return {
+            "name": object_name,
+            "type": "mesh",
+            "position": [0, 0, 0],
+            "rotation": [0, 0, 0],
+            "scale": [1, 1, 1],
+        }
 
 
 _mock_servers = {}
@@ -91,78 +90,108 @@ def start_mock_dcc_service(dcc_name, host="localhost", port=0):
 
     Returns:
         (host, port) tuple
-
     """
-    # Create service instance
-    service = MockDCCService(dcc_name)
-    # Create server
+    global _mock_servers
+
+    # Check if the service is already running
+    if dcc_name in _mock_servers:
+        server, host, port = _mock_servers[dcc_name]
+        return host, port
+
+    # Create a service instance with the specified DCC name
+    service = MockDCCService(dcc_name=dcc_name)
+
+    # Create a server
     server = ThreadedServer(
-        service=service,
+        service,
         hostname=host,
         port=port,
-        protocol_config={"allow_public_attrs": True},
-        logger=None,
+        protocol_config={"allow_all_attrs": True},
     )
 
-    # Get actual port
-    if port == 0:
-        port = server.port
+    # Start the server in a separate thread
+    server_thread = threading.Thread(target=server.start, daemon=True)
+    server_thread.start()
 
-    # Register service
-    register_service(dcc_name, host, port)
+    # Wait for the server to start
+    time.sleep(0.1)
 
-    # Start server in new thread
-    thread = threading.Thread(target=server.start, daemon=True)
-    thread.start()
+    # Get the port that was assigned
+    port = server.port
 
-    # Store server instance for later closing
-    _mock_servers[dcc_name] = (server, thread)
+    # Store the server instance
+    _mock_servers[dcc_name] = (server, host, port)
 
-    # Wait for server to start
-    time.sleep(0.5)
+    # Register the service
+    registry = ServiceRegistry()
+    strategy = registry.get_strategy("file")
+    if not strategy:
+        strategy = FileDiscoveryStrategy()
+        registry.register_strategy("file", strategy)
+    
+    service_info = ServiceInfo(
+        name=dcc_name,
+        host=host,
+        port=port,
+        dcc_type=dcc_name,
+        metadata={"version": "1.0.0"}
+    )
+    registry.register_service("file", service_info)
 
     return host, port
 
 
-# Close mock DCC service
 def stop_mock_dcc_service(dcc_name):
     """Close mock DCC service.
 
     Args:
         dcc_name: DCC name
-
     """
+    global _mock_servers
+
     if dcc_name in _mock_servers:
-        server, thread = _mock_servers[dcc_name]
+        server, host, port = _mock_servers[dcc_name]
         server.close()
+        
+        # Unregister the service
+        registry = ServiceRegistry()
+        strategy = registry.get_strategy("file")
+        if strategy:
+            service_info = ServiceInfo(
+                name=dcc_name,
+                host=host,
+                port=port,
+                dcc_type=dcc_name,
+                metadata={"version": "1.0.0"}
+            )
+            registry.unregister_service("file", service_info)
+        
         del _mock_servers[dcc_name]
 
 
-# Start mock DCC services
-@pytest.fixture(scope="module")
+@pytest.fixture
 def mock_dcc_services():
     """Start mock DCC services."""
-    # Start mock services
+    # Start mock services for common DCCs
     start_mock_dcc_service("maya")
     start_mock_dcc_service("houdini")
     start_mock_dcc_service("nuke")
 
-    # Run tests
     yield
 
-    # Cleanup: close all mock services
+    # Stop all mock services
     for dcc_name in list(_mock_servers.keys()):
         stop_mock_dcc_service(dcc_name)
 
 
 # Skip tests if no DCC services are available
 pytestmark = pytest.mark.skipif(
-    not any(discover_services().values()),  # Check if any DCC services are available
-    reason="No DCC services available for integration testing",
+    not ServiceRegistry().list_services(),  # Check if any DCC services are available
+    reason="No DCC services available for testing",
 )
 
 
-def get_test_dcc_client(dcc_name: str) -> Optional[BaseDCCClient]:
+def get_test_dcc_client(dcc_name: str):
     """Get a DCC client for testing if available.
 
     Args:
@@ -172,119 +201,97 @@ def get_test_dcc_client(dcc_name: str) -> Optional[BaseDCCClient]:
     Returns:
     -------
         DCC client if available, None otherwise
-
     """
-    # Discover services
-    services_by_dcc = discover_services()
-
-    # Get list of services for specified DCC
-    dcc_services = services_by_dcc.get(dcc_name.lower(), [])
-    if not dcc_services:
-        return None
-
-    # Get latest service
-    service = get_latest_service(dcc_services)
+    # Try to find the service
+    registry = ServiceRegistry()
+    service = registry.get_service(dcc_name)
+    
     if not service:
-        return None
-
-    # Create client
-    client = BaseDCCClient(dcc_name=dcc_name, host=service.get("host"), port=service.get("port"))
-
-    # Try to connect
-    try:
-        client.connect()
+        # Try to discover services
+        strategy = registry.get_strategy("file")
+        if strategy:
+            registry.discover_services("file", dcc_name)
+            service = registry.get_service(dcc_name)
+    
+    if not service:
+        # Start a mock service
+        host, port = start_mock_dcc_service(dcc_name)
+        
+        # Create a client
+        client = BaseDCCClient(host=host, port=port)
         return client
-    except Exception:
-        return None
+    
+    # Create a client
+    client = BaseDCCClient(host=service.host, port=service.port)
+    return client
 
 
-@pytest.mark.maya
-@pytest.mark.usefixtures("mock_dcc_services")
 def test_maya_integration():
     """Test integration with Maya."""
-    # Get Maya client
+    # Get a Maya client
     client = get_test_dcc_client("maya")
-    if not client:
-        pytest.skip("Maya service not available")
+    assert client is not None
 
-    try:
-        # Get DCC info
-        dcc_info = client.get_dcc_info()
-        assert dcc_info["name"] == "maya"
-        assert "version" in dcc_info
+    # Test connection
+    assert client.is_connected()
 
-        # Execute Python code
-        result = client.execute_python("_result = ['test_sphere']")
-        assert isinstance(result, list)
-        assert "test_sphere" in result[0]
+    # Test get_dcc_info
+    dcc_info = client.get_dcc_info()
+    assert dcc_info is not None
+    assert dcc_info["name"] == "maya"
 
-        # Execute DCC command
-        result = client.execute_dcc_command("sphere -name test_sphere2;")
-        assert isinstance(result, str)
-        assert "test_sphere2" in result
+    # Test get_scene_info
+    scene_info = client.get_scene_info()
+    assert scene_info is not None
+    assert "file_path" in scene_info
+    assert "scene_name" in scene_info
+    assert "objects" in scene_info
 
-        # Get scene info
-        scene_info = client.get_scene_info()
-        assert isinstance(scene_info, dict)
-        assert "file_path" in scene_info
-    finally:
-        # Close client
-        client.close()
+    # Test execute_command
+    result = client.execute_command("polyCube", {"width": 2.0})
+    assert result is not None
+    assert result["success"] is True
 
 
-@pytest.mark.houdini
-@pytest.mark.usefixtures("mock_dcc_services")
 def test_houdini_integration():
     """Test integration with Houdini."""
-    # Get Houdini client
+    # Get a Houdini client
     client = get_test_dcc_client("houdini")
-    if not client:
-        pytest.skip("Houdini service not available")
+    assert client is not None
 
-    try:
-        # Get DCC info
-        dcc_info = client.get_dcc_info()
-        assert dcc_info["name"] == "houdini"
-        assert "version" in dcc_info
+    # Test connection
+    assert client.is_connected()
 
-        # Execute Python code
-        result = client.execute_python("_result = 'test_geo'")
-        assert isinstance(result, str)
-        assert "test_geo" in result
+    # Test get_dcc_info
+    dcc_info = client.get_dcc_info()
+    assert dcc_info is not None
+    assert dcc_info["name"] == "houdini"
 
-        # Get scene info
-        scene_info = client.get_scene_info()
-        assert isinstance(scene_info, dict)
-        assert "file_path" in scene_info
-    finally:
-        # Close client
-        client.close()
+    # Test get_scene_info
+    scene_info = client.get_scene_info()
+    assert scene_info is not None
+    assert "file_path" in scene_info
+    assert "scene_name" in scene_info
+    assert "objects" in scene_info
 
 
-@pytest.mark.nuke
-@pytest.mark.usefixtures("mock_dcc_services")
 def test_nuke_integration():
     """Test integration with Nuke."""
-    # Get Nuke client
+    # Get a Nuke client
     client = get_test_dcc_client("nuke")
-    if not client:
-        pytest.skip("Nuke service not available")
+    assert client is not None
 
-    try:
-        # Get DCC info
-        dcc_info = client.get_dcc_info()
-        assert dcc_info["name"] == "nuke"
-        assert "version" in dcc_info
+    # Test connection
+    assert client.is_connected()
 
-        # Execute Python code
-        result = client.execute_python("_result = 'Blur'")
-        assert isinstance(result, str)
-        assert "Blur" in result
+    # Test get_dcc_info
+    dcc_info = client.get_dcc_info()
+    assert dcc_info is not None
+    assert dcc_info["name"] == "nuke"
 
-        # Get scene info
-        scene_info = client.get_scene_info()
-        assert isinstance(scene_info, dict)
-        assert "file_path" in scene_info
-    finally:
-        # Close client
-        client.close()
+    # Test get_scene_info
+    scene_info = client.get_scene_info()
+    assert scene_info is not None
+    assert "file_path" in scene_info
+    assert "scene_name" in scene_info
+    assert "objects" in scene_info

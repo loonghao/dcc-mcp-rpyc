@@ -39,6 +39,7 @@ def create_server(
     protocol_config: Optional[Dict[str, Any]] = None,
     server_type: str = "threaded",
     name: Optional[Optional[str]] = None,
+    use_zeroconf: bool = False,
 ) -> Union[ThreadedServer, DCCServer]:
     """Create a new RPYC server instance.
 
@@ -53,6 +54,7 @@ def create_server(
         protocol_config: Custom protocol configuration (default: None)
         server_type: Type of server to create, one of 'threaded' or 'dcc' (default: 'threaded')
         name: Optional name for the server, required for 'dcc' server type
+        use_zeroconf: Whether to use ZeroConf for service discovery (default: False)
 
     Returns:
     -------
@@ -66,7 +68,7 @@ def create_server(
     if server_type == "dcc":
         if not name:
             raise ValueError("Name is required for DCC server type")
-        server = _create_dcc_server(name, service_class, host, port)
+        server = _create_dcc_server(name, service_class, host, port, use_zeroconf)
     else:  # Default to threaded server
         if protocol_config is None:
             protocol_config = get_rpyc_config()
@@ -82,6 +84,7 @@ def create_server(
         "running": False,
         "type": server_type,
         "name": name,
+        "use_zeroconf": use_zeroconf,
     }
 
     logger.info(f"Created {server_type} server on {host}:{port}")

@@ -6,15 +6,23 @@ including connection pooling and client registry.
 
 # Import built-in modules
 import logging
+import time
 from typing import Callable
 from typing import ClassVar
 from typing import Dict
 from typing import Optional
 from typing import Tuple
 from typing import Type
+from typing import Any
+from typing import List
+from typing import Union
+
+# Import third-party modules
+import rpyc
 
 # Import local modules
 from dcc_mcp_rpyc.client.dcc import BaseDCCClient
+from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -27,8 +35,7 @@ class ClientRegistry:
     with the connection pool. It allows registering custom client classes for
     specific DCC applications and retrieving them later.
 
-    Attributes
-    ----------
+    Attributes:
         _registry: Dictionary mapping DCC names to client classes
 
     """
@@ -40,7 +47,6 @@ class ClientRegistry:
         """Register a client class for a DCC.
 
         Args:
-        ----
             dcc_name: Name of the DCC to register the client class for
             client_class: The client class to register
 
@@ -53,11 +59,9 @@ class ClientRegistry:
         """Get the client class for a DCC.
 
         Args:
-        ----
             dcc_name: Name of the DCC to get the client class for
 
         Returns:
-        -------
             The client class for the specified DCC, or BaseDCCClient if no custom
             client class is registered
 
@@ -69,33 +73,44 @@ class ConnectionPool:
     """Pool of RPYC connections to DCC servers.
 
     This class provides a pool of connections to DCC RPYC servers that can be
-    reused to avoid the overhead of creating new connections.
+    reused to avoid the overhead of creating new connections. It also manages
+    connection lifecycle, including cleanup of idle connections.
 
-    Attributes
-    ----------
-        pool: Dictionary mapping (dcc_name, host, port) to client instances
+    Attributes:
+        pool: Dictionary mapping (dcc_name, host, port) to (client, last_used_time)
+        max_idle_time: Maximum time in seconds a connection can be idle
+        cleanup_interval: Interval in seconds to clean up idle connections
+        last_cleanup: Timestamp of the last cleanup operation
 
     """
 
-    def __init__(self):
-        """Initialize the connection pool."""
-        self.pool: Dict[Tuple[str, str, int], BaseDCCClient] = {}
+    def __init__(self, max_idle_time: float = 300.0, cleanup_interval: float = 60.0):
+        """Initialize the connection pool.
+        
+        Args:
+            max_idle_time: Maximum time in seconds a connection can be idle
+            cleanup_interval: Interval in seconds to clean up idle connections
+        """
+        self.pool: Dict[Tuple[str, str, int], Tuple[BaseDCCClient, float]] = {}
+        self.max_idle_time = max_idle_time
+        self.cleanup_interval = cleanup_interval
+        self.last_cleanup = time.time()
 
     def get_client(
         self,
         dcc_name: str,
-        host: Optional[Optional[str]] = None,
-        port: Optional[Optional[int]] = None,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
         auto_connect: bool = True,
         connection_timeout: float = 5.0,
-        registry_path: Optional[Optional[str]] = None,
-        client_class: Optional[Optional[Type[BaseDCCClient]]] = None,
+        registry_path: Optional[str] = None,
+        client_class: Optional[Type[BaseDCCClient]] = None,
         client_factory: Optional[Callable[..., BaseDCCClient]] = None,
+        use_zeroconf: bool = False,
     ) -> BaseDCCClient:
         """Get a client from the pool or create a new one.
 
         Args:
-        ----
             dcc_name: Name of the DCC to connect to
             host: Host of the DCC RPYC server (default: None, auto-discover)
             port: Port of the DCC RPYC server (default: None, auto-discover)
@@ -104,157 +119,180 @@ class ConnectionPool:
             registry_path: Optional path to the registry file (default: None)
             client_class: Optional client class to use (default: None, use registry)
             client_factory: Optional factory function to create clients (default: None, use create_client)
+            use_zeroconf: Whether to use ZeroConf for service discovery (default: False)
 
         Returns:
-        -------
             A client instance for the specified DCC
 
         """
-        # Normalize DCC name
-        dcc_name = dcc_name.lower()
+        # Clean up idle connections if needed
+        self._cleanup_idle_connections()
+        
+        # 如果host和port未指定，尝试发现它们
+        goto_create_client = False
+        if host is None or port is None:
+            # 首先尝试使用ZeroConf发现服务（如果启用）
+            if use_zeroconf:
+                try:
+                    from dcc_mcp_rpyc.utils.zeroconf_discovery import find_service as zc_find_service
+                    from dcc_mcp_rpyc.utils.zeroconf_discovery import is_zeroconf_available
+                    
+                    if is_zeroconf_available():
+                        logger.info(f"Attempting to discover {dcc_name} service using ZeroConf...")
+                        service_info = zc_find_service(dcc_name)
+                        if service_info:
+                            host = service_info.get("host", host)
+                            port = service_info.get("port", port)
+                            logger.info(f"Discovered {dcc_name} service at {host}:{port} using ZeroConf")
+                            # 如果成功通过ZeroConf发现服务，跳过文件发现
+                            goto_create_client = True
+                except ImportError:
+                    logger.warning("ZeroConf discovery module not available")
+                except Exception as e:
+                    logger.warning(f"Error using ZeroConf discovery: {e}")
+            
+            # 如果ZeroConf发现失败或未启用，回退到基于文件的发现
+            if not goto_create_client and (host is None or port is None):
+                # 使用服务注册表查找服务
+                registry = ServiceRegistry()
+                strategy = registry.get_strategy("file")
+                if not strategy:
+                    # 如果没有找到文件策略，创建一个新的
+                    strategy = FileDiscoveryStrategy(registry_path=registry_path)
+                    registry.register_strategy("file", strategy)
+                
+                # 发现服务
+                registry.discover_services("file", dcc_name)
+                service_info = registry.get_service(dcc_name)
+                
+                if service_info:
+                    host = service_info.host
+                    port = service_info.port
+                    logger.info(f"Discovered {dcc_name} service at {host}:{port} using file-based discovery")
 
-        # Try to get an existing client from the pool
-        client = self._get_existing_client(dcc_name, host, port)
-        if client is not None:
+        # Create a key for the connection pool
+        key = (dcc_name.lower(), host, port)
+
+        # Check if we already have a client for this key
+        if key in self.pool:
+            client, _ = self.pool[key]
+            # Update last used time
+            self.pool[key] = (client, time.time())
+            
+            # If the client is not connected and auto_connect is True, try to reconnect
+            if auto_connect and not client.is_connected():
+                try:
+                    client.connect()
+                except Exception as e:
+                    logger.warning(f"Failed to reconnect to {dcc_name}: {e}")
+            
             return client
 
-        # Create a new client
-        return self._create_new_client(
-            dcc_name,
-            host,
-            port,
-            auto_connect,
-            connection_timeout,
-            registry_path,
-            client_class,
-            client_factory,
-        )
-
-    def _get_existing_client(self, dcc_name: str, host: Optional[str], port: Optional[int]) -> Optional[BaseDCCClient]:
-        """Get an existing client from the pool if available.
-
-        Args:
-        ----
-            dcc_name: Name of the DCC to connect to
-            host: Host of the DCC RPYC server
-            port: Port of the DCC RPYC server
-
-        Returns:
-        -------
-            An existing client instance or None if not found
-
-        """
-        # Normalize DCC name
-        dcc_name = dcc_name.lower()
-
-        # Check if we have a client for the specified DCC, host, and port
-        for (pool_dcc, pool_host, pool_port), client in self.pool.items():
-            if pool_dcc == dcc_name and (host is None or pool_host == host) and (port is None or pool_port == port):
-                # Check if the client is still connected
-                if client.is_connected():
-                    logger.info(f"Using existing client for {dcc_name} at {pool_host}:{pool_port}")
-                    return client
-                else:
-                    # Remove the disconnected client from the pool
-                    logger.info(f"Removing disconnected client for {dcc_name} at {pool_host}:{pool_port}")
-                    del self.pool[(pool_dcc, pool_host, pool_port)]
-                    break
-
-        return None
-
-    def _create_new_client(
-        self,
-        dcc_name: str,
-        host: Optional[str],
-        port: Optional[int],
-        auto_connect: bool,
-        connection_timeout: float,
-        registry_path: Optional[str],
-        client_class: Optional[Type[BaseDCCClient]],
-        client_factory: Optional[Callable[..., BaseDCCClient]],
-    ) -> BaseDCCClient:
-        """Create a new client instance.
-
-        Args:
-        ----
-            dcc_name: Name of the DCC to connect to
-            host: Host of the DCC RPYC server
-            port: Port of the DCC RPYC server
-            auto_connect: Whether to automatically connect
-            connection_timeout: Timeout for connection attempts in seconds
-            registry_path: Optional path to the registry file
-            client_class: Optional client class to use
-            client_factory: Optional factory function to create clients
-
-        Returns:
-        -------
-            A new client instance
-
-        """
-        # Normalize DCC name
-        dcc_name = dcc_name.lower()
-
-        # Use provided client class or get from registry
+        # Determine the client class to use
         if client_class is None:
             client_class = ClientRegistry.get_client_class(dcc_name)
 
-        # Use provided factory or create client directly
+        # Create a new client
         if client_factory is not None:
             client = client_factory(
-                dcc_name,
+                dcc_name=dcc_name,  # 使用 dcc_name 而不是 app_name
                 host=host,
                 port=port,
                 auto_connect=auto_connect,
                 connection_timeout=connection_timeout,
                 registry_path=registry_path,
+                use_zeroconf=use_zeroconf,
             )
         else:
-            client = client_class(
-                dcc_name,
-                host=host,
-                port=port,
-                auto_connect=auto_connect,
-                connection_timeout=connection_timeout,
-                registry_path=registry_path,
-            )
+            # 检查client_class是否接受use_zeroconf参数
+            try:
+                client = client_class(
+                    dcc_name=dcc_name,  # 使用 dcc_name 而不是 app_name
+                    host=host,
+                    port=port,
+                    auto_connect=auto_connect,
+                    connection_timeout=connection_timeout,
+                    registry_path=registry_path,
+                    use_zeroconf=use_zeroconf,
+                )
+            except TypeError:
+                # 如果client_class不接受use_zeroconf参数，则不传递该参数
+                logger.warning(f"{client_class.__name__} does not accept use_zeroconf parameter")
+                client = client_class(
+                    dcc_name=dcc_name,  # 使用 dcc_name 而不是 app_name
+                    host=host,
+                    port=port,
+                    auto_connect=auto_connect,
+                    connection_timeout=connection_timeout,
+                    registry_path=registry_path,
+                )
 
-        # Add the client to the pool if it's connected
-        if client.is_connected():
-            self.pool[(dcc_name, client.host, client.port)] = client
-            logger.info(f"Added new client for {dcc_name} at {client.host}:{client.port} to the pool")
+        # Add the client to the pool with the current timestamp
+        self.pool[key] = (client, time.time())
 
         return client
 
-    def release_client(self, client: BaseDCCClient):
-        """Release a client back to the pool.
+    def close_client(
+        self, dcc_name: str, host: Optional[str] = None, port: Optional[int] = None
+    ) -> bool:
+        """Close a client connection.
 
         Args:
-        ----
-            client: The client to release
+            dcc_name: Name of the DCC
+            host: Host of the DCC RPYC server (default: None)
+            port: Port of the DCC RPYC server (default: None)
+
+        Returns:
+            True if the client was closed, False otherwise
 
         """
-        # Check if the client is still connected
-        if client.is_connected():
-            # Add the client to the pool
-            self.pool[(client.app_name, client.host, client.port)] = client
-            logger.info(f"Released client for {client.app_name} at {client.host}:{client.port} back to the pool")
-        else:
-            # Close the client if it's disconnected
-            client.disconnect()
-            logger.info(f"Closed disconnected client for {client.app_name}")
+        key = (dcc_name.lower(), host, port)
 
-    def close_all(self):
-        """Close all connections in the pool."""
-        for (dcc_name, host, port), client in list(self.pool.items()):
+        if key in self.pool:
+            client, _ = self.pool[key]
             try:
                 client.disconnect()
-                logger.info(f"Closed client for {dcc_name} at {host}:{port}")
+                del self.pool[key]
+                return True
             except Exception as e:
-                logger.error(f"Error closing client for {dcc_name} at {host}:{port}: {e}")
+                logger.warning(f"Error closing connection to {dcc_name}: {e}")
 
-        # Clear the pool
+        return False
+
+    def close_all_connections(self):
+        """Close all connections in the pool."""
+        for key, (client, _) in list(self.pool.items()):
+            try:
+                client.disconnect()
+            except Exception as e:
+                logger.warning(f"Error closing connection: {e}")
+
         self.pool.clear()
-        logger.info("Cleared connection pool")
+    
+    def _cleanup_idle_connections(self) -> None:
+        """Clean up idle connections.
+        
+        This method closes connections that have been idle for too long.
+        """
+        current_time = time.time()
+        
+        # Only clean up at the specified interval
+        if current_time - self.last_cleanup < self.cleanup_interval:
+            return
+        
+        self.last_cleanup = current_time
+        
+        # Find idle connections
+        idle_keys = []
+        for key, (_, last_used) in self.pool.items():
+            if current_time - last_used > self.max_idle_time:
+                idle_keys.append(key)
+        
+        # Close idle connections
+        for key in idle_keys:
+            dcc_name, host, port = key
+            if self.close_client(dcc_name, host, port):
+                logger.debug(f"Closed idle connection to {dcc_name}")
 
 
 # Global connection pool
@@ -263,18 +301,18 @@ _connection_pool = ConnectionPool()
 
 def get_client(
     dcc_name: str,
-    host: Optional[Optional[str]] = None,
-    port: Optional[Optional[int]] = None,
+    host: Optional[str] = None,
+    port: Optional[int] = None,
     auto_connect: bool = True,
     connection_timeout: float = 5.0,
-    registry_path: Optional[Optional[str]] = None,
-    client_class: Optional[Optional[Type[BaseDCCClient]]] = None,
+    registry_path: Optional[str] = None,
+    client_class: Optional[Type[BaseDCCClient]] = None,
     client_factory: Optional[Callable[..., BaseDCCClient]] = None,
+    use_zeroconf: bool = False,
 ) -> BaseDCCClient:
     """Get a client from the global connection pool.
 
     Args:
-    ----
         dcc_name: Name of the DCC to connect to
         host: Host of the DCC RPYC server (default: None, auto-discover)
         port: Port of the DCC RPYC server (default: None, auto-discover)
@@ -283,14 +321,14 @@ def get_client(
         registry_path: Optional path to the registry file (default: None)
         client_class: Optional client class to use (default: None, use registry)
         client_factory: Optional factory function to create clients (default: None, use create_client)
+        use_zeroconf: Whether to use ZeroConf for service discovery (default: False)
 
     Returns:
-    -------
         A client instance for the specified DCC
 
     """
     return _connection_pool.get_client(
-        dcc_name,
+        dcc_name=dcc_name,
         host=host,
         port=port,
         auto_connect=auto_connect,
@@ -298,9 +336,27 @@ def get_client(
         registry_path=registry_path,
         client_class=client_class,
         client_factory=client_factory,
+        use_zeroconf=use_zeroconf,
     )
+
+
+def close_client(
+    dcc_name: str, host: Optional[str] = None, port: Optional[int] = None
+) -> bool:
+    """Close a client connection from the global connection pool.
+
+    Args:
+        dcc_name: Name of the DCC
+        host: Host of the DCC RPYC server (default: None)
+        port: Port of the DCC RPYC server (default: None)
+
+    Returns:
+        True if the client was closed, False otherwise
+
+    """
+    return _connection_pool.close_client(dcc_name, host, port)
 
 
 def close_all_connections():
     """Close all connections in the global connection pool."""
-    _connection_pool.close_all()
+    _connection_pool.close_all_connections()

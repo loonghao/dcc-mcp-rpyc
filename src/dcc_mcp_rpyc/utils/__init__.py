@@ -14,13 +14,12 @@ from dcc_mcp_rpyc.utils.di import register_instance
 from dcc_mcp_rpyc.utils.di import register_singleton
 from dcc_mcp_rpyc.utils.di import resolve
 
-# Import from discovery module
-from dcc_mcp_rpyc.utils.discovery import cleanup_stale_services
-from dcc_mcp_rpyc.utils.discovery import discover_services
-from dcc_mcp_rpyc.utils.discovery import find_service_registry_files
-from dcc_mcp_rpyc.utils.discovery import get_latest_service
-from dcc_mcp_rpyc.utils.discovery import register_service
-from dcc_mcp_rpyc.utils.discovery import unregister_service
+# Import from discovery module (now in dcc_mcp_rpyc.discovery)
+from dcc_mcp_rpyc.discovery import ServiceRegistry
+from dcc_mcp_rpyc.discovery import ServiceInfo
+from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import ZeroConfDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import ServiceDiscoveryFactory
 
 # Import from errors module
 from dcc_mcp_rpyc.utils.errors import ActionError
@@ -38,20 +37,19 @@ __all__ = [
     "Container",
     "DCCMCPError",
     "ExecutionError",
-    "cleanup_stale_services",
     "deliver_parameters",
-    "discover_services",
     "execute_remote_command",
-    "find_service_registry_files",
+    "FileDiscoveryStrategy",
     "get_container",
-    "get_latest_service",
     "handle_error",
     "register_factory",
     "register_instance",
-    "register_service",
     "register_singleton",
     "resolve",
-    "unregister_service",
+    "ServiceDiscoveryFactory",
+    "ServiceInfo",
+    "ServiceRegistry",
     "with_action_result",
     "with_error_handling",
+    "ZeroConfDiscoveryStrategy",
 ]

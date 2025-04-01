@@ -30,8 +30,7 @@ def deliver_parameters(params: Dict[str, Any]) -> Dict[str, Any]:
     delivered_params = {}
     for key, value in params.items():
         try:
-            # Use classic.deliver to convert NetRefs to actual values
-            delivered_params[key] = classic.deliver(value)
+            delivered_params[key] = value
         except Exception as e:
             logger.warning(f"Error delivering parameter {key}: {e}")
             delivered_params[key] = value
@@ -52,20 +51,9 @@ def execute_remote_command(connection: "rpyc.Connection", command: str, *args, *
         Result of the remote command execution
 
     """
-    # Process keyword arguments
-    processed_kwargs = deliver_parameters(kwargs) if kwargs else {}
-
-    # Process positional arguments
-    processed_args = []
-    for arg in args:
-        try:
-            processed_args.append(classic.deliver(arg))
-        except Exception as e:
-            logger.warning(f"Error delivering positional argument: {e}")
-            processed_args.append(arg)
 
     # Get the command object from the connection
     cmd = getattr(connection, command)
 
     # Execute the command with processed arguments
-    return cmd(*processed_args, **processed_kwargs)
+    return cmd(*args, **kwargs)

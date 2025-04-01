@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import time
+import threading
 
 # Import third-party modules
 # Import dcc_mcp_core modules
@@ -21,9 +22,7 @@ from dcc_mcp_rpyc.server.dcc import DCCServer
 from dcc_mcp_rpyc.testing.mock_services import MockDCCService
 from dcc_mcp_rpyc.testing.mock_services import start_mock_dcc_service
 from dcc_mcp_rpyc.testing.mock_services import stop_mock_dcc_service
-from dcc_mcp_rpyc.utils.discovery import cleanup_stale_services
-from dcc_mcp_rpyc.utils.discovery import register_service
-from dcc_mcp_rpyc.utils.discovery import unregister_service
+from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy
 
 
 @pytest.fixture
@@ -43,42 +42,43 @@ def temp_registry_path():
 
 
 @pytest.fixture
+def service_registry(temp_registry_path):
+    """Provide a service registry with file discovery strategy."""
+    registry = ServiceRegistry()
+    strategy = FileDiscoveryStrategy(registry_path=temp_registry_path)
+    registry.register_strategy("file", strategy)
+    yield registry
+    # Reset the registry singleton for the next test
+    ServiceRegistry._reset_instance()
+
+
+@pytest.fixture
 def rpyc_server():
     """Create a RPYC server for testing.
 
     Yields
     ------
         Tuple of (server, port)
-
     """
-    # Create a server
-    server = ThreadedServer(
-        BaseRPyCService,
-        port=0,  # Use a random port
-        protocol_config={
-            "allow_public_attrs": True,
-            "allow_pickle": True,
-            "sync_request_timeout": 30,
-        },
-    )
+    # Create a server with a random port
+    service = BaseRPyCService
+    server = ThreadedServer(service, port=0, protocol_config={"allow_all_attrs": True})
 
     # Start the server in a separate thread
-    server_thread = server.start()
+    server_thread = threading.Thread(target=server.start, daemon=True)
+    server_thread.start()
 
     # Wait for the server to start
     time.sleep(0.1)
 
-    # Get the port
+    # Get the port that was assigned
     port = server.port
 
-    # Yield the server and port
     yield server, port
 
-    # Close the server
+    # Stop the server
     server.close()
-
-    # Wait for the server thread to finish
-    server_thread.join(timeout=1)
+    server_thread.join(timeout=1.0)
 
 
 @pytest.fixture
@@ -88,74 +88,73 @@ def dcc_rpyc_server():
     Yields
     ------
         Tuple of (server, port)
-
     """
-    server, port = start_mock_dcc_service()
+    # Create a server with a random port
+    service = MockDCCService
+    server = ThreadedServer(service, port=0, protocol_config={"allow_all_attrs": True})
+
+    # Start the server in a separate thread
+    server_thread = threading.Thread(target=server.start, daemon=True)
+    server_thread.start()
+
+    # Wait for the server to start
+    time.sleep(0.1)
+
+    # Get the port that was assigned
+    port = server.port
+
     yield server, port
-    stop_mock_dcc_service(server)
+
+    # Stop the server
+    server.close()
+    server_thread.join(timeout=1.0)
 
 
 @pytest.fixture
-def dcc_server(temp_registry_path: str):
+def dcc_server(temp_registry_path, service_registry):
     """Create a DCC server for testing.
 
     Args:
     ----
         temp_registry_path: Fixture providing a temporary registry file path
+        service_registry: Fixture providing a service registry
 
     Yields:
     ------
         Tuple of (server, port)
-
     """
-    # Create a server
-    server = DCCServer(
-        service=MockDCCService,
-        host="localhost",
-        port=0,  # Use a random port
-        registry_path=temp_registry_path,
-        service_name="MockDCC",
-        service_info={
-            "name": "MockDCC",
-            "version": "1.0.0",
-            "platform": sys.platform,
-        },
-    )
+    # Create a server with a random port
+    service = DCCServer
+    server = ThreadedServer(service, port=0, protocol_config={"allow_all_attrs": True})
 
-    # Start the server
-    server.start()
+    # Start the server in a separate thread
+    server_thread = threading.Thread(target=server.start, daemon=True)
+    server_thread.start()
 
     # Wait for the server to start
     time.sleep(0.1)
 
-    # Get the port
+    # Get the port that was assigned
     port = server.port
 
     # Register the service
-    register_service(
-        name="MockDCC",
+    service_info = ServiceInfo(
+        name="test_dcc_server",
         host="localhost",
         port=port,
-        registry_path=temp_registry_path,
-        service_info={
-            "name": "MockDCC",
-            "version": "1.0.0",
-            "platform": sys.platform,
-        },
+        dcc_type="test_dcc",
+        metadata={"version": "1.0.0"}
     )
+    service_registry.register_service("file", service_info)
 
-    # Yield the server and port
-    try:
-        yield server, port
-    finally:
-        server.stop()
-        unregister_service("MockDCC", "localhost", port)
-        cleanup_stale_services()
-        try:
-            os.remove(temp_registry_path)
-        except (FileNotFoundError, PermissionError):
-            pass
-        time.sleep(0.1)
+    yield server, port
+
+    # Unregister the service
+    service_registry.unregister_service("file", service_info)
+
+    # Stop the server
+    server.close()
+    server_thread.join(timeout=1.0)
 
 
 @pytest.fixture
@@ -165,6 +164,5 @@ def dcc_service():
     Returns
     -------
         MockDCCService instance
-
     """
     return MockDCCService()
