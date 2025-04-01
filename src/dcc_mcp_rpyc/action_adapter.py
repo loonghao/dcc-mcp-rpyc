@@ -10,8 +10,6 @@ from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
-from typing import Optional
-from typing import Callable
 
 # Import third-party modules
 from dcc_mcp_core.actions.base import Action

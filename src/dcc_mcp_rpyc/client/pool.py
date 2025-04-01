@@ -13,16 +13,12 @@ from typing import Dict
 from typing import Optional
 from typing import Tuple
 from typing import Type
-from typing import Any
-from typing import List
-from typing import Union
-
-# Import third-party modules
-import rpyc
 
 # Import local modules
 from dcc_mcp_rpyc.client.dcc import BaseDCCClient
-from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import ServiceRegistry
+from dcc_mcp_rpyc.discovery.zeroconf_strategy import ZeroConfDiscoveryStrategy
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -52,7 +48,9 @@ class ClientRegistry:
 
         """
         cls._registry[dcc_name.lower()] = client_class
-        logger.info(f"Registered client class {client_class.__name__} for {dcc_name}")
+        # Use getattr to safely get the class name, fallback to str(client_class) if not found
+        class_name = getattr(client_class, "__name__", str(client_class))
+        logger.info(f"Registered client class {class_name} for {dcc_name}")
 
     @classmethod
     def get_client_class(cls, dcc_name: str) -> Type[BaseDCCClient]:
@@ -86,10 +84,11 @@ class ConnectionPool:
 
     def __init__(self, max_idle_time: float = 300.0, cleanup_interval: float = 60.0):
         """Initialize the connection pool.
-        
+
         Args:
             max_idle_time: Maximum time in seconds a connection can be idle
             cleanup_interval: Interval in seconds to clean up idle connections
+
         """
         self.pool: Dict[Tuple[str, str, int], Tuple[BaseDCCClient, float]] = {}
         self.max_idle_time = max_idle_time
@@ -127,44 +126,40 @@ class ConnectionPool:
         """
         # Clean up idle connections if needed
         self._cleanup_idle_connections()
-        
-        # 如果host和port未指定，尝试发现它们
+
+        # If host and port are not specified, try to discover them
         goto_create_client = False
         if host is None or port is None:
-            # 首先尝试使用ZeroConf发现服务（如果启用）
+            # First try to use ZeroConf to discover the service (if enabled)
             if use_zeroconf:
                 try:
-                    from dcc_mcp_rpyc.utils.zeroconf_discovery import find_service as zc_find_service
-                    from dcc_mcp_rpyc.utils.zeroconf_discovery import is_zeroconf_available
-                    
-                    if is_zeroconf_available():
-                        logger.info(f"Attempting to discover {dcc_name} service using ZeroConf...")
-                        service_info = zc_find_service(dcc_name)
-                        if service_info:
-                            host = service_info.get("host", host)
-                            port = service_info.get("port", port)
-                            logger.info(f"Discovered {dcc_name} service at {host}:{port} using ZeroConf")
-                            # 如果成功通过ZeroConf发现服务，跳过文件发现
-                            goto_create_client = True
-                except ImportError:
-                    logger.warning("ZeroConf discovery module not available")
+                    strategy = ZeroConfDiscoveryStrategy()
+                    services = strategy.discover_services(dcc_name)
+                    if services:
+                        # Use the first matching service
+                        service = services[0]
+                        host = service.host
+                        port = service.port
+                        logger.info(f"Attempted to use ZeroConf to discover {dcc_name} service, address: {host}:{port}")
+                        # If ZeroConf discovery is successful, skip file discovery
+                        goto_create_client = True
                 except Exception as e:
                     logger.warning(f"Error using ZeroConf discovery: {e}")
-            
-            # 如果ZeroConf发现失败或未启用，回退到基于文件的发现
+
+            # If ZeroConf discovery fails or is not enabled, fallback to file-based discovery
             if not goto_create_client and (host is None or port is None):
-                # 使用服务注册表查找服务
+                # Use service registry to find service
                 registry = ServiceRegistry()
                 strategy = registry.get_strategy("file")
                 if not strategy:
-                    # 如果没有找到文件策略，创建一个新的
+                    # If no file strategy found, create a new one
                     strategy = FileDiscoveryStrategy(registry_path=registry_path)
                     registry.register_strategy("file", strategy)
-                
-                # 发现服务
+
+                # Discover service
                 registry.discover_services("file", dcc_name)
                 service_info = registry.get_service(dcc_name)
-                
+
                 if service_info:
                     host = service_info.host
                     port = service_info.port
@@ -178,14 +173,14 @@ class ConnectionPool:
             client, _ = self.pool[key]
             # Update last used time
             self.pool[key] = (client, time.time())
-            
+
             # If the client is not connected and auto_connect is True, try to reconnect
             if auto_connect and not client.is_connected():
                 try:
                     client.connect()
                 except Exception as e:
                     logger.warning(f"Failed to reconnect to {dcc_name}: {e}")
-            
+
             return client
 
         # Determine the client class to use
@@ -195,7 +190,7 @@ class ConnectionPool:
         # Create a new client
         if client_factory is not None:
             client = client_factory(
-                dcc_name=dcc_name,  # 使用 dcc_name 而不是 app_name
+                dcc_name=dcc_name,  # Use dcc_name instead of app_name
                 host=host,
                 port=port,
                 auto_connect=auto_connect,
@@ -204,10 +199,10 @@ class ConnectionPool:
                 use_zeroconf=use_zeroconf,
             )
         else:
-            # 检查client_class是否接受use_zeroconf参数
+            # Check if client_class accepts use_zeroconf parameter
             try:
                 client = client_class(
-                    dcc_name=dcc_name,  # 使用 dcc_name 而不是 app_name
+                    dcc_name=dcc_name,  # Use dcc_name instead of app_name
                     host=host,
                     port=port,
                     auto_connect=auto_connect,
@@ -216,10 +211,10 @@ class ConnectionPool:
                     use_zeroconf=use_zeroconf,
                 )
             except TypeError:
-                # 如果client_class不接受use_zeroconf参数，则不传递该参数
+                # If client_class does not accept use_zeroconf parameter, do not pass it
                 logger.warning(f"{client_class.__name__} does not accept use_zeroconf parameter")
                 client = client_class(
-                    dcc_name=dcc_name,  # 使用 dcc_name 而不是 app_name
+                    dcc_name=dcc_name,  # Use dcc_name instead of app_name
                     host=host,
                     port=port,
                     auto_connect=auto_connect,
@@ -232,9 +227,7 @@ class ConnectionPool:
 
         return client
 
-    def close_client(
-        self, dcc_name: str, host: Optional[str] = None, port: Optional[int] = None
-    ) -> bool:
+    def close_client(self, dcc_name: str, host: Optional[str] = None, port: Optional[int] = None) -> bool:
         """Close a client connection.
 
         Args:
@@ -268,26 +261,26 @@ class ConnectionPool:
                 logger.warning(f"Error closing connection: {e}")
 
         self.pool.clear()
-    
+
     def _cleanup_idle_connections(self) -> None:
         """Clean up idle connections.
-        
+
         This method closes connections that have been idle for too long.
         """
         current_time = time.time()
-        
+
         # Only clean up at the specified interval
         if current_time - self.last_cleanup < self.cleanup_interval:
             return
-        
+
         self.last_cleanup = current_time
-        
+
         # Find idle connections
         idle_keys = []
         for key, (_, last_used) in self.pool.items():
             if current_time - last_used > self.max_idle_time:
                 idle_keys.append(key)
-        
+
         # Close idle connections
         for key in idle_keys:
             dcc_name, host, port = key
@@ -340,9 +333,7 @@ def get_client(
     )
 
 
-def close_client(
-    dcc_name: str, host: Optional[str] = None, port: Optional[int] = None
-) -> bool:
+def close_client(dcc_name: str, host: Optional[str] = None, port: Optional[int] = None) -> bool:
     """Close a client connection from the global connection pool.
 
     Args:

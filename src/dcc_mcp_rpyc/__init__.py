@@ -15,13 +15,12 @@ from typing import Type
 from typing import Union
 
 # Import third-party modules
-import rpyc
-
 # Import dcc_mcp_core modules
 from dcc_mcp_core.actions import Action
 from dcc_mcp_core.actions import ActionRegistry
 from dcc_mcp_core.models import ActionResultModel
 from dcc_mcp_core.utils.filesystem import get_config_dir
+import rpyc
 
 # Import local modules
 # Import from action_adapter module
@@ -39,6 +38,13 @@ from dcc_mcp_rpyc.client import ClientRegistry
 from dcc_mcp_rpyc.client import ConnectionPool
 from dcc_mcp_rpyc.client import get_client
 
+# Import from discovery module
+from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import ServiceDiscoveryFactory
+from dcc_mcp_rpyc.discovery import ServiceInfo
+from dcc_mcp_rpyc.discovery import ServiceRegistry
+from dcc_mcp_rpyc.discovery import ZeroConfDiscoveryStrategy
+
 # Import from server module
 from dcc_mcp_rpyc.server import ApplicationRPyCService
 from dcc_mcp_rpyc.server import BaseRPyCService
@@ -47,13 +53,6 @@ from dcc_mcp_rpyc.server import is_server_running
 from dcc_mcp_rpyc.server import start_server
 from dcc_mcp_rpyc.server import stop_server
 
-# Import from discovery module
-from dcc_mcp_rpyc.discovery import ServiceRegistry
-from dcc_mcp_rpyc.discovery import ServiceInfo
-from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
-from dcc_mcp_rpyc.discovery import ZeroConfDiscoveryStrategy
-from dcc_mcp_rpyc.discovery import ServiceDiscoveryFactory
-
 # Get default registry path
 config_dir = get_config_dir(ensure_exists=True)
 DEFAULT_REGISTRY_PATH = os.path.join(config_dir, "service_registry.json")
@@ -61,27 +60,27 @@ DEFAULT_REGISTRY_PATH = os.path.join(config_dir, "service_registry.json")
 __all__ = [
     # Discovery functions
     "DEFAULT_REGISTRY_PATH",
-    "ServiceRegistry",
-    "ServiceInfo",
-    "FileDiscoveryStrategy",
-    "ZeroConfDiscoveryStrategy",
-    "ServiceDiscoveryFactory",
     # Action adapter
     "ActionAdapter",
     # Adapter classes and functions
     "ApplicationAdapter",
-    "DCCAdapter",
-    "get_adapter",
+    # Server classes and functions
+    "ApplicationRPyCService",
     # Client classes and functions
     "BaseApplicationClient",
     "BaseDCCClient",
+    "BaseRPyCService",
     "ClientRegistry",
     "ConnectionPool",
-    "get_client",
-    # Server classes and functions
-    "ApplicationRPyCService",
-    "BaseRPyCService",
+    "DCCAdapter",
     "DCCServer",
+    "FileDiscoveryStrategy",
+    "ServiceDiscoveryFactory",
+    "ServiceInfo",
+    "ServiceRegistry",
+    "ZeroConfDiscoveryStrategy",
+    "get_adapter",
+    "get_client",
     "is_server_running",
     "start_server",
     "stop_server",

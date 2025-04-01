@@ -2,6 +2,13 @@
 
 # Import from rpyc_utils module
 # Import local modules
+# Import from discovery module (now in dcc_mcp_rpyc.discovery)
+from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import ServiceDiscoveryFactory
+from dcc_mcp_rpyc.discovery import ServiceInfo
+from dcc_mcp_rpyc.discovery import ServiceRegistry
+from dcc_mcp_rpyc.discovery import ZeroConfDiscoveryStrategy
+
 # Import from decorators module
 from dcc_mcp_rpyc.utils.decorators import with_action_result
 from dcc_mcp_rpyc.utils.decorators import with_error_handling
@@ -13,13 +20,6 @@ from dcc_mcp_rpyc.utils.di import register_factory
 from dcc_mcp_rpyc.utils.di import register_instance
 from dcc_mcp_rpyc.utils.di import register_singleton
 from dcc_mcp_rpyc.utils.di import resolve
-
-# Import from discovery module (now in dcc_mcp_rpyc.discovery)
-from dcc_mcp_rpyc.discovery import ServiceRegistry
-from dcc_mcp_rpyc.discovery import ServiceInfo
-from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
-from dcc_mcp_rpyc.discovery import ZeroConfDiscoveryStrategy
-from dcc_mcp_rpyc.discovery import ServiceDiscoveryFactory
 
 # Import from errors module
 from dcc_mcp_rpyc.utils.errors import ActionError
@@ -37,19 +37,19 @@ __all__ = [
     "Container",
     "DCCMCPError",
     "ExecutionError",
+    "FileDiscoveryStrategy",
+    "ServiceDiscoveryFactory",
+    "ServiceInfo",
+    "ServiceRegistry",
+    "ZeroConfDiscoveryStrategy",
     "deliver_parameters",
     "execute_remote_command",
-    "FileDiscoveryStrategy",
     "get_container",
     "handle_error",
     "register_factory",
     "register_instance",
     "register_singleton",
     "resolve",
-    "ServiceDiscoveryFactory",
-    "ServiceInfo",
-    "ServiceRegistry",
     "with_action_result",
     "with_error_handling",
-    "ZeroConfDiscoveryStrategy",
 ]

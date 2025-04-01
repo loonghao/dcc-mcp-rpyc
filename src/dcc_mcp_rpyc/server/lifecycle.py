@@ -23,7 +23,7 @@ from dcc_mcp_rpyc.server.dcc import DCCServer
 from dcc_mcp_rpyc.server.factory import cleanup_server
 from dcc_mcp_rpyc.server.factory import create_dcc_server as _create_dcc_server
 from dcc_mcp_rpyc.server.factory import create_raw_threaded_server
-from dcc_mcp_rpyc.server.factory import get_rpyc_config
+from dcc_mcp_rpyc.server.server_utils import get_rpyc_config
 
 # Configure logging
 logger = logging.getLogger(__name__)

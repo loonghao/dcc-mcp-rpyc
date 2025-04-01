@@ -5,18 +5,23 @@ remote calls with connection management, timeout handling, and automatic reconne
 """
 
 # Import built-in modules
-import logging
-from typing import Any, Dict, Optional, Callable, List, Union, TypeVar, Generic, cast
 from contextlib import contextmanager
+import logging
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import TypeVar
+
+# Import third-party modules
+from dcc_mcp_core.models import ActionResultModel
 
 # Import local modules
 from dcc_mcp_rpyc.client.base import BaseApplicationClient
-from dcc_mcp_core.models import ActionResultModel
 
 logger = logging.getLogger(__name__)
 
 # Type variable for the return type of execute_with_connection
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class BaseDCCClient(BaseApplicationClient):
@@ -24,13 +29,14 @@ class BaseDCCClient(BaseApplicationClient):
 
     This class provides common functionality for connecting to DCC RPYC servers and
     executing remote calls with connection management, timeout handling, and automatic reconnection.
-    
+
     It extends BaseApplicationClient with DCC-specific functionality such as scene management,
     session information, and primitive creation.
-    
+
     Attributes:
         dcc_name: Name of the DCC application
         connection: Active RPYC connection
+
     """
 
     def __init__(
@@ -55,47 +61,47 @@ class BaseDCCClient(BaseApplicationClient):
         """
         super().__init__(dcc_name, host, port, auto_connect, connection_timeout, registry_path)
         self.dcc_name = dcc_name.lower()
-    
+
     @contextmanager
     def ensure_connection(self):
         """Context manager to ensure the client is connected.
-        
+
         This context manager ensures the client is connected before executing code
         within its scope. If the client is not connected, it attempts to connect.
-        
+
         Raises:
             ConnectionError: If the client cannot connect
-        
+
         Yields:
             The active connection
-        
+
         """
         if not self.is_connected():
             if not self.connect():
                 raise ConnectionError(f"Failed to connect to {self.dcc_name} service")
-        
+
         try:
             yield self.connection
         except Exception as e:
             logger.error(f"Error during connection to {self.dcc_name}: {e}")
             raise
-    
+
     def execute_with_connection(self, func: Callable[[Any], T]) -> T:
         """Execute a function with an ensured connection.
-        
+
         This method ensures the client is connected before executing the provided function.
         It handles connection errors and provides a consistent interface for remote calls.
-        
+
         Args:
             func: Function to execute with the connection as its argument
-        
+
         Returns:
             Result of the function
-        
+
         Raises:
             ConnectionError: If the client cannot connect
             Exception: If the function execution fails
-        
+
         """
         with self.ensure_connection() as connection:
             return func(connection)
@@ -154,16 +160,14 @@ class BaseDCCClient(BaseApplicationClient):
 
         """
         try:
-            return self.execute_with_connection(
-                lambda conn: conn.root.create_primitive(primitive_type, **kwargs)
-            )
+            return self.execute_with_connection(lambda conn: conn.root.create_primitive(primitive_type, **kwargs))
         except Exception as e:
             # Return a structured error response
             return ActionResultModel(
                 success=False,
                 message=f"Failed to create {primitive_type}",
                 error=str(e),
-                context={"primitive_type": primitive_type, "kwargs": kwargs}
+                context={"primitive_type": primitive_type, "kwargs": kwargs},
             ).model_dump()
 
     def execute_command(self, command: str, *args, **kwargs) -> Dict[str, Any]:
@@ -182,16 +186,14 @@ class BaseDCCClient(BaseApplicationClient):
 
         """
         try:
-            return self.execute_with_connection(
-                lambda conn: conn.root.execute_command(command, *args, **kwargs)
-            )
+            return self.execute_with_connection(lambda conn: conn.root.execute_command(command, *args, **kwargs))
         except Exception as e:
             # Return a structured error response
             return ActionResultModel(
                 success=False,
                 message=f"Failed to execute command: {command}",
                 error=str(e),
-                context={"command": command, "args": args, "kwargs": kwargs}
+                context={"command": command, "args": args, "kwargs": kwargs},
             ).model_dump()
 
     def execute_script(self, script: str, script_type: str = "python") -> Dict[str, Any]:
@@ -209,16 +211,14 @@ class BaseDCCClient(BaseApplicationClient):
 
         """
         try:
-            return self.execute_with_connection(
-                lambda conn: conn.root.execute_script(script, script_type)
-            )
+            return self.execute_with_connection(lambda conn: conn.root.execute_script(script, script_type))
         except Exception as e:
             # Return a structured error response
             return ActionResultModel(
                 success=False,
                 message=f"Failed to execute {script_type} script",
                 error=str(e),
-                context={"script_type": script_type, "script_length": len(script)}
+                context={"script_type": script_type, "script_length": len(script)},
             ).model_dump()
 
     def execute_python(self, code: str) -> Any:

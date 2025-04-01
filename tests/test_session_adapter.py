@@ -33,8 +33,11 @@ class MockSessionAdapter(SessionAdapter):
 
         Returns:
             ActionResultModel with application information
+
         """
+        # Import third-party modules
         from dcc_mcp_core.models import ActionResultModel
+
         return ActionResultModel(
             success=True,
             message="Successfully retrieved application information",
@@ -44,7 +47,7 @@ class MockSessionAdapter(SessionAdapter):
                 "platform": "test",
                 "executable": "/path/to/test",
                 "pid": 12345,
-            }
+            },
         )
 
 
