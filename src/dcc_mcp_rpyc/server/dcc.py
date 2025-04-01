@@ -4,23 +4,29 @@ This module provides DCC-specific RPYC services and server implementation.
 """
 
 # Import built-in modules
+from abc import abstractmethod
 import logging
 import threading
 import time
-from abc import abstractmethod
-from typing import Any, Dict, List, Optional, Type, Union
+from typing import Any
+from typing import Dict
+from typing import Optional
+from typing import Type
+from typing import Union
 
 # Import third-party modules
-import rpyc
 from rpyc.core import service
 from rpyc.utils.server import ThreadedServer
 
 # Import local modules
+from dcc_mcp_rpyc.discovery import ServiceInfo
+from dcc_mcp_rpyc.discovery import ServiceRegistry
+from dcc_mcp_rpyc.discovery import ZEROCONF_AVAILABLE
 from dcc_mcp_rpyc.server.base import ApplicationRPyCService
 from dcc_mcp_rpyc.server.decorators import with_scene_info
+from dcc_mcp_rpyc.server.discovery import register_dcc_service
+from dcc_mcp_rpyc.server.discovery import unregister_dcc_service
 from dcc_mcp_rpyc.server.server_utils import create_raw_threaded_server
-from dcc_mcp_rpyc.server.discovery import register_dcc_service, unregister_dcc_service
-from dcc_mcp_rpyc.discovery import ZeroConfDiscoveryStrategy, ServiceRegistry, ServiceInfo, ZEROCONF_AVAILABLE
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -101,8 +107,8 @@ class DCCServer:
     def __init__(
         self,
         dcc_name: str,
-        service_class: Type[service.Service] = None,
-        host: str = "0.0.0.0",  # 默认绑定到所有网络接口
+        service_class: Optional[Type[service.Service]] = None,
+        host: str = "0.0.0.0",  # Default: bind to all interfaces
         port: int = 0,
         server: Optional[ThreadedServer] = None,
         protocol_config: Optional[Dict[str, Any]] = None,
@@ -208,7 +214,7 @@ class DCCServer:
             # Register the service using both methods for backward compatibility
             # 1. File-based registration
             self.registry_file = register_dcc_service(dcc_name=self.dcc_name, host=self.host, port=self.port)
-            
+
             # 2. ZeroConf registration if available
             if self.use_zeroconf:
                 logger.info(f"Registering {self.dcc_name} service using ZeroConf")
@@ -221,12 +227,12 @@ class DCCServer:
                     metadata={
                         "app_name": self.dcc_name,
                         "registry_file": self.registry_file,
-                    }
+                    },
                 )
                 success = registry.register_service_with_strategy("zeroconf", service_info)
                 if not success:
                     logger.warning(f"Failed to register {self.dcc_name} service using ZeroConf")
-                # 保存 service_info 以便后续注销
+                # Save service_info for later deregistration
                 self.zeroconf_info = service_info
 
             self.running = True
@@ -255,7 +261,7 @@ class DCCServer:
                 # Unregister the service using both methods for backward compatibility
                 # 1. File-based unregistration
                 unregister_dcc_service(self.registry_file)
-                
+
                 # 2. ZeroConf unregistration if available
                 if self.use_zeroconf and self.zeroconf_info:
                     logger.info(f"Unregistering {self.dcc_name} service from ZeroConf")

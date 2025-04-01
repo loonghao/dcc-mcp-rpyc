@@ -6,7 +6,6 @@ remote calls with connection management, timeout handling, and automatic reconne
 
 # Import built-in modules
 import logging
-import os
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -16,7 +15,10 @@ from typing import Tuple
 import rpyc
 
 # Import local modules
-from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy, ZeroConfDiscoveryStrategy, ZEROCONF_AVAILABLE
+from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import ServiceRegistry
+from dcc_mcp_rpyc.discovery import ZEROCONF_AVAILABLE
+from dcc_mcp_rpyc.discovery import ZeroConfDiscoveryStrategy
 from dcc_mcp_rpyc.utils import execute_remote_command as _execute_remote_command
 
 # Configure logging
@@ -89,11 +91,11 @@ class BaseApplicationClient:
                 if not strategy:
                     strategy = ZeroConfDiscoveryStrategy()
                     registry.register_strategy("zeroconf", strategy)
-                
-                # 发现服务
+
+                # Find services
                 services = registry.discover_services("zeroconf", self.app_name)
                 if services and len(services) > 0:
-                    service = services[0]  # 使用第一个发现的服务
+                    service = services[0]  # Use the first discovered service
                     self.port = service.port
                     self.host = service.host
                     logger.info(f"Discovered {self.app_name} service at {self.host}:{self.port} using ZeroConf")
@@ -107,19 +109,19 @@ class BaseApplicationClient:
             if not strategy:
                 strategy = FileDiscoveryStrategy(registry_path=self.registry_path)
                 registry.register_strategy("file", strategy)
-            
-            # 发现服务
+
+            # Find services
             services = registry.discover_services("file", self.app_name)
             if services and len(services) > 0:
-                service = services[0]  # 使用第一个发现的服务
+                service = services[0]  # Use the first discovered service
                 self.port = service.port
                 self.host = service.host
                 logger.info(f"Discovered {self.app_name} service at {self.host}:{self.port} using file-based discovery")
                 return self.host, self.port
 
             # Method 2: If all else fails, try to find registry files directly
-            # 这部分代码不再需要，因为 FileDiscoveryStrategy 已经处理了注册表文件的查找
-            # 如果上面的方法都失败了，则返回 None
+            # This part of the code is no longer needed, as FileDiscoveryStrategy already handles registry file lookup
+            # If above methods fail, return None
             logger.warning(f"No {self.app_name} service discovered")
             return None, None
 
@@ -338,7 +340,7 @@ class BaseApplicationClient:
         -------
             Dict with application information
 
-        Raises:
+        Raises
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If getting application information fails
@@ -360,7 +362,7 @@ class BaseApplicationClient:
         -------
             Dict with environment information
 
-        Raises:
+        Raises
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If getting environment information fails
@@ -382,7 +384,7 @@ class BaseApplicationClient:
         -------
             Dict with action information
 
-        Raises:
+        Raises
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If listing actions fails

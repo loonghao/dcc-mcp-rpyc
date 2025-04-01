@@ -8,7 +8,6 @@ These tests require a running DCC application with the DCC-MCP-RPYC server insta
 import sys
 import threading
 import time
-from typing import Optional
 
 # Import third-party modules
 import pytest
@@ -17,7 +16,9 @@ from rpyc.utils.server import ThreadedServer
 
 # Import local modules
 from dcc_mcp_rpyc.client import BaseDCCClient
-from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import ServiceInfo
+from dcc_mcp_rpyc.discovery import ServiceRegistry
 
 
 # Mock DCC service class
@@ -90,6 +91,7 @@ def start_mock_dcc_service(dcc_name, host="localhost", port=0):
 
     Returns:
         (host, port) tuple
+
     """
     global _mock_servers
 
@@ -128,14 +130,8 @@ def start_mock_dcc_service(dcc_name, host="localhost", port=0):
     if not strategy:
         strategy = FileDiscoveryStrategy()
         registry.register_strategy("file", strategy)
-    
-    service_info = ServiceInfo(
-        name=dcc_name,
-        host=host,
-        port=port,
-        dcc_type=dcc_name,
-        metadata={"version": "1.0.0"}
-    )
+
+    service_info = ServiceInfo(name=dcc_name, host=host, port=port, dcc_type=dcc_name, metadata={"version": "1.0.0"})
     registry.register_service("file", service_info)
 
     return host, port
@@ -146,26 +142,23 @@ def stop_mock_dcc_service(dcc_name):
 
     Args:
         dcc_name: DCC name
+
     """
     global _mock_servers
 
     if dcc_name in _mock_servers:
         server, host, port = _mock_servers[dcc_name]
         server.close()
-        
+
         # Unregister the service
         registry = ServiceRegistry()
         strategy = registry.get_strategy("file")
         if strategy:
             service_info = ServiceInfo(
-                name=dcc_name,
-                host=host,
-                port=port,
-                dcc_type=dcc_name,
-                metadata={"version": "1.0.0"}
+                name=dcc_name, host=host, port=port, dcc_type=dcc_name, metadata={"version": "1.0.0"}
             )
             registry.unregister_service("file", service_info)
-        
+
         del _mock_servers[dcc_name]
 
 
@@ -201,26 +194,27 @@ def get_test_dcc_client(dcc_name: str):
     Returns:
     -------
         DCC client if available, None otherwise
+
     """
     # Try to find the service
     registry = ServiceRegistry()
     service = registry.get_service(dcc_name)
-    
+
     if not service:
         # Try to discover services
         strategy = registry.get_strategy("file")
         if strategy:
             registry.discover_services("file", dcc_name)
             service = registry.get_service(dcc_name)
-    
+
     if not service:
         # Start a mock service
         host, port = start_mock_dcc_service(dcc_name)
-        
+
         # Create a client
         client = BaseDCCClient(host=host, port=port)
         return client
-    
+
     # Create a client
     client = BaseDCCClient(host=service.host, port=service.port)
     return client

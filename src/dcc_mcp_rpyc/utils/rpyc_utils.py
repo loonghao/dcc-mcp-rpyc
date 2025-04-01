@@ -11,7 +11,6 @@ from typing import Dict
 
 # Import third-party modules
 import rpyc
-from rpyc.utils import classic
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +50,6 @@ def execute_remote_command(connection: "rpyc.Connection", command: str, *args, *
         Result of the remote command execution
 
     """
-
     # Get the command object from the connection
     cmd = getattr(connection, command)
 

@@ -19,8 +19,9 @@ from dcc_mcp_core.models import ActionResultModel
 from rpyc.utils.server import ThreadedServer
 
 # Import local modules
+from dcc_mcp_rpyc.discovery import ServiceInfo
+from dcc_mcp_rpyc.discovery import ServiceRegistry
 from dcc_mcp_rpyc.server import DCCRPyCService
-from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy
 
 # Dictionary to store mock servers for cleanup
 _mock_servers = {}
@@ -604,13 +605,7 @@ def start_mock_dcc_service(dcc_name="mock_dcc", host="localhost", port=0):
 
     # Register service
     registry = ServiceRegistry()
-    service_info = ServiceInfo(
-        name=dcc_name,
-        host=host,
-        port=port,
-        dcc_type=dcc_name,
-        metadata={"version": "1.0.0"}
-    )
+    service_info = ServiceInfo(name=dcc_name, host=host, port=port, dcc_type=dcc_name, metadata={"version": "1.0.0"})
     registry.register_service_with_strategy("file", service_info)
 
     # Start server in new thread
@@ -644,18 +639,14 @@ def stop_mock_dcc_service(dcc_name):
     """
     if dcc_name in _mock_servers:
         server, thread, host, port = _mock_servers[dcc_name]
-        
+
         # Unregister the service
         registry = ServiceRegistry()
         service_info = ServiceInfo(
-            name=dcc_name,
-            host=host,
-            port=port,
-            dcc_type=dcc_name,
-            metadata={"version": "1.0.0"}
+            name=dcc_name, host=host, port=port, dcc_type=dcc_name, metadata={"version": "1.0.0"}
         )
         registry.register_service_with_strategy("file", service_info, unregister=True)
-        
+
         # Close the server
         server.close()
         thread.join(timeout=1)

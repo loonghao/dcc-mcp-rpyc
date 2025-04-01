@@ -5,10 +5,9 @@ This module provides fixtures and configuration for pytest tests.
 
 # Import built-in modules
 import os
-import sys
 import tempfile
-import time
 import threading
+import time
 
 # Import third-party modules
 # Import dcc_mcp_core modules
@@ -16,13 +15,14 @@ import pytest
 from rpyc.utils.server import ThreadedServer
 
 # Import local modules
+from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
+from dcc_mcp_rpyc.discovery import ServiceInfo
+from dcc_mcp_rpyc.discovery import ServiceRegistry
+
 # Import dcc_mcp_rpyc modules
 from dcc_mcp_rpyc.server.base import BaseRPyCService
 from dcc_mcp_rpyc.server.dcc import DCCServer
 from dcc_mcp_rpyc.testing.mock_services import MockDCCService
-from dcc_mcp_rpyc.testing.mock_services import start_mock_dcc_service
-from dcc_mcp_rpyc.testing.mock_services import stop_mock_dcc_service
-from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy
 
 
 @pytest.fixture
@@ -59,6 +59,7 @@ def rpyc_server():
     Yields
     ------
         Tuple of (server, port)
+
     """
     # Create a server with a random port
     service = BaseRPyCService
@@ -88,6 +89,7 @@ def dcc_rpyc_server():
     Yields
     ------
         Tuple of (server, port)
+
     """
     # Create a server with a random port
     service = MockDCCService
@@ -122,6 +124,7 @@ def dcc_server(temp_registry_path, service_registry):
     Yields:
     ------
         Tuple of (server, port)
+
     """
     # Create a server with a random port
     service = DCCServer
@@ -139,11 +142,7 @@ def dcc_server(temp_registry_path, service_registry):
 
     # Register the service
     service_info = ServiceInfo(
-        name="test_dcc_server",
-        host="localhost",
-        port=port,
-        dcc_type="test_dcc",
-        metadata={"version": "1.0.0"}
+        name="test_dcc_server", host="localhost", port=port, dcc_type="test_dcc", metadata={"version": "1.0.0"}
     )
     service_registry.register_service("file", service_info)
 
@@ -164,5 +163,6 @@ def dcc_service():
     Returns
     -------
         MockDCCService instance
+
     """
     return MockDCCService()

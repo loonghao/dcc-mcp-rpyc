@@ -9,7 +9,11 @@ application adapters should implement.
 from abc import ABC
 from abc import abstractmethod
 import logging
-from typing import Any, Dict, List, Optional, Union, Callable
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
+from typing import Optional
 
 # Import third-party modules
 from dcc_mcp_core.models import ActionResultModel
@@ -28,10 +32,10 @@ class ApplicationAdapter(ABC):
     This class provides a common interface for adapting application-specific functionality
     to the MCP protocol. It handles connection to the application, action
     discovery and management, and function execution.
-    
+
     This is the root class in the adapter hierarchy. Specific adapter types should
     inherit from this class and implement the required abstract methods.
-    
+
     Hierarchy:
     - ApplicationAdapter (abstract base class)
       - DCCAdapter (for DCC applications requiring remote connections)
@@ -42,6 +46,7 @@ class ApplicationAdapter(ABC):
         client: Client instance for communicating with the application
         action_adapter: Adapter for managing actions
         _action_paths: List of paths to search for actions
+
     """
 
     def __init__(self, app_name: str) -> None:
@@ -49,6 +54,7 @@ class ApplicationAdapter(ABC):
 
         Args:
             app_name: Name of the application
+
         """
         self.app_name = app_name
         self.client: Optional[BaseApplicationClient] = None
@@ -91,6 +97,7 @@ class ApplicationAdapter(ABC):
 
         Returns:
             List of paths to search for actions
+
         """
         return self._action_paths
 
@@ -100,6 +107,7 @@ class ApplicationAdapter(ABC):
 
         Args:
             paths: List of paths to search for actions
+
         """
         self._action_paths = paths
         self.action_adapter.set_action_search_paths(paths)
@@ -112,15 +120,16 @@ class ApplicationAdapter(ABC):
         Args:
             action_name: Name of the action
             action_func: Function to execute when the action is called
+
         """
         self.action_adapter.register_action(action_name, action_func)
 
     def get_available_actions(self) -> List[str]:
-        """u83b7u53d6u53efu7528u7684 action u540du79f0u5217u8868u3002
+        """Get action list.
 
-        Returns:
+        Returns
         -------
-            action u540du79f0u5217u8868
+            action list
 
         """
         return self.action_adapter.list_actions(names_only=True)
@@ -133,6 +142,7 @@ class ApplicationAdapter(ABC):
 
         Returns:
             Dict with action information
+
         """
         return self.action_adapter.get_action_info(action_name)
 
@@ -145,19 +155,18 @@ class ApplicationAdapter(ABC):
 
         Returns:
             Dict with action execution result
+
         """
         try:
             result = self.action_adapter.execute_action(action_name, **kwargs)
-            
+
             # If the result is already an ActionResultModel dict, return it
             if isinstance(result, dict) and "success" in result:
                 return result
-            
+
             # Otherwise, wrap it in an ActionResultModel
             return ActionResultModel(
-                success=True,
-                message=f"Successfully executed action {action_name}",
-                context={"result": result}
+                success=True, message=f"Successfully executed action {action_name}", context={"result": result}
             ).model_dump()
         except Exception as e:
             logger.error(f"Error executing action {action_name}: {e}")
@@ -165,7 +174,7 @@ class ApplicationAdapter(ABC):
                 success=False,
                 message=f"Failed to execute action {action_name}",
                 error=str(e),
-                context={"action_name": action_name, "kwargs": kwargs}
+                context={"action_name": action_name, "kwargs": kwargs},
             ).model_dump()
 
     @abstractmethod
@@ -174,6 +183,7 @@ class ApplicationAdapter(ABC):
 
         Returns:
             Dict with application information
+
         """
 
     def ensure_connected(self) -> bool:
@@ -181,6 +191,7 @@ class ApplicationAdapter(ABC):
 
         Returns:
             True if connected, False otherwise
+
         """
         if self.client is None:
             return False
