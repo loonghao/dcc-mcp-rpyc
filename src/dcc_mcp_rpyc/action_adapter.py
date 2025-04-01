@@ -10,6 +10,8 @@ from typing import Dict
 from typing import List
 from typing import Type
 from typing import Union
+from typing import Optional
+from typing import Callable
 
 # Import third-party modules
 from dcc_mcp_core.actions.base import Action
@@ -118,47 +120,31 @@ class ActionAdapter:
             return True
         except Exception as e:
             logger.error(f"Error registering action: {e}")
-            raise ActionError(
-                f"Error registering action: {e}", action_name=getattr(action, "name", str(action)), cause=e
-            )
+            raise ActionError(f"Failed to register action: {e}") from e
 
     @with_error_handling
-    def discover_actions_from_module(self, module_name: str) -> List[str]:
-        """Discover and register actions from a module.
+    def discover_actions(self, source: str, is_module: bool = False) -> List[str]:
+        """Discover and register actions from a module or directory.
 
         Args:
         ----
-            module_name: The name of the module to search for actions
+            source: The module or directory to search for actions
+            is_module: If True, source is a module, otherwise it is a directory
 
         Returns:
         -------
-            A list of names of discovered actions
+            True if the action was registered successfully
 
         """
         try:
-            return self.action_manager.discover_actions_from_module(module_name)
+            if is_module:
+                return self.action_manager.discover_actions_from_module(source)
+            else:
+                return self.action_manager.discover_actions_from_path(source)
         except Exception as e:
-            logger.error(f"Error discovering actions from module {module_name}: {e}")
-            raise ActionError(f"Error discovering actions from module: {e}", action_name=module_name, cause=e)
-
-    @with_error_handling
-    def discover_actions_from_path(self, path: str) -> List[str]:
-        """Discover and register actions from a file or directory path.
-
-        Args:
-        ----
-            path: Path to a Python file or directory to search for actions
-
-        Returns:
-        -------
-            A list of names of discovered actions
-
-        """
-        try:
-            return self.action_manager.discover_actions_from_path(path)
-        except Exception as e:
-            logger.error(f"Error discovering actions from path {path}: {e}")
-            raise ActionError(f"Error discovering actions from path: {e}", action_name=path, cause=e)
+            source_type = "module" if is_module else "path"
+            logger.error(f"Error discovering actions from {source_type} {source}: {e}")
+            raise ActionError(f"Error discovering actions from {source_type}: {e}", action_name=source, cause=e)
 
     @with_error_handling
     def discover_all_actions(self) -> List[str]:
@@ -174,7 +160,7 @@ class ActionAdapter:
         # Discover actions from all search paths
         for path in self.search_paths:
             try:
-                discovered.extend(self.discover_actions_from_path(path))
+                discovered.extend(self.discover_actions(path))
             except Exception as e:
                 logger.error(f"Error discovering actions from path {path}: {e}")
                 # Continue with other paths even if one fails
@@ -182,16 +168,23 @@ class ActionAdapter:
         return discovered
 
     @with_error_handling
-    def list_actions(self) -> Dict[str, Any]:
-        """List all registered actions with their metadata.
+    def list_actions(self, names_only: bool = False) -> Union[Dict[str, Any], List[str]]:
+        """List all registered actions and their metadata.
 
-        Returns
+        Args:
+        ----
+            names_only: If True, only return action names list, otherwise return full metadata
+
+        Returns:
         -------
-            A dictionary mapping action names to action metadata
+            A dictionary mapping action names to metadata if names_only is False
+            A list of action names if names_only is True
 
         """
         try:
             actions_list = self.action_manager.registry.list_actions()
+            if names_only:
+                return [action["name"] for action in actions_list]
             return {action["name"]: action for action in actions_list}
         except Exception as e:
             logger.error(f"Error listing actions: {e}")

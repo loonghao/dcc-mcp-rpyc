@@ -16,11 +16,8 @@ from typing import Tuple
 import rpyc
 
 # Import local modules
-from dcc_mcp_rpyc.utils import discover_services
+from dcc_mcp_rpyc.discovery import ServiceRegistry, ServiceInfo, FileDiscoveryStrategy, ZeroConfDiscoveryStrategy, ZEROCONF_AVAILABLE
 from dcc_mcp_rpyc.utils import execute_remote_command as _execute_remote_command
-from dcc_mcp_rpyc.utils import find_service_registry_files
-from dcc_mcp_rpyc.utils import get_latest_service
-from dcc_mcp_rpyc.utils.discovery import _load_registry_file
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -42,6 +39,7 @@ class BaseApplicationClient:
         auto_connect: bool = True,
         connection_timeout: float = 5.0,
         registry_path: Optional[Optional[str]] = None,
+        use_zeroconf: bool = True,
     ):
         """Initialize the client.
 
@@ -53,6 +51,7 @@ class BaseApplicationClient:
             auto_connect: Whether to automatically connect (default: True)
             connection_timeout: Timeout for connection attempts in seconds (default: 5.0)
             registry_path: Optional path to the registry file (default: None)
+            use_zeroconf: Whether to use ZeroConf for service discovery (default: True)
 
         """
         self.app_name = app_name.lower()
@@ -61,6 +60,7 @@ class BaseApplicationClient:
         self.connection = None
         self.connection_timeout = connection_timeout
         self.registry_path = registry_path
+        self.use_zeroconf = use_zeroconf and ZEROCONF_AVAILABLE
 
         # Auto-discover host and port if not provided
         if (self.host is None or self.port is None) and auto_connect:
@@ -81,43 +81,47 @@ class BaseApplicationClient:
         try:
             logger.info(f"Discovering {self.app_name} service...")
 
+            # Method 0: Try ZeroConf discovery first if available
+            if self.use_zeroconf:
+                logger.info(f"Attempting to discover {self.app_name} service using ZeroConf...")
+                registry = ServiceRegistry()
+                strategy = registry.get_strategy("zeroconf")
+                if not strategy:
+                    strategy = ZeroConfDiscoveryStrategy()
+                    registry.register_strategy("zeroconf", strategy)
+                
+                # 发现服务
+                services = registry.discover_services("zeroconf", self.app_name)
+                if services and len(services) > 0:
+                    service = services[0]  # 使用第一个发现的服务
+                    self.port = service.port
+                    self.host = service.host
+                    logger.info(f"Discovered {self.app_name} service at {self.host}:{self.port} using ZeroConf")
+                    return self.host, self.port
+                else:
+                    logger.warning(f"No {self.app_name} service discovered using ZeroConf")
+
             # Method 1: Discover services using the discovery module
-            services = discover_services(self.app_name, self.registry_path)
-            if services:
-                latest_service = get_latest_service(services)
-                self.port = latest_service.get("port")
-                self.host = latest_service.get("host", self.host or "localhost")
-                logger.info(f"Discovered {self.app_name} service at {self.host}:{self.port}")
+            registry = ServiceRegistry()
+            strategy = registry.get_strategy("file")
+            if not strategy:
+                strategy = FileDiscoveryStrategy(registry_path=self.registry_path)
+                registry.register_strategy("file", strategy)
+            
+            # 发现服务
+            services = registry.discover_services("file", self.app_name)
+            if services and len(services) > 0:
+                service = services[0]  # 使用第一个发现的服务
+                self.port = service.port
+                self.host = service.host
+                logger.info(f"Discovered {self.app_name} service at {self.host}:{self.port} using file-based discovery")
                 return self.host, self.port
 
-            # Method 2: Find services directly from registry files
-            registry_files = find_service_registry_files(self.app_name, self.registry_path)
-            if not registry_files:
-                logger.warning(f"No {self.app_name} service discovered")
-                return None, None
-
-            # Get the most recent registry file
-            latest_registry_file = max(registry_files, key=os.path.getmtime)
-
-            try:
-                # Load registry file and get service information
-                registry_data = _load_registry_file(latest_registry_file)
-                app_services = registry_data.get(self.app_name.lower(), [])
-
-                if not app_services:
-                    logger.warning(f"No services found for {self.app_name} in registry file")
-                    return None, None
-
-                # Get the most recent service information
-                latest_service = get_latest_service(app_services)
-                self.port = latest_service.get("port")
-                self.host = latest_service.get("host", self.host or "localhost")
-
-                logger.info(f"Found {self.app_name} service at {self.host}:{self.port} from registry file")
-                return self.host, self.port
-            except Exception as e:
-                logger.warning(f"Error reading registry file: {e}")
-                return None, None
+            # Method 2: If all else fails, try to find registry files directly
+            # 这部分代码不再需要，因为 FileDiscoveryStrategy 已经处理了注册表文件的查找
+            # 如果上面的方法都失败了，则返回 None
+            logger.warning(f"No {self.app_name} service discovered")
+            return None, None
 
         except Exception as e:
             logger.error(f"Error discovering {self.app_name} service: {e}")
@@ -334,7 +338,7 @@ class BaseApplicationClient:
         -------
             Dict with application information
 
-        Raises
+        Raises:
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If getting application information fails
@@ -356,7 +360,7 @@ class BaseApplicationClient:
         -------
             Dict with environment information
 
-        Raises
+        Raises:
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If getting environment information fails
@@ -378,7 +382,7 @@ class BaseApplicationClient:
         -------
             Dict with action information
 
-        Raises
+        Raises:
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If listing actions fails

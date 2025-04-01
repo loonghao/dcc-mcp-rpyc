@@ -28,6 +28,25 @@ class MockSessionAdapter(SessionAdapter):
         # Only set paths, do not call set_action_search_paths method
         self._action_paths = []
 
+    def get_application_info(self):
+        """Get information about the application.
+
+        Returns:
+            ActionResultModel with application information
+        """
+        from dcc_mcp_core.models import ActionResultModel
+        return ActionResultModel(
+            success=True,
+            message="Successfully retrieved application information",
+            context={
+                "name": self.app_name,
+                "version": "1.0.0",
+                "platform": "test",
+                "executable": "/path/to/test",
+                "pid": 12345,
+            }
+        )
+
 
 class TestSessionAdapter:
     """Tests for the SessionAdapter class."""

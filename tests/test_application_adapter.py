@@ -54,22 +54,24 @@ class TestGenericApplicationAdapter:
 
     def test_get_application_info(self, adapter):
         """Test get_application_info method."""
-        info = adapter.get_application_info()
-        assert info["name"] == "test_app"
-        assert info["version"] == "1.0.0"
-        assert info["platform"] == platform.platform()
-        assert info["executable"] == sys.executable
-        assert info["pid"] == os.getpid()
+        result = adapter.get_application_info()
+        assert result.success is True
+        assert result.context["name"] == "test_app"
+        assert result.context["version"] == "1.0.0"
+        assert result.context["platform"] == platform.platform()
+        assert result.context["executable"] == sys.executable
+        assert result.context["pid"] == os.getpid()
 
     def test_get_environment_info(self, adapter):
         """Test get_environment_info method."""
-        info = adapter.get_environment_info()
-        assert info["python_version"] == sys.version
-        assert info["platform"] == platform.platform()
-        assert info["os"] == os.name
-        assert info["sys_prefix"] == sys.prefix
-        assert "python_path" in info
-        assert isinstance(info["python_path"], list)
+        result = adapter.get_environment_info()
+        assert result.success is True
+        assert result.context["python_version"] == sys.version
+        assert result.context["platform"] == platform.platform()
+        assert result.context["os"] == os.name
+        assert result.context["sys_prefix"] == sys.prefix
+        assert "python_path" in result.context
+        assert isinstance(result.context["python_path"], list)
 
     def test_execute_python_success(self, adapter):
         """Test successful Python code execution."""

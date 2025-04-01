@@ -9,10 +9,7 @@ application adapters should implement.
 from abc import ABC
 from abc import abstractmethod
 import logging
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+from typing import Any, Dict, List, Optional, Union, Callable
 
 # Import third-party modules
 from dcc_mcp_core.models import ActionResultModel
@@ -31,26 +28,30 @@ class ApplicationAdapter(ABC):
     This class provides a common interface for adapting application-specific functionality
     to the MCP protocol. It handles connection to the application, action
     discovery and management, and function execution.
+    
+    This is the root class in the adapter hierarchy. Specific adapter types should
+    inherit from this class and implement the required abstract methods.
+    
+    Hierarchy:
+    - ApplicationAdapter (abstract base class)
+      - DCCAdapter (for DCC applications requiring remote connections)
+      - GenericApplicationAdapter (for local Python environments)
 
-    Attributes
-    ----------
+    Attributes:
         app_name: Name of the application
         client: Client instance for communicating with the application
         action_adapter: Adapter for managing actions
         _action_paths: List of paths to search for actions
-
     """
 
     def __init__(self, app_name: str) -> None:
         """Initialize the application adapter.
 
         Args:
-        ----
             app_name: Name of the application
-
         """
         self.app_name = app_name
-        self.client: Optional[Optional[BaseApplicationClient]] = None
+        self.client: Optional[BaseApplicationClient] = None
         self._action_paths = []
 
         # Initialize the action adapter
@@ -68,7 +69,6 @@ class ApplicationAdapter(ABC):
 
         This method should be implemented by subclasses to initialize the client
         for the specific application.
-
         """
 
     @abstractmethod
@@ -77,7 +77,6 @@ class ApplicationAdapter(ABC):
 
         This method should be implemented by subclasses to initialize the paths
         to search for actions for the specific application.
-
         """
         self.action_adapter.set_action_search_paths(self.action_paths)
 
@@ -90,10 +89,8 @@ class ApplicationAdapter(ABC):
         These paths can be extended in the application implementation to include additional
         directories for custom actions and plugins.
 
-        Returns
-        -------
-            list: List of paths to search for actions
-
+        Returns:
+            List of paths to search for actions
         """
         return self._action_paths
 
@@ -102,256 +99,97 @@ class ApplicationAdapter(ABC):
         """Set the paths to search for actions.
 
         Args:
-        ----
             paths: List of paths to search for actions
-
         """
         self._action_paths = paths
-        if self.action_adapter:
-            self.action_adapter.set_action_search_paths(paths)
+        self.action_adapter.set_action_search_paths(paths)
 
-    def connect(self) -> bool:
-        """Connect to the application.
+    def register_action(self, action_name: str, action_func: Callable) -> None:
+        """Register an action with the adapter.
 
-        This method connects to the application using the client.
-
-        Returns
-        -------
-            bool: True if connected successfully, False otherwise
-
-        """
-        if self.client is None:
-            self._initialize_client()
-
-        if self.client is None:
-            logger.error(f"Failed to initialize client for {self.app_name}")
-            return False
-
-        try:
-            # If the client has a connect method, use it
-            if hasattr(self.client, "connect") and callable(getattr(self.client, "connect")):
-                return self.client.connect()
-            # Otherwise, check if the client is already connected
-            return self.client.is_connected() if hasattr(self.client, "is_connected") else True
-        except Exception as e:
-            logger.error(f"Error connecting to {self.app_name}: {e}")
-            return False
-
-    def ensure_connected(self) -> None:
-        """Ensure that the client is connected to the application.
-
-        If the client is not connected, this method will attempt to reconnect.
-
-        Raises
-        ------
-            ConnectionError: If the client cannot connect to the application
-
-        """
-        if self.client is None:
-            self._initialize_client()
-
-        if not self.client.is_connected():
-            logger.info(f"Reconnecting to {self.app_name}...")
-            try:
-                self.client.connect()
-            except Exception as e:
-                logger.error(f"Failed to connect to {self.app_name}: {e}")
-                raise ConnectionError(f"Failed to connect to {self.app_name}: {e}")
-
-    def get_application_info(self) -> Dict[str, Any]:
-        """Get information about the application.
-
-        Returns
-        -------
-            Dict with application information
-
-        """
-        self.ensure_connected()
-
-        try:
-            # Get application info from the application
-            result = self.client.root.get_application_info()
-            return ActionResultModel(
-                success=True, message="Successfully retrieved application information", context=result
-            ).model_dump()
-        except Exception as e:
-            logger.error(f"Error getting application info: {e}")
-            return ActionResultModel(
-                success=False, message="Failed to retrieve application information", error=str(e)
-            ).model_dump()
-
-    def get_environment_info(self) -> Dict[str, Any]:
-        """Get information about the Python environment.
-
-        Returns
-        -------
-            Dict with environment information
-
-        """
-        self.ensure_connected()
-
-        try:
-            # Get environment info from the application
-            result = self.client.root.get_environment_info()
-            return ActionResultModel(
-                success=True, message="Successfully retrieved environment information", context=result
-            ).model_dump()
-        except Exception as e:
-            logger.error(f"Error getting environment info: {e}")
-            return ActionResultModel(
-                success=False, message="Failed to retrieve environment information", error=str(e)
-            ).model_dump()
-
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Execute Python code in the application's environment.
+        This method registers an action with the adapter, making it available for execution.
 
         Args:
-        ----
-            code: Python code to execute
-            context: Optional context dictionary to use during execution
+            action_name: Name of the action
+            action_func: Function to execute when the action is called
+        """
+        self.action_adapter.register_action(action_name, action_func)
+
+    def get_available_actions(self) -> List[str]:
+        """u83b7u53d6u53efu7528u7684 action u540du79f0u5217u8868u3002
 
         Returns:
         -------
-            Dict with execution result
+            action u540du79f0u5217u8868
 
         """
-        self.ensure_connected()
+        return self.action_adapter.list_actions(names_only=True)
 
-        try:
-            # Execute Python code in the application
-            result = self.client.root.exposed_execute_python(code, context or {})
-            return ActionResultModel(
-                success=True, message="Successfully executed Python code", context=result
-            ).model_dump()
-        except Exception as e:
-            logger.error(f"Error executing Python code: {e}")
-            return ActionResultModel(success=False, message="Failed to execute Python code", error=str(e)).model_dump()
-
-    def import_module(self, module_name: str) -> Dict[str, Any]:
-        """Import a module in the application's environment.
+    def get_action_info(self, action_name: str) -> Dict[str, Any]:
+        """Get information about an action.
 
         Args:
-        ----
-            module_name: Name of the module to import
+            action_name: Name of the action
 
         Returns:
-        -------
-            Dict with import result
-
-        """
-        self.ensure_connected()
-
-        try:
-            # Import module in the application
-            result = self.client.root.exposed_get_module(module_name)
-            if result is None:
-                return ActionResultModel(success=False, message=f"Module {module_name} not found").model_dump()
-            return ActionResultModel(
-                success=True, message=f"Successfully imported module {module_name}", context={"module": result}
-            ).model_dump()
-        except Exception as e:
-            logger.error(f"Error importing module {module_name}: {e}")
-            return ActionResultModel(
-                success=False, message=f"Failed to import module {module_name}", error=str(e)
-            ).model_dump()
-
-    def call_function(self, module_name: str, function_name: str, *args, **kwargs) -> Dict[str, Any]:
-        """Call a function in the application's environment.
-
-        Args:
-        ----
-            module_name: Name of the module containing the function
-            function_name: Name of the function to call
-            *args: Positional arguments to pass to the function
-            **kwargs: Keyword arguments to pass to the function
-
-        Returns:
-        -------
-            Dict with function call result
-
-        """
-        self.ensure_connected()
-
-        try:
-            # Call function in the application
-            result = self.client.root.exposed_call_function(module_name, function_name, *args, **kwargs)
-            return ActionResultModel(
-                success=True, message=f"Successfully called function {module_name}.{function_name}", context=result
-            ).model_dump()
-        except Exception as e:
-            logger.error(f"Error calling function {module_name}.{function_name}: {e}")
-            return ActionResultModel(
-                success=False, message=f"Failed to call function {module_name}.{function_name}", error=str(e)
-            ).model_dump()
-
-    def get_actions(self) -> Dict[str, Any]:
-        """Get all available actions for the application.
-
-        Returns
-        -------
             Dict with action information
-
         """
-        self.ensure_connected()
+        return self.action_adapter.get_action_info(action_name)
 
-        try:
-            # Get actions from the application
-            result = self.client.root.exposed_list_actions()
-            return ActionResultModel(
-                success=True,
-                message=(
-                    f"Successfully retrieved "
-                    f"{len(result.get('actions', {})) if isinstance(result, dict) else 0} actions"
-                ),
-                context=result,
-            ).model_dump()
-        except Exception as e:
-            logger.error(f"Error getting actions: {e}")
-            return ActionResultModel(success=False, message="Failed to retrieve actions", error=str(e)).model_dump()
-
-    def call_action(self, action_name: str, **kwargs) -> Dict[str, Any]:
-        """Call an action in the application.
+    def execute_action(self, action_name: str, **kwargs) -> Dict[str, Any]:
+        """Execute an action.
 
         Args:
-        ----
-            action_name: Name of the action to call
-            **kwargs: Arguments for the action
+            action_name: Name of the action to execute
+            **kwargs: Arguments to pass to the action
 
         Returns:
-        -------
-            Dict with action call result
-
+            Dict with action execution result
         """
-        self.ensure_connected()
-
         try:
-            # Call the action in the application
-            result = self.client.root.exposed_call_action(action_name, **kwargs)
-
-            # If result is already a success/failure dict, return it
+            result = self.action_adapter.execute_action(action_name, **kwargs)
+            
+            # If the result is already an ActionResultModel dict, return it
             if isinstance(result, dict) and "success" in result:
                 return result
-
+            
             # Otherwise, wrap it in an ActionResultModel
             return ActionResultModel(
                 success=True,
-                message=f"Successfully called action {action_name}",
-                context=result,
+                message=f"Successfully executed action {action_name}",
+                context={"result": result}
             ).model_dump()
         except Exception as e:
-            logger.error(f"Error calling action {action_name}: {e}")
+            logger.error(f"Error executing action {action_name}: {e}")
             return ActionResultModel(
                 success=False,
-                message=f"Failed to call action {action_name}",
+                message=f"Failed to execute action {action_name}",
                 error=str(e),
+                context={"action_name": action_name, "kwargs": kwargs}
             ).model_dump()
 
-    def discover_actions(self) -> List[str]:
-        """Discover actions from all configured action paths.
+    @abstractmethod
+    def get_application_info(self) -> Dict[str, Any]:
+        """Get information about the application.
 
-        Returns
-        -------
-            List of discovered action names
-
+        Returns:
+            Dict with application information
         """
-        return self.action_adapter.discover_all_actions()
+
+    def ensure_connected(self) -> bool:
+        """Ensure the adapter is connected to the application.
+
+        Returns:
+            True if connected, False otherwise
+        """
+        if self.client is None:
+            return False
+
+        if not self.client.is_connected():
+            try:
+                return self.client.connect()
+            except Exception as e:
+                logger.error(f"Error connecting to {self.app_name}: {e}")
+                return False
+
+        return True
