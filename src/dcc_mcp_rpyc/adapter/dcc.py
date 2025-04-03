@@ -5,9 +5,7 @@ This module provides DCC-specific adapter classes for connecting to DCC applicat
 
 # Import built-in modules
 import logging
-from typing import Any
-from typing import Dict
-from typing import Optional
+from typing import Any, Dict, Optional, List
 
 # Import third-party modules
 from dcc_mcp_core.models import ActionResultModel
@@ -16,6 +14,7 @@ from dcc_mcp_core.models import ActionResultModel
 from dcc_mcp_rpyc.adapter.base import ApplicationAdapter
 from dcc_mcp_rpyc.client import BaseDCCClient
 from dcc_mcp_rpyc.client.pool import get_client
+from dcc_mcp_rpyc.discovery import ServiceRegistry, ZEROCONF_AVAILABLE
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -256,3 +255,90 @@ class DCCAdapter(ApplicationAdapter):
                 error=str(e),
                 context={"script_type": script_type, "script_length": len(script)},
             ).model_dump()
+
+    def get_available_dcc_instances(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Get all available DCC instances grouped by DCC type.
+
+        This method performs a service discovery using all registered strategies
+        and returns a dictionary of DCC instances grouped by DCC type.
+
+        Returns:
+            Dictionary with DCC types as keys and lists of instance info as values
+            Example: {
+                "maya": [
+                    {
+                        "name": "maya-2022",
+                        "host": "127.0.0.1",
+                        "port": 18812,
+                        "version": "2022",
+                        "scene": "untitled.ma",
+                        "instance_id": "12345",
+                        "start_time": "2025-04-02T10:30:00",
+                        "user": "username"
+                    }
+                ]
+            }
+        """
+        # Create a service registry
+        registry = ServiceRegistry()
+        
+        # Ensure we have both file and zeroconf strategies registered
+        registry.ensure_strategy("file")
+        if ZEROCONF_AVAILABLE:
+            registry.ensure_strategy("zeroconf")
+            
+        # Get available DCC instances
+        return registry.get_available_dcc_instances(refresh=True)
+        
+    def connect_to_instance(self, instance_info: Dict[str, Any]) -> bool:
+        """Connect to a specific DCC instance.
+
+        Args:
+            instance_info: Dictionary with instance information (must contain 'host' and 'port')
+
+        Returns:
+            True if connected successfully, False otherwise
+        """
+        if not instance_info or 'host' not in instance_info or 'port' not in instance_info:
+            logger.error("Invalid instance information: missing host or port")
+            return False
+
+        # Create a new client or update the existing one
+        self.client = get_client(
+            app_name=self.dcc_name,
+            host=instance_info['host'],
+            port=instance_info['port'],
+            auto_connect=True
+        )
+        
+        return self.client.is_connected()
+        
+    def format_instance_info(self, instance_info: Dict[str, Any]) -> str:
+        """Format instance information for display.
+
+        Args:
+            instance_info: Dictionary with instance information
+
+        Returns:
+            Formatted string with instance information
+        """
+        # Basic information
+        info_str = f"{instance_info.get('name', 'Unknown')}"
+        
+        # Add version if available
+        if 'version' in instance_info:
+            info_str += f" (版本: {instance_info['version']})"
+            
+        # Add scene if available
+        if 'scene' in instance_info:
+            info_str += f" (场景: {instance_info['scene']})"
+            
+        # Add user if available
+        if 'username' in instance_info:
+            info_str += f" (用户: {instance_info['username']})"
+            
+        # Add start time if available
+        if 'start_time' in instance_info:
+            info_str += f" (启动时间: {instance_info['start_time']})"
+            
+        return info_str

@@ -44,27 +44,68 @@ class FileDiscoveryStrategy(ServiceDiscoveryStrategy):
         self._load_registry()
 
     def _load_registry(self) -> None:
-        """Load the registry from file."""
+        """Load the registry from file with enhanced error handling and version compatibility."""
         try:
             if os.path.exists(self.registry_path):
                 with open(self.registry_path) as f:
-                    data = json.load(f)
-                    self._services = data
-                    logger.debug(f"Loaded registry from {self.registry_path}")
+                    try:
+                        data = json.load(f)
+                        # Check data format version
+                        version = data.pop("_version", 1) if isinstance(data, dict) else 1
+                        
+                        # Process based on version
+                        if version == 1:
+                            # Handle v1 format
+                            if isinstance(data, dict):
+                                self._services = data
+                                logger.debug(f"Loaded registry from {self.registry_path} (version {version})")
+                            else:
+                                logger.error(f"Invalid registry data format in {self.registry_path}")
+                                self._backup_invalid_registry()
+                                self._services = {}
+                        else:
+                            # Handle unknown version
+                            logger.warning(f"Unknown registry version {version}, attempting compatibility handling")
+                            if isinstance(data, dict):
+                                self._services = data
+                            else:
+                                self._services = {}
+                    except json.JSONDecodeError as e:
+                        logger.error(f"Invalid registry file format in {self.registry_path}: {e}")
+                        # Backup and create new file
+                        self._backup_invalid_registry()
+                        self._services = {}
             else:
                 logger.debug(f"Registry file {self.registry_path} does not exist")
+                self._services = {}
         except Exception as e:
             logger.error(f"Error loading registry: {e}")
+            self._services = {}
+            
+    def _backup_invalid_registry(self) -> None:
+        """Backup an invalid registry file."""
+        try:
+            if os.path.exists(self.registry_path):
+                backup_path = f"{self.registry_path}.bak.{int(time.time())}"
+                import shutil
+                shutil.copy2(self.registry_path, backup_path)
+                logger.info(f"Backed up invalid registry file to {backup_path}")
+        except Exception as e:
+            logger.error(f"Failed to backup invalid registry file: {e}")
 
     def _save_registry(self) -> None:
-        """Save the registry to file."""
+        """Save the registry to file with version information."""
         try:
             # Ensure directory exists
             os.makedirs(os.path.dirname(self.registry_path), exist_ok=True)
 
+            # Add version information
+            data = self._services.copy()
+            data["_version"] = 1  # Current version
+            
             with open(self.registry_path, "w") as f:
-                json.dump(self._services, f, indent=2)
-                logger.debug(f"Saved registry to {self.registry_path}")
+                json.dump(data, f, indent=2)
+                logger.debug(f"Saved registry to {self.registry_path} (version 1)")
         except Exception as e:
             logger.error(f"Error saving registry: {e}")
 
