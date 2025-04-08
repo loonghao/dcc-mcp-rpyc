@@ -26,7 +26,7 @@ classifiers = [
 [tool.poetry.dependencies]
 python = ">=3.7,<4.0"
 rpyc = ">=6.0.0,<7.0.0"
-dcc-mcp-core = "^0.5.0"
+dcc-mcp-core = "^0.8.0"
 zeroconf = ">=0.38.0,<0.132.0"
 
 [tool.poetry.urls]
