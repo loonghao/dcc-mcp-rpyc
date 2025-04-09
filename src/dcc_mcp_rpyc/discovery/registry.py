@@ -7,6 +7,8 @@ This module provides a registry for managing service discovery strategies and di
 import logging
 from typing import List
 from typing import Optional
+from typing import Dict
+from typing import Any
 
 # Import local modules
 from dcc_mcp_rpyc.discovery.base import ServiceDiscoveryStrategy
@@ -187,6 +189,86 @@ class ServiceRegistry:
         if dcc_type:
             return [s for s in self._services.values() if s.dcc_type == dcc_type]
         return list(self._services.values())
+
+    def get_available_dcc_instances(self, refresh: bool = True) -> Dict[str, List[Dict[str, Any]]]:
+        """Get all available DCC instances grouped by DCC type.
+
+        This method performs a service discovery using all registered strategies
+        and returns a dictionary of DCC instances grouped by DCC type.
+
+        Args:
+            refresh: Whether to refresh the service cache (default: True)
+
+        Returns:
+            Dictionary with DCC types as keys and lists of instance info as values
+            Example: {
+                "maya": [
+                    {
+                        "name": "maya-2022",
+                        "host": "127.0.0.1",
+                        "port": 18812,
+                        "version": "2022",
+                        "scene": "untitled.ma",
+                        "instance_id": "12345",
+                        "start_time": "2025-04-02T10:30:00",
+                        "user": "username"
+                    }
+                ]
+            }
+        """
+        # Use cached results if available and refresh is not requested
+        if hasattr(self, '_cached_instances') and not refresh:
+            self._logger.debug("Using cached DCC instances")
+            return self._cached_instances
+            
+        # Initialize result dictionary
+        result = {}
+        
+        # Discover services using all registered strategies
+        for strategy_name in self.list_strategies():
+            try:
+                services = self.discover_services(strategy_name)
+                
+                # Group services by DCC type
+                for service in services:
+                    dcc_type = service.dcc_type.lower()
+                    
+                    # Initialize list for DCC type if not exists
+                    if dcc_type not in result:
+                        result[dcc_type] = []
+                        
+                    # Create instance info
+                    instance_info = {
+                        "name": service.name,
+                        "host": service.host,
+                        "port": service.port,
+                        "dcc_type": service.dcc_type,
+                    }
+                    
+                    # Add metadata
+                    if service.metadata:
+                        for key, value in service.metadata.items():
+                            if key not in instance_info:
+                                instance_info[key] = value
+                                
+                    # Check if instance already exists
+                    exists = False
+                    for existing in result[dcc_type]:
+                        if (existing["host"] == instance_info["host"] and
+                                existing["port"] == instance_info["port"]):
+                            exists = True
+                            break
+                            
+                    # Add instance if not exists
+                    if not exists:
+                        result[dcc_type].append(instance_info)
+            except Exception as e:
+                self._logger.error(f"Error discovering services using {strategy_name}: {e}")
+                
+        # Cache results
+        self._cached_instances = result
+        
+        return result
 
     def ensure_strategy(self, strategy_type: str, **kwargs) -> ServiceDiscoveryStrategy:
         """Ensure a strategy of the specified type exists in the registry.

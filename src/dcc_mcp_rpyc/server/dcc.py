@@ -211,29 +211,39 @@ class DCCServer:
             # Get the port the server is running on
             self.port = self.server.port
 
-            # Register the service using both methods for backward compatibility
-            # 1. File-based registration
-            self.registry_file = register_dcc_service(dcc_name=self.dcc_name, host=self.host, port=self.port)
+            # Get additional metadata
+            try:
+                # Try to get DCC version and scene information if available
+                dcc_version = None
+                scene_name = None
+                additional_metadata = {}
+                
+                if hasattr(self.service_class, "get_dcc_info") and callable(getattr(self.service_class, "get_dcc_info")):
+                    dcc_info = self.service_class.get_dcc_info()
+                    if isinstance(dcc_info, dict):
+                        dcc_version = dcc_info.get("version")
+                        additional_metadata.update(dcc_info)
+                
+                if hasattr(self.service_class, "get_scene_info") and callable(getattr(self.service_class, "get_scene_info")):
+                    scene_info = self.service_class.get_scene_info()
+                    if isinstance(scene_info, dict):
+                        scene_name = scene_info.get("name")
+                        additional_metadata.update(scene_info)
+            except Exception as e:
+                logger.warning(f"Error getting additional metadata: {e}")
+                dcc_version = None
+                scene_name = None
+                additional_metadata = {}
 
-            # 2. ZeroConf registration if available
-            if self.use_zeroconf:
-                logger.info(f"Registering {self.dcc_name} service using ZeroConf")
-                registry = ServiceRegistry()
-                service_info = ServiceInfo(
-                    name=self.dcc_name,
-                    host=self.host,
-                    port=self.port,
-                    dcc_type=self.dcc_name,
-                    metadata={
-                        "app_name": self.dcc_name,
-                        "registry_file": self.registry_file,
-                    },
-                )
-                success = registry.register_service_with_strategy("zeroconf", service_info)
-                if not success:
-                    logger.warning(f"Failed to register {self.dcc_name} service using ZeroConf")
-                # Save service_info for later deregistration
-                self.zeroconf_info = service_info
+            # Register the service with enhanced metadata
+            self.registry_file = register_dcc_service(
+                dcc_name=self.dcc_name, 
+                host=self.host, 
+                port=self.port,
+                version=dcc_version,
+                scene_name=scene_name,
+                metadata=additional_metadata
+            )
 
             self.running = True
             logger.info(f"Started RPYC server for {self.dcc_name} on {self.host}:{self.port}")

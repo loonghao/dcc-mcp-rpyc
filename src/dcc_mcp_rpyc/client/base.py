@@ -10,6 +10,7 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Tuple
+from typing import List
 
 # Import third-party modules
 import rpyc
@@ -19,6 +20,7 @@ from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
 from dcc_mcp_rpyc.discovery import ServiceRegistry
 from dcc_mcp_rpyc.discovery import ZEROCONF_AVAILABLE
 from dcc_mcp_rpyc.discovery import ZeroConfDiscoveryStrategy
+from dcc_mcp_rpyc.discovery.base import ServiceInfo
 from dcc_mcp_rpyc.utils import execute_remote_command as _execute_remote_command
 
 # Configure logging
@@ -75,6 +77,10 @@ class BaseApplicationClient:
     def _discover_service(self) -> Tuple[Optional[str], Optional[int]]:
         """Discover the host and port of the application RPYC server.
 
+        This method attempts to discover a service of the specified application type.
+        If multiple services are found, it will use the first one by default.
+        For more control over service selection, use get_available_dcc_instances().
+
         Returns
         -------
             Tuple of (host, port) if discovered, (None, None) otherwise
@@ -83,51 +89,118 @@ class BaseApplicationClient:
         try:
             logger.info(f"Discovering {self.app_name} service...")
 
-            # Method 0: Try ZeroConf discovery first if available
-            if self.use_zeroconf:
-                logger.info(f"Attempting to discover {self.app_name} service using ZeroConf...")
-                registry = ServiceRegistry()
-                strategy = registry.get_strategy("zeroconf")
-                if not strategy:
-                    strategy = ZeroConfDiscoveryStrategy()
-                    registry.register_strategy("zeroconf", strategy)
-
-                # Find services
-                services = registry.discover_services("zeroconf", self.app_name)
-                if services and len(services) > 0:
-                    service = services[0]  # Use the first discovered service
-                    self.port = service.port
-                    self.host = service.host
-                    logger.info(f"Discovered {self.app_name} service at {self.host}:{self.port} using ZeroConf")
-                    return self.host, self.port
-                else:
-                    logger.warning(f"No {self.app_name} service discovered using ZeroConf")
-
-            # Method 1: Discover services using the discovery module
-            registry = ServiceRegistry()
-            strategy = registry.get_strategy("file")
-            if not strategy:
-                strategy = FileDiscoveryStrategy(registry_path=self.registry_path)
-                registry.register_strategy("file", strategy)
-
-            # Find services
-            services = registry.discover_services("file", self.app_name)
-            if services and len(services) > 0:
+            # Get all available services
+            services = self.get_available_services()
+            
+            # If services found, use the first one
+            if services:
                 service = services[0]  # Use the first discovered service
                 self.port = service.port
                 self.host = service.host
-                logger.info(f"Discovered {self.app_name} service at {self.host}:{self.port} using file-based discovery")
+                logger.info(f"Discovered {self.app_name} service at {self.host}:{self.port}")
                 return self.host, self.port
-
-            # Method 2: If all else fails, try to find registry files directly
-            # This part of the code is no longer needed, as FileDiscoveryStrategy already handles registry file lookup
-            # If above methods fail, return None
+            
+            # If no services found
             logger.warning(f"No {self.app_name} service discovered")
             return None, None
 
         except Exception as e:
             logger.error(f"Error discovering {self.app_name} service: {e}")
             return None, None
+
+    def get_available_services(self) -> List[ServiceInfo]:
+        """Get all available services for the application type.
+
+        This method attempts to discover all services of the specified application type
+        using both ZeroConf and file-based discovery strategies.
+
+        Returns
+        -------
+            List of ServiceInfo objects for the discovered services
+
+        """
+        services = []
+        registry = ServiceRegistry()
+
+        # Try ZeroConf discovery first if available
+        if self.use_zeroconf:
+            logger.info(f"Attempting to discover {self.app_name} service using ZeroConf...")
+            strategy = registry.ensure_strategy("zeroconf")
+            
+            # Find services
+            zeroconf_services = registry.discover_services("zeroconf", self.app_name)
+            if zeroconf_services:
+                services.extend(zeroconf_services)
+                logger.info(f"Discovered {len(zeroconf_services)} {self.app_name} service(s) using ZeroConf")
+
+        # Try file-based discovery
+        logger.info(f"Attempting to discover {self.app_name} service using file-based discovery...")
+        strategy = registry.ensure_strategy("file", registry_path=self.registry_path)
+        
+        # Find services
+        file_services = registry.discover_services("file", self.app_name)
+        if file_services:
+            # Add only services that aren't already in the list
+            for service in file_services:
+                if not any(s.host == service.host and s.port == service.port for s in services):
+                    services.append(service)
+            logger.info(f"Discovered {len(file_services)} {self.app_name} service(s) using file-based discovery")
+
+        return services
+
+    def get_available_dcc_instances(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Get all available DCC instances grouped by DCC type.
+
+        This method performs a service discovery using all registered strategies
+        and returns a dictionary of DCC instances grouped by DCC type.
+
+        Returns
+        -------
+            Dictionary with DCC types as keys and lists of instance info as values
+            Example: {
+                "maya": [
+                    {
+                        "name": "maya-2022",
+                        "host": "127.0.0.1",
+                        "port": 18812,
+                        "version": "2022",
+                        "scene": "untitled.ma",
+                        "instance_id": "12345",
+                        "start_time": "2025-04-02T10:30:00",
+                        "user": "username"
+                    }
+                ]
+            }
+        """
+        registry = ServiceRegistry()
+        
+        # Ensure we have both file and zeroconf strategies registered
+        registry.ensure_strategy("file", registry_path=self.registry_path)
+        if self.use_zeroconf:
+            registry.ensure_strategy("zeroconf")
+            
+        # Get available DCC instances
+        return registry.get_available_dcc_instances(refresh=True)
+
+    def connect_to_instance(self, instance_info: Dict[str, Any]) -> bool:
+        """Connect to a specific DCC instance.
+
+        Args:
+        ----
+            instance_info: Dictionary with instance information (must contain 'host' and 'port')
+
+        Returns:
+        -------
+            True if connected successfully, False otherwise
+
+        """
+        if not instance_info or 'host' not in instance_info or 'port' not in instance_info:
+            logger.error("Invalid instance information: missing host or port")
+            return False
+
+        self.host = instance_info['host']
+        self.port = instance_info['port']
+        return self.connect()
 
     def connect(self, rpyc_connect_func=None) -> bool:
         """Connect to the application RPYC server.
@@ -204,22 +277,37 @@ class BaseApplicationClient:
         return self.connect()
 
     def is_connected(self) -> bool:
-        """Check if the client is connected to the application RPYC server.
+        """Check if the client is connected to the application server.
 
         Returns
         -------
             True if connected, False otherwise
 
         """
-        if not self.connection:
-            return False
+        return self.connection is not None and not getattr(self.connection, "closed", True)
 
+    def ping(self) -> bool:
+        """Ping the server to check if the connection is still alive.
+        
+        Returns
+        -------
+            True if the ping was successful, False otherwise
+            
+        """
+        if not self.is_connected():
+            return False
+            
         try:
-            # Try to ping the server to check if the connection is still alive
-            self.connection.ping()
+            # Try to ping the connection
+            if hasattr(self.connection, "ping"):
+                self.connection.ping()
+                return True
+                
+            # If no ping method, try to access a simple property
+            self.connection.root.get_service_info()
             return True
-        except Exception:
-            self.connection = None
+        except Exception as e:
+            logger.debug(f"Ping failed: {e}")
             return False
 
     def execute_remote_command(self, command: str, *args, **kwargs) -> Any:
@@ -340,7 +428,7 @@ class BaseApplicationClient:
         -------
             Dict with application information
 
-        Raises
+        Raises:
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If getting application information fails
@@ -362,7 +450,7 @@ class BaseApplicationClient:
         -------
             Dict with environment information
 
-        Raises
+        Raises:
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If getting environment information fails
@@ -384,7 +472,7 @@ class BaseApplicationClient:
         -------
             Dict with action information
 
-        Raises
+        Raises:
         ------
             ConnectionError: If the client is not connected to the application RPYC server
             Exception: If listing actions fails
