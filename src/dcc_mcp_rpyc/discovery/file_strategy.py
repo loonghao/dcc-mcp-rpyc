@@ -82,34 +82,55 @@ class FileDiscoveryStrategy(ServiceDiscoveryStrategy):
         self._load_registry()
 
         services = []
-        for dcc_name, service_data in self._services.items():
-            if service_type and dcc_name != service_type:
-                continue
-
+        for key, service_data in self._services.items():
             # Check if service data is valid
             if not isinstance(service_data, dict):
-                logger.warning(f"Invalid service data for {dcc_name}: {service_data}")
+                logger.warning(f"Invalid service data for {key}: {service_data}")
+                continue
+
+            # Extract dcc_type from service data or key
+            # New format: stored in service_data["dcc_type"]
+            # Legacy format: key is the dcc_type directly (no ":" separator)
+            dcc_type = service_data.get("dcc_type", key.split(":")[0] if ":" in key else key)
+
+            if service_type and dcc_type != service_type:
                 continue
 
             # Check if service is stale (older than 1 hour)
             timestamp = service_data.get("timestamp", 0)
             if time.time() - timestamp > 3600:  # 1 hour
-                logger.debug(f"Service {dcc_name} is stale, skipping")
+                logger.debug(f"Service {key} is stale, skipping")
                 continue
 
             try:
                 service_info = ServiceInfo(
-                    name=service_data.get("name", dcc_name),
+                    name=service_data.get("name", key),
                     host=service_data.get("host", ""),
                     port=service_data.get("port", 0),
-                    dcc_type=dcc_name,
+                    dcc_type=dcc_type,
                     metadata=service_data.get("metadata", {}),
                 )
                 services.append(service_info)
             except Exception as e:
-                logger.warning(f"Error creating ServiceInfo for {dcc_name}: {e}")
+                logger.warning(f"Error creating ServiceInfo for {key}: {e}")
 
         return services
+
+    @staticmethod
+    def _make_service_key(service_info: ServiceInfo) -> str:
+        """Create a unique key for a service instance.
+
+        Uses dcc_type:host:port to uniquely identify each instance,
+        allowing multiple instances of the same DCC type.
+
+        Args:
+            service_info: Information about the service
+
+        Returns:
+            A unique string key for the service instance
+
+        """
+        return f"{service_info.dcc_type}:{service_info.host}:{service_info.port}"
 
     def register_service(self, service_info: ServiceInfo) -> bool:
         """Register a service with the discovery mechanism.
@@ -130,17 +151,23 @@ class FileDiscoveryStrategy(ServiceDiscoveryStrategy):
                 "name": service_info.name,
                 "host": service_info.host,
                 "port": service_info.port,
+                "dcc_type": service_info.dcc_type,
                 "timestamp": time.time(),
                 "metadata": service_info.metadata,
             }
 
-            # Register the service
-            self._services[service_info.dcc_type] = service_data
+            # Register the service using composite key (dcc_type:host:port)
+            # This allows multiple instances of the same DCC type
+            key = self._make_service_key(service_info)
+            self._services[key] = service_data
 
             # Save the registry
             self._save_registry()
 
-            logger.info(f"Registered service {service_info.name} for DCC {service_info.dcc_type}")
+            logger.info(
+                f"Registered service {service_info.name} for DCC "
+                f"{service_info.dcc_type} at {service_info.host}:{service_info.port}"
+            )
             return True
         except Exception as e:
             logger.error(f"Error registering service: {e}")
@@ -160,18 +187,28 @@ class FileDiscoveryStrategy(ServiceDiscoveryStrategy):
             # Reload the registry to get the latest services
             self._load_registry()
 
-            # Check if service exists
-            if service_info.dcc_type not in self._services:
-                logger.warning(f"Service {service_info.name} for DCC {service_info.dcc_type} not found")
-                return False
+            key = self._make_service_key(service_info)
 
-            # Unregister the service
-            del self._services[service_info.dcc_type]
+            # Try new composite key first
+            if key in self._services:
+                del self._services[key]
+            # Fallback: try legacy dcc_type key for backward compatibility
+            elif service_info.dcc_type in self._services:
+                del self._services[service_info.dcc_type]
+            else:
+                logger.warning(
+                    f"Service {service_info.name} for DCC "
+                    f"{service_info.dcc_type} at {service_info.host}:{service_info.port} not found"
+                )
+                return False
 
             # Save the registry
             self._save_registry()
 
-            logger.info(f"Unregistered service {service_info.name} for DCC {service_info.dcc_type}")
+            logger.info(
+                f"Unregistered service {service_info.name} for DCC "
+                f"{service_info.dcc_type} at {service_info.host}:{service_info.port}"
+            )
             return True
         except Exception as e:
             logger.error(f"Error unregistering service: {e}")
