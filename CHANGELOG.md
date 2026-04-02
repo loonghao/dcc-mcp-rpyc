@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## 1.0.0 (2026-04-02)
+
+### BREAKING CHANGE
+
+- Package renamed from dcc-mcp-rpyc to dcc-mcp-ipc to reflect
+the project's evolution from an RPyC-only implementation to a multi-protocol
+IPC adapter layer supporting RPyC, HTTP, and WebSocket transports.
+
+### Feat
+
+- **transport**: add protocol-agnostic transport abstraction layer
+
+### Refactor
+
+- rename dcc-mcp-rpyc to dcc-mcp-ipc
+
 ## 0.4.1 (2026-03-29)
 
 ### Fix
