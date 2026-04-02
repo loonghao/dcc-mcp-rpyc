@@ -115,12 +115,14 @@ class TestBuiltinRegistration:
         assert "http" in _transport_registry
 
     def test_create_rpyc_transport(self):
+        # Import local modules
         from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransport
 
         transport = create_transport("rpyc")
         assert isinstance(transport, RPyCTransport)
 
     def test_create_http_transport(self):
+        # Import local modules
         from dcc_mcp_ipc.transport.http import HTTPTransport
 
         transport = create_transport("http")

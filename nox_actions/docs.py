@@ -4,15 +4,11 @@
 import os
 import shutil
 
-# Import third-party modules
-import nox
-
 # Import local modules
 from nox_actions.utils import PACKAGE_NAME
 from nox_actions.utils import THIS_ROOT
 
 
-@nox.session
 def docs(session):
     """Build the documentation."""
     output_dir = os.path.join(THIS_ROOT, "docs", "build", "html")
@@ -31,7 +27,6 @@ def docs(session):
     )
 
 
-@nox.session
 def docs_serve(session):
     """Build and serve the documentation with live reloading on file changes."""
     session.install("-e", ".")

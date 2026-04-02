@@ -248,6 +248,7 @@ def test_unregister_specific_instance(temp_registry_file):
 
 def test_backward_compat_legacy_registry_format(temp_registry_file):
     """Test backward compatibility with legacy registry format (dcc_type as key)."""
+    # Import built-in modules
     import time as time_mod
 
     # Write legacy format directly
