@@ -1,7 +1,7 @@
-"""Integration tests for DCC-MCP-RPYC with DCC applications.
+"""Integration tests for DCC-MCP-IPC with DCC applications.
 
-This module contains integration tests for the DCC-MCP-RPYC package with DCC applications.
-These tests require a running DCC application with the DCC-MCP-RPYC server installed.
+This module contains integration tests for the DCC-MCP-IPC package with DCC applications.
+These tests require a running DCC application with the DCC-MCP-IPC server installed.
 """
 
 # Import built-in modules
@@ -15,10 +15,10 @@ import rpyc
 from rpyc.utils.server import ThreadedServer
 
 # Import local modules
-from dcc_mcp_rpyc.client import BaseDCCClient
-from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
-from dcc_mcp_rpyc.discovery import ServiceInfo
-from dcc_mcp_rpyc.discovery import ServiceRegistry
+from dcc_mcp_ipc.client import BaseDCCClient
+from dcc_mcp_ipc.discovery import FileDiscoveryStrategy
+from dcc_mcp_ipc.discovery import ServiceInfo
+from dcc_mcp_ipc.discovery import ServiceRegistry
 
 
 # Mock DCC service class

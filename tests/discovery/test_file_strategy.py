@@ -13,8 +13,8 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.discovery.base import ServiceInfo
-from dcc_mcp_rpyc.discovery.file_strategy import FileDiscoveryStrategy
+from dcc_mcp_ipc.discovery.base import ServiceInfo
+from dcc_mcp_ipc.discovery.file_strategy import FileDiscoveryStrategy
 
 
 @pytest.fixture

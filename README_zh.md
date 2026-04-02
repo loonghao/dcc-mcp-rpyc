@@ -1,15 +1,15 @@
-# DCC-MCP-RPYC
+# DCC-MCP-IPC
 
 <div align="center">
-    <img src="https://raw.githubusercontent.com/loonghao/dcc-mcp-rpyc/main/logo.svg" alt="DCC-MCP-RPYC Logo" width="200"/>
+    <img src="https://raw.githubusercontent.com/loonghao/dcc-mcp-ipc/main/logo.svg" alt="DCC-MCP-IPC Logo" width="200"/>
 
-[![PyPI version](https://badge.fury.io/py/dcc-mcp-rpyc.svg)](https://badge.fury.io/py/dcc-mcp-rpyc)
-[![Build Status](https://github.com/loonghao/dcc-mcp-rpyc/workflows/Build%20and%20Release/badge.svg)](https://github.com/loonghao/dcc-mcp-rpyc/actions)
-[![Python Version](https://img.shields.io/pypi/pyversions/dcc-mcp-rpyc.svg)](https://pypi.org/project/dcc-mcp-rpyc/)
-[![License](https://img.shields.io/github/license/loonghao/dcc-mcp-rpyc.svg)](https://github.com/loonghao/dcc-mcp-rpyc/blob/main/LICENSE)
+[![PyPI version](https://badge.fury.io/py/dcc-mcp-ipc.svg)](https://badge.fury.io/py/dcc-mcp-ipc)
+[![Build Status](https://github.com/loonghao/dcc-mcp-ipc/workflows/Build%20and%20Release/badge.svg)](https://github.com/loonghao/dcc-mcp-ipc/actions)
+[![Python Version](https://img.shields.io/pypi/pyversions/dcc-mcp-ipc.svg)](https://pypi.org/project/dcc-mcp-ipc/)
+[![License](https://img.shields.io/github/license/loonghao/dcc-mcp-ipc.svg)](https://github.com/loonghao/dcc-mcp-ipc/blob/main/LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/badge/ruff-enabled-brightgreen)](https://github.com/astral-sh/ruff)
-[![Downloads](https://static.pepy.tech/badge/dcc-mcp-rpyc)](https://pepy.tech/project/dcc-mcp-rpyc)
+[![Downloads](https://static.pepy.tech/badge/dcc-mcp-ipc)](https://pepy.tech/project/dcc-mcp-ipc)
 </div>
 
 [English](README.md) | [中文](README_zh.md)
@@ -26,7 +26,7 @@ RPyC（远程 Python 调用）为 DCC 软件集成提供了显著的优势：
 - **减少样板代码**：与其他进程间通信方法相比，最小化了进程间通信所需的重复代码。
 - **对象引用**：维护对远程对象的实时引用，允许跨进程边界进行自然的面向对象编程。
 
-通过利用 RPyC，DCC-MCP-RPYC 提供了一个统一的框架，在启用远程控制功能的同时保留了每个 DCC 原生 API 的使用体验。
+通过利用 RPyC，DCC-MCP-IPC 提供了一个统一的框架，在启用远程控制功能的同时保留了每个 DCC 原生 API 的使用体验。
 
 ## 特性
 
@@ -42,14 +42,14 @@ RPyC（远程 Python 调用）为 DCC 软件集成提供了显著的优势：
 
 ## 架构
 
-DCC-MCP-RPYC 的架构设计旨在为控制各种 DCC 应用程序提供统一的接口：
+DCC-MCP-IPC 的架构设计旨在为控制各种 DCC 应用程序提供统一的接口：
 
 ```mermaid
 graph TD
     A[客户端应用<br>AI 助手] --> B[MCP 服务器<br>协调器]
     B --> C[DCC 软件<br>Maya/Houdini]
     A --> D[DCC-MCP<br>核心 API]
-    D --> E[DCC-MCP-RPYC<br>传输层]
+    D --> E[DCC-MCP-IPC<br>传输层]
     E --> C
     F[Action 系统] --> E
     G[模拟 DCC 服务] -.-> E
@@ -68,13 +68,13 @@ graph TD
 ## 安装
 
 ```bash
-pip install dcc-mcp-rpyc
+pip install dcc-mcp-ipc
 ```
 
 或者使用 Poetry：
 
 ```bash
-poetry add dcc-mcp-rpyc
+poetry add dcc-mcp-ipc
 ```
 
 ## 使用方法
@@ -83,7 +83,7 @@ poetry add dcc-mcp-rpyc
 
 ```python
 # 在 Maya 中创建并启动 DCC 服务器
-from dcc_mcp_rpyc.server import create_dcc_server, DCCRPyCService
+from dcc_mcp_ipc.server import create_dcc_server, DCCRPyCService
 
 # 创建自定义服务类
 class MayaService(DCCRPyCService):
@@ -109,7 +109,7 @@ server.start(threaded=True)
 ### 客户端
 
 ```python
-from dcc_mcp_rpyc.client import BaseDCCClient
+from dcc_mcp_ipc.client import BaseDCCClient
 
 # 连接到 DCC 服务器
 client = BaseDCCClient(
@@ -136,7 +136,7 @@ client.disconnect()
 ### 使用连接池
 
 ```python
-from dcc_mcp_rpyc.client import ConnectionPool
+from dcc_mcp_ipc.client import ConnectionPool
 
 # 创建连接池
 pool = ConnectionPool()
@@ -153,8 +153,8 @@ with pool.get_client("maya", host="localhost") as client:
 ### 创建 DCC 适配器
 
 ```python
-from dcc_mcp_rpyc.dcc_adapter import DCCAdapter
-from dcc_mcp_rpyc.client import BaseDCCClient
+from dcc_mcp_ipc.dcc_adapter import DCCAdapter
+from dcc_mcp_ipc.client import BaseDCCClient
 
 class MayaAdapter(DCCAdapter):
     def _create_client(self) -> BaseDCCClient:
@@ -176,8 +176,8 @@ class MayaAdapter(DCCAdapter):
 
 ```bash
 # 克隆仓库
-git clone https://github.com/loonghao/dcc-mcp-rpyc.git
-cd dcc-mcp-rpyc
+git clone https://github.com/loonghao/dcc-mcp-ipc.git
+cd dcc-mcp-ipc
 
 # 使用 Poetry 安装依赖
 poetry install
@@ -203,7 +203,7 @@ MIT
 ### 使用服务工厂
 
 ```python
-from dcc_mcp_rpyc.server import create_service_factory, create_shared_service_instance, create_raw_threaded_server
+from dcc_mcp_ipc.server import create_service_factory, create_shared_service_instance, create_raw_threaded_server
 
 # 创建共享状态管理器
 class SceneManager:
@@ -228,7 +228,7 @@ server.start()
 ### 参数处理
 
 ```python
-from dcc_mcp_rpyc.parameters import process_rpyc_parameters, execute_remote_command
+from dcc_mcp_ipc.parameters import process_rpyc_parameters, execute_remote_command
 
 # 处理 RPyC 调用的参数
 params = {"radius": 5.0, "create": True, "name": "mySphere"}
@@ -241,7 +241,7 @@ result = execute_remote_command(connection, "create_sphere", radius=5.0, create=
 ### 使用 Action 系统
 
 ```python
-from dcc_mcp_rpyc.action_adapter import ActionAdapter, get_action_adapter
+from dcc_mcp_ipc.action_adapter import ActionAdapter, get_action_adapter
 from dcc_mcp_core.actions.base import Action
 from dcc_mcp_core.models import ActionResultModel
 from pydantic import BaseModel, Field
@@ -279,8 +279,8 @@ print(result.message)  # "创建了半径为 2.0 的球体 mySphere"
 
 ```python
 # 使用新的测试模块中的模拟 DCC 服务
-from dcc_mcp_rpyc.testing.mock_services import start_mock_dcc_service, stop_mock_dcc_service
-from dcc_mcp_rpyc.client import BaseDCCClient
+from dcc_mcp_ipc.testing.mock_services import start_mock_dcc_service, stop_mock_dcc_service
+from dcc_mcp_ipc.client import BaseDCCClient
 
 # 启动模拟 DCC 服务
 server, port = start_mock_dcc_service(dcc_name="mock_dcc", host="localhost", port=18812)
@@ -307,8 +307,8 @@ stop_mock_dcc_service(server)
 
 ```bash
 # 克隆仓库
-git clone https://github.com/loonghao/dcc-mcp-rpyc.git
-cd dcc-mcp-rpyc
+git clone https://github.com/loonghao/dcc-mcp-ipc.git
+cd dcc-mcp-ipc
 
 # 使用 Poetry 安装依赖
 poetry install

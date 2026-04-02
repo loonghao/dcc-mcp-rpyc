@@ -1,4 +1,4 @@
-"""Tests for the Action system in DCC-MCP-RPYC.
+"""Tests for the Action system in DCC-MCP-IPC.
 
 This module contains tests for the Action system, including action registration,
 discovery, and execution.
@@ -15,7 +15,7 @@ from pydantic import Field
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.action_adapter import ActionAdapter
+from dcc_mcp_ipc.action_adapter import ActionAdapter
 
 
 # Create a MockActionRegistry class for testing
@@ -154,7 +154,7 @@ def mock_action_adapter(monkeypatch):
         return adapters[name]
 
     # Replace the original function
-    monkeypatch.setattr("dcc_mcp_rpyc.action_adapter.get_action_adapter", mock_get_adapter)
+    monkeypatch.setattr("dcc_mcp_ipc.action_adapter.get_action_adapter", mock_get_adapter)
 
     return mock_get_adapter
 

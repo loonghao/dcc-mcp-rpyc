@@ -7,12 +7,12 @@ This module contains tests for the dependency injection container in utils/di.py
 import unittest
 
 # Import local modules
-from dcc_mcp_rpyc.utils.di import Container
-from dcc_mcp_rpyc.utils.di import get_container
-from dcc_mcp_rpyc.utils.di import register_factory
-from dcc_mcp_rpyc.utils.di import register_instance
-from dcc_mcp_rpyc.utils.di import register_singleton
-from dcc_mcp_rpyc.utils.di import resolve
+from dcc_mcp_ipc.utils.di import Container
+from dcc_mcp_ipc.utils.di import get_container
+from dcc_mcp_ipc.utils.di import register_factory
+from dcc_mcp_ipc.utils.di import register_instance
+from dcc_mcp_ipc.utils.di import register_singleton
+from dcc_mcp_ipc.utils.di import resolve
 
 
 class TestContainer(unittest.TestCase):

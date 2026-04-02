@@ -8,11 +8,11 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.transport.base import ConnectionError
-from dcc_mcp_rpyc.transport.base import ProtocolError
-from dcc_mcp_rpyc.transport.base import TransportState
-from dcc_mcp_rpyc.transport.rpyc_transport import RPyCTransport
-from dcc_mcp_rpyc.transport.rpyc_transport import RPyCTransportConfig
+from dcc_mcp_ipc.transport.base import ConnectionError
+from dcc_mcp_ipc.transport.base import ProtocolError
+from dcc_mcp_ipc.transport.base import TransportState
+from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransport
+from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransportConfig
 
 
 class TestRPyCTransportConfig:
@@ -58,7 +58,7 @@ class TestRPyCTransport:
         assert transport.rpyc_config.host == "test"
         assert transport.rpyc_config.port == 1234
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_connect_success(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_rpyc.connect.return_value = mock_conn
@@ -72,7 +72,7 @@ class TestRPyCTransport:
         assert transport.connection is mock_conn
         mock_rpyc.connect.assert_called_once()
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_connect_failure(self, mock_rpyc):
         mock_rpyc.connect.side_effect = OSError("Connection refused")
 
@@ -85,7 +85,7 @@ class TestRPyCTransport:
         assert transport.state == TransportState.ERROR
         assert transport.connection is None
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_connect_already_connected(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_rpyc.connect.return_value = mock_conn
@@ -97,7 +97,7 @@ class TestRPyCTransport:
         transport.connect()
         assert mock_rpyc.connect.call_count == 1
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_disconnect(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_rpyc.connect.return_value = mock_conn
@@ -116,7 +116,7 @@ class TestRPyCTransport:
         transport.disconnect()  # should not raise
         assert transport.state == TransportState.DISCONNECTED
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_disconnect_with_close_error(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_conn.close.side_effect = RuntimeError("close failed")
@@ -129,7 +129,7 @@ class TestRPyCTransport:
         assert transport.state == TransportState.DISCONNECTED
         assert transport.connection is None
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_health_check_connected(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_rpyc.connect.return_value = mock_conn
@@ -141,7 +141,7 @@ class TestRPyCTransport:
         assert transport.health_check() is True
         mock_conn.ping.assert_called_once()
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_health_check_ping_fails(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_conn.ping.side_effect = RuntimeError("ping failed")
@@ -158,7 +158,7 @@ class TestRPyCTransport:
         transport = RPyCTransport()
         assert transport.health_check() is False
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_execute_exposed_method(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_conn.root.exposed_list_actions.return_value = {"actions": {"create_sphere": {}}}
@@ -171,7 +171,7 @@ class TestRPyCTransport:
         result = transport.execute("list_actions")
         assert result == {"actions": {"create_sphere": {}}}
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_execute_method_not_found(self, mock_rpyc):
         """Test that ProtocolError is raised when method doesn't exist on a spec'd mock."""
         # Use a bare object as root spec so getattr returns None
@@ -187,7 +187,7 @@ class TestRPyCTransport:
         with pytest.raises(ProtocolError, match="has no method"):
             transport.execute("nonexistent_method")
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_execute_non_dict_result(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_conn.root.exposed_get_version.return_value = "2024.1"
@@ -205,7 +205,7 @@ class TestRPyCTransport:
         with pytest.raises(ConnectionError, match="Not connected"):
             transport.execute("test")
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_execute_remote_error(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_conn.root.exposed_bad_action.side_effect = RuntimeError("DCC crash")
@@ -218,7 +218,7 @@ class TestRPyCTransport:
         with pytest.raises(ProtocolError, match="Error executing"):
             transport.execute("bad_action")
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_execute_python(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_conn.root.exposed_execute_python.return_value = 42
@@ -236,7 +236,7 @@ class TestRPyCTransport:
         with pytest.raises(ConnectionError):
             transport.execute_python("x = 1")
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_call_function(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_conn.root.exposed_call_function.return_value = "/tmp/test"
@@ -257,7 +257,7 @@ class TestRPyCTransport:
         with pytest.raises(ConnectionError):
             transport.call_function("os", "getcwd")
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_import_module(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_module = MagicMock()
@@ -276,7 +276,7 @@ class TestRPyCTransport:
         with pytest.raises(ConnectionError):
             transport.import_module("os")
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_root_property(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_rpyc.connect.return_value = mock_conn
@@ -292,7 +292,7 @@ class TestRPyCTransport:
         with pytest.raises(ConnectionError):
             _ = transport.root
 
-    @patch("dcc_mcp_rpyc.transport.rpyc_transport.rpyc")
+    @patch("dcc_mcp_ipc.transport.rpyc_transport.rpyc")
     def test_context_manager(self, mock_rpyc):
         mock_conn = MagicMock()
         mock_rpyc.connect.return_value = mock_conn

@@ -1,4 +1,4 @@
-Welcome to DCC-MCP-RPYC's documentation!
+Welcome to DCC-MCP-IPC's documentation!
 ======================================
 
 .. toctree::

@@ -1,4 +1,4 @@
-"""Sphinx configuration file for DCC MCP RPYC documentation."""
+"""Sphinx configuration file for DCC MCP IPC documentation."""
 #
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
@@ -13,13 +13,13 @@ import sys
 
 # Import local modules
 # Import project version
-from dcc_mcp_rpyc.__version__ import __version__
+from dcc_mcp_ipc.__version__ import __version__
 
 sys.path.insert(0, os.path.abspath("../.."))
 
 # -- Project information -----------------------------------------------------
 
-project = "dcc-mcp-rpyc"
+project = "dcc-mcp-ipc"
 copyright = f"{datetime.datetime.now().year}, Your Name"
 author = "Your Name"
 

@@ -8,13 +8,13 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.transport.base import BaseTransport
-from dcc_mcp_rpyc.transport.base import ConnectionError
-from dcc_mcp_rpyc.transport.base import ProtocolError
-from dcc_mcp_rpyc.transport.base import TimeoutError
-from dcc_mcp_rpyc.transport.base import TransportConfig
-from dcc_mcp_rpyc.transport.base import TransportError
-from dcc_mcp_rpyc.transport.base import TransportState
+from dcc_mcp_ipc.transport.base import BaseTransport
+from dcc_mcp_ipc.transport.base import ConnectionError
+from dcc_mcp_ipc.transport.base import ProtocolError
+from dcc_mcp_ipc.transport.base import TimeoutError
+from dcc_mcp_ipc.transport.base import TransportConfig
+from dcc_mcp_ipc.transport.base import TransportError
+from dcc_mcp_ipc.transport.base import TransportState
 
 
 class ConcreteTransport(BaseTransport):

@@ -1,4 +1,4 @@
-"""Pytest configuration for DCC-MCP-RPYC tests.
+"""Pytest configuration for DCC-MCP-IPC tests.
 
 This module provides fixtures and configuration for pytest tests.
 """
@@ -15,14 +15,14 @@ import pytest
 from rpyc.utils.server import ThreadedServer
 
 # Import local modules
-from dcc_mcp_rpyc.discovery import FileDiscoveryStrategy
-from dcc_mcp_rpyc.discovery import ServiceInfo
-from dcc_mcp_rpyc.discovery import ServiceRegistry
+from dcc_mcp_ipc.discovery import FileDiscoveryStrategy
+from dcc_mcp_ipc.discovery import ServiceInfo
+from dcc_mcp_ipc.discovery import ServiceRegistry
 
-# Import dcc_mcp_rpyc modules
-from dcc_mcp_rpyc.server.base import BaseRPyCService
-from dcc_mcp_rpyc.server.dcc import DCCServer
-from dcc_mcp_rpyc.testing.mock_services import MockDCCService
+# Import dcc_mcp_ipc modules
+from dcc_mcp_ipc.server.base import BaseRPyCService
+from dcc_mcp_ipc.server.dcc import DCCServer
+from dcc_mcp_ipc.testing.mock_services import MockDCCService
 
 
 @pytest.fixture

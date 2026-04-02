@@ -1,16 +1,16 @@
 Usage
 =====
 
-To use DCC-MCP-RPYC in a project::
+To use DCC-MCP-IPC in a project::
 
-    import dcc_mcp_rpyc
+    import dcc_mcp_ipc
 
 基本连接示例 (Basic Connection Example)
 ---------------------------------
 
-以下是如何使用 DCC-MCP-RPYC 连接到应用程序服务器的基本示例::
+以下是如何使用 DCC-MCP-IPC 连接到应用程序服务器的基本示例::
 
-    from dcc_mcp_rpyc.application import connect_to_application
+    from dcc_mcp_ipc.application import connect_to_application
     
     # 连接到应用程序服务器
     client = connect_to_application("localhost", 18812)
@@ -25,9 +25,9 @@ To use DCC-MCP-RPYC in a project::
 DCC 集成示例 (DCC Integration Example)
 --------------------------------
 
-以下是如何使用 DCC-MCP-RPYC 连接到 DCC 应用程序（如 Maya、Houdini 或 Nuke）的示例::
+以下是如何使用 DCC-MCP-IPC 连接到 DCC 应用程序（如 Maya、Houdini 或 Nuke）的示例::
 
-    from dcc_mcp_rpyc.client import BaseDCCClient
+    from dcc_mcp_ipc.client import BaseDCCClient
     
     # 创建 DCC 客户端
     maya_client = BaseDCCClient("maya", "localhost", 18812)
@@ -51,7 +51,7 @@ DCC 集成示例 (DCC Integration Example)
 以下是如何使用异步客户端的示例::
 
     import asyncio
-    from dcc_mcp_rpyc.client import AsyncBaseDCCClient
+    from dcc_mcp_ipc.client import AsyncBaseDCCClient
     
     async def main():
         # 创建异步 DCC 客户端
@@ -109,7 +109,7 @@ DCC 集成示例 (DCC Integration Example)
 
 以下是如何启动 DCC 服务器的示例::
 
-    from dcc_mcp_rpyc.server import create_server, start_server
+    from dcc_mcp_ipc.server import create_server, start_server
     
     # 创建服务器
     server = create_server("maya", port=18812)

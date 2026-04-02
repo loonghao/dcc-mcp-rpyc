@@ -1,15 +1,15 @@
-# DCC-MCP-RPYC
+# DCC-MCP-IPC
 
 <div align="center">
-    <img src="https://raw.githubusercontent.com/loonghao/dcc-mcp-rpyc/main/logo.svg" alt="DCC-MCP-RPYC Logo" width="200"/>
+    <img src="https://raw.githubusercontent.com/loonghao/dcc-mcp-ipc/main/logo.svg" alt="DCC-MCP-IPC Logo" width="200"/>
 
-[![PyPI version](https://badge.fury.io/py/dcc-mcp-rpyc.svg)](https://badge.fury.io/py/dcc-mcp-rpyc)
-[![Build Status](https://github.com/loonghao/dcc-mcp-rpyc/workflows/Build%20and%20Release/badge.svg)](https://github.com/loonghao/dcc-mcp-rpyc/actions)
-[![Python Version](https://img.shields.io/pypi/pyversions/dcc-mcp-rpyc.svg)](https://pypi.org/project/dcc-mcp-rpyc/)
-[![License](https://img.shields.io/github/license/loonghao/dcc-mcp-rpyc.svg)](https://github.com/loonghao/dcc-mcp-rpyc/blob/main/LICENSE)
+[![PyPI version](https://badge.fury.io/py/dcc-mcp-ipc.svg)](https://badge.fury.io/py/dcc-mcp-ipc)
+[![Build Status](https://github.com/loonghao/dcc-mcp-ipc/workflows/Build%20and%20Release/badge.svg)](https://github.com/loonghao/dcc-mcp-ipc/actions)
+[![Python Version](https://img.shields.io/pypi/pyversions/dcc-mcp-ipc.svg)](https://pypi.org/project/dcc-mcp-ipc/)
+[![License](https://img.shields.io/github/license/loonghao/dcc-mcp-ipc.svg)](https://github.com/loonghao/dcc-mcp-ipc/blob/main/LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Ruff](https://img.shields.io/badge/ruff-enabled-brightgreen)](https://github.com/astral-sh/ruff)
-[![Downloads](https://static.pepy.tech/badge/dcc-mcp-rpyc)](https://pepy.tech/project/dcc-mcp-rpyc)
+[![Downloads](https://static.pepy.tech/badge/dcc-mcp-ipc)](https://pepy.tech/project/dcc-mcp-ipc)
 </div>
 
 [English](README.md) | [中文](README_zh.md)
@@ -26,7 +26,7 @@ RPyC (Remote Python Call) offers significant advantages for DCC software integra
 - **Reduced Boilerplate**: Minimizes repetitive code needed for inter-process communication compared to other IPC methods.
 - **Object References**: Maintains live references to remote objects, allowing for natural object-oriented programming across process boundaries.
 
-By leveraging RPyC, DCC-MCP-RPYC provides a unified framework that preserves the native feel of each DCC's API while enabling remote control capabilities.
+By leveraging RPyC, DCC-MCP-IPC provides a unified framework that preserves the native feel of each DCC's API while enabling remote control capabilities.
 
 ## Features
 
@@ -42,14 +42,14 @@ By leveraging RPyC, DCC-MCP-RPYC provides a unified framework that preserves the
 
 ## Architecture
 
-The architecture of DCC-MCP-RPYC is designed to provide a unified interface for controlling various DCC applications:
+The architecture of DCC-MCP-IPC is designed to provide a unified interface for controlling various DCC applications:
 
 ```mermaid
 graph TD
     A[Client App<br>AI Assistant] --> B[MCP Server<br>Coordinator]
     B --> C[DCC Software<br>Maya/Houdini]
     A --> D[DCC-MCP<br>Core API]
-    D --> E[DCC-MCP-RPYC<br>Transport]
+    D --> E[DCC-MCP-IPC<br>Transport]
     E --> C
     F[Action System] --> E
     G[Mock DCC Services] -.-> E
@@ -68,13 +68,13 @@ Key components:
 ## Installation
 
 ```bash
-pip install dcc-mcp-rpyc
+pip install dcc-mcp-ipc
 ```
 
 Or with Poetry:
 
 ```bash
-poetry add dcc-mcp-rpyc
+poetry add dcc-mcp-ipc
 ```
 
 ## Usage
@@ -83,7 +83,7 @@ poetry add dcc-mcp-rpyc
 
 ```python
 # Create and start a DCC server in Maya
-from dcc_mcp_rpyc.server import create_dcc_server, DCCRPyCService
+from dcc_mcp_ipc.server import create_dcc_server, DCCRPyCService
 
 # Create a custom service class
 class MayaService(DCCRPyCService):
@@ -109,7 +109,7 @@ server.start(threaded=True)
 ### Using Service Factories
 
 ```python
-from dcc_mcp_rpyc.server import create_service_factory, create_shared_service_instance, create_raw_threaded_server
+from dcc_mcp_ipc.server import create_service_factory, create_shared_service_instance, create_raw_threaded_server
 
 # Create a shared state manager
 class SceneManager:
@@ -134,7 +134,7 @@ server.start()
 ### Parameter Handling
 
 ```python
-from dcc_mcp_rpyc.parameters import process_rpyc_parameters, execute_remote_command
+from dcc_mcp_ipc.parameters import process_rpyc_parameters, execute_remote_command
 
 # Process parameters for RPyC calls
 params = {"radius": 5.0, "create": True, "name": "mySphere"}
@@ -147,7 +147,7 @@ result = execute_remote_command(connection, "create_sphere", radius=5.0, create=
 ### Client-side
 
 ```python
-from dcc_mcp_rpyc.client import BaseDCCClient
+from dcc_mcp_ipc.client import BaseDCCClient
 
 # Connect to a DCC server
 client = BaseDCCClient(
@@ -182,7 +182,7 @@ client.disconnect()
 ### Using Connection Pool
 
 ```python
-from dcc_mcp_rpyc.client import ConnectionPool
+from dcc_mcp_ipc.client import ConnectionPool
 
 # Create a connection pool
 pool = ConnectionPool()
@@ -199,7 +199,7 @@ with pool.get_client("maya", host="localhost") as client:
 ### Using the Action System
 
 ```python
-from dcc_mcp_rpyc.action_adapter import ActionAdapter, get_action_adapter
+from dcc_mcp_ipc.action_adapter import ActionAdapter, get_action_adapter
 from dcc_mcp_core.actions.base import Action
 from dcc_mcp_core.models import ActionResultModel
 from pydantic import BaseModel, Field
@@ -239,8 +239,8 @@ print(result.message)  # "Created sphere mySphere with radius 2.0"
 import threading
 import rpyc
 from rpyc.utils.server import ThreadedServer
-from dcc_mcp_rpyc.client import BaseDCCClient
-from dcc_mcp_rpyc.utils.discovery import register_service
+from dcc_mcp_ipc.client import BaseDCCClient
+from dcc_mcp_ipc.utils.discovery import register_service
 
 # Create a mock DCC service
 class MockDCCService(rpyc.Service):
@@ -285,8 +285,8 @@ print(dcc_info)  # {"name": "mock_dcc", "version": "1.0.0", "platform": "windows
 ### Creating a DCC Adapter
 
 ```python
-from dcc_mcp_rpyc.dcc_adapter import DCCAdapter
-from dcc_mcp_rpyc.client import BaseDCCClient
+from dcc_mcp_ipc.dcc_adapter import DCCAdapter
+from dcc_mcp_ipc.client import BaseDCCClient
 
 class MayaAdapter(DCCAdapter):
     def _create_client(self) -> BaseDCCClient:
@@ -308,8 +308,8 @@ class MayaAdapter(DCCAdapter):
 
 ```bash
 # Clone the repository
-git clone https://github.com/loonghao/dcc-mcp-rpyc.git
-cd dcc-mcp-rpyc
+git clone https://github.com/loonghao/dcc-mcp-ipc.git
+cd dcc-mcp-ipc
 
 # Install dependencies with Poetry
 poetry install
