@@ -112,6 +112,7 @@ def _register_builtins() -> None:
     """
     # Lazy imports to avoid circular dependencies and optional deps
     try:
+        # Import local modules
         from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransport
 
         register_transport("rpyc", RPyCTransport)
@@ -119,6 +120,7 @@ def _register_builtins() -> None:
         logger.debug("RPyC transport not available (rpyc not installed)")
 
     try:
+        # Import local modules
         from dcc_mcp_ipc.transport.http import HTTPTransport
 
         register_transport("http", HTTPTransport)
