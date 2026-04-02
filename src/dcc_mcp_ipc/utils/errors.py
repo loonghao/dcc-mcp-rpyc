@@ -170,12 +170,15 @@ class ServiceNotFoundError(ConnectionError):
         if message is None:
             message = f"Service '{service_name}' not found"
 
+        # Call ConnectionError.__init__ for host/port/service_name handling,
+        # then override error_code (ConnectionError doesn't accept error_code).
         super().__init__(
             message=message,
             service_name=service_name,
-            error_code="RPYC_SERVICE_NOT_FOUND",
             cause=cause,
         )
+        # Override error_code set by parent
+        self.error_code = "RPYC_SERVICE_NOT_FOUND"
 
 
 class ExecutionError(DCCMCPError):
