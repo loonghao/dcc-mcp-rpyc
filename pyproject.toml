@@ -36,15 +36,6 @@ Issues = "https://github.com/loonghao/dcc-mcp-ipc/issues"
 [tool.poetry.scripts]
 dcc-mcp-ipc = "dcc_mcp_ipc.cli:main"
 
-[tool.commitizen]
-name = "cz_conventional_commits"
-version = "1.0.0"
-tag_format = "$version"
-version_files = [
-    "pyproject.toml:version",
-    "src/dcc_mcp_ipc/__version__.py",
-]
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
@@ -152,12 +143,4 @@ commands = [
     "pytest tests/ --cov=dcc_mcp_ipc --cov-report=xml:coverage.xml --cov-report=term-missing"
 ]
 
-[tool.semantic_release]
-version_variable = [
-    "src/dcc_mcp_ipc/__version__.py:__version__",
-    "pyproject.toml:version"
-]
-branch = "main"
-upload_to_pypi = false
-upload_to_release = true
-build_command = "pip install poetry && poetry build"
+
