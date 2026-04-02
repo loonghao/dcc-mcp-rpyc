@@ -9,12 +9,12 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 # Import local modules
-from dcc_mcp_rpyc.client.dcc import BaseDCCClient
-from dcc_mcp_rpyc.client.pool import ClientRegistry
-from dcc_mcp_rpyc.client.pool import ConnectionPool
-from dcc_mcp_rpyc.client.pool import close_all_connections
-from dcc_mcp_rpyc.client.pool import close_client
-from dcc_mcp_rpyc.client.pool import get_client
+from dcc_mcp_ipc.client.dcc import BaseDCCClient
+from dcc_mcp_ipc.client.pool import ClientRegistry
+from dcc_mcp_ipc.client.pool import ConnectionPool
+from dcc_mcp_ipc.client.pool import close_all_connections
+from dcc_mcp_ipc.client.pool import close_client
+from dcc_mcp_ipc.client.pool import get_client
 
 
 def test_client_registry_register():
@@ -274,7 +274,7 @@ def test_global_get_client():
     mock_pool.get_client.return_value = mock_client
 
     # Replace global connection pool
-    with patch("dcc_mcp_rpyc.client.pool._connection_pool", mock_pool):
+    with patch("dcc_mcp_ipc.client.pool._connection_pool", mock_pool):
         # Get client
         client = get_client("test_dcc", "localhost", 8000)
 
@@ -300,7 +300,7 @@ def test_global_close_client():
     mock_pool.close_client.return_value = True
 
     # Replace global connection pool
-    with patch("dcc_mcp_rpyc.client.pool._connection_pool", mock_pool):
+    with patch("dcc_mcp_ipc.client.pool._connection_pool", mock_pool):
         # Close client
         result = close_client("test_dcc", "localhost", 8000)
 
@@ -315,7 +315,7 @@ def test_global_close_all_connections():
     mock_pool = MagicMock(spec=ConnectionPool)
 
     # Replace global connection pool
-    with patch("dcc_mcp_rpyc.client.pool._connection_pool", mock_pool):
+    with patch("dcc_mcp_ipc.client.pool._connection_pool", mock_pool):
         # Close all connections
         close_all_connections()
 

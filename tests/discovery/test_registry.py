@@ -10,8 +10,8 @@ from unittest.mock import MagicMock
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.discovery.base import ServiceInfo
-from dcc_mcp_rpyc.discovery.registry import ServiceRegistry
+from dcc_mcp_ipc.discovery.base import ServiceInfo
+from dcc_mcp_ipc.discovery.registry import ServiceRegistry
 
 
 @pytest.fixture

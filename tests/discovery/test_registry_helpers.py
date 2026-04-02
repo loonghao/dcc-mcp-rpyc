@@ -11,11 +11,11 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.discovery.base import ServiceInfo
-from dcc_mcp_rpyc.discovery.file_strategy import FileDiscoveryStrategy
-from dcc_mcp_rpyc.discovery.registry import ServiceRegistry
-from dcc_mcp_rpyc.discovery.zeroconf_strategy import ZEROCONF_AVAILABLE
-from dcc_mcp_rpyc.discovery.zeroconf_strategy import ZeroConfDiscoveryStrategy
+from dcc_mcp_ipc.discovery.base import ServiceInfo
+from dcc_mcp_ipc.discovery.file_strategy import FileDiscoveryStrategy
+from dcc_mcp_ipc.discovery.registry import ServiceRegistry
+from dcc_mcp_ipc.discovery.zeroconf_strategy import ZEROCONF_AVAILABLE
+from dcc_mcp_ipc.discovery.zeroconf_strategy import ZeroConfDiscoveryStrategy
 
 
 @pytest.fixture
@@ -65,7 +65,7 @@ def test_ensure_strategy_with_kwargs(clean_registry):
     registry = ServiceRegistry()
 
     # Execute
-    with patch("dcc_mcp_rpyc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
+    with patch("dcc_mcp_ipc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
         mock_strategy = MagicMock(spec=FileDiscoveryStrategy)
         mock_get_strategy.return_value = mock_strategy
         strategy = registry.ensure_strategy("file", registry_path="/tmp/test.json")

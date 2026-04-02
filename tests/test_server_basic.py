@@ -11,10 +11,10 @@ import rpyc
 from rpyc.core import service
 
 # Import local modules
-from dcc_mcp_rpyc.server import BaseRPyCService
-from dcc_mcp_rpyc.server import DCCServer
-from dcc_mcp_rpyc.server import create_service_factory
-from dcc_mcp_rpyc.server import create_shared_service_instance
+from dcc_mcp_ipc.server import BaseRPyCService
+from dcc_mcp_ipc.server import DCCServer
+from dcc_mcp_ipc.server import create_service_factory
+from dcc_mcp_ipc.server import create_shared_service_instance
 
 
 class TestBaseRPyCService:

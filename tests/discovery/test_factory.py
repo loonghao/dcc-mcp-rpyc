@@ -11,8 +11,8 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.discovery.factory import ServiceDiscoveryFactory
-from dcc_mcp_rpyc.discovery.file_strategy import FileDiscoveryStrategy
+from dcc_mcp_ipc.discovery.factory import ServiceDiscoveryFactory
+from dcc_mcp_ipc.discovery.file_strategy import FileDiscoveryStrategy
 
 
 @pytest.fixture
@@ -41,8 +41,8 @@ def test_get_file_strategy(clean_factory):
     assert strategy is strategy2
 
 
-@patch("dcc_mcp_rpyc.discovery.factory.ZEROCONF_AVAILABLE", True)
-@patch("dcc_mcp_rpyc.discovery.factory.ZeroConfDiscoveryStrategy")
+@patch("dcc_mcp_ipc.discovery.factory.ZEROCONF_AVAILABLE", True)
+@patch("dcc_mcp_ipc.discovery.factory.ZeroConfDiscoveryStrategy")
 def test_get_zeroconf_strategy(mock_zeroconf_strategy, clean_factory):
     """Test getting a ZeroConf discovery strategy."""
     # Setup
@@ -63,7 +63,7 @@ def test_get_zeroconf_strategy(mock_zeroconf_strategy, clean_factory):
     assert mock_zeroconf_strategy.call_count == 1  # Should not be called again
 
 
-@patch("dcc_mcp_rpyc.discovery.factory.ZEROCONF_AVAILABLE", False)
+@patch("dcc_mcp_ipc.discovery.factory.ZEROCONF_AVAILABLE", False)
 def test_get_unavailable_zeroconf_strategy(clean_factory):
     """Test getting an unavailable ZeroConf discovery strategy."""
     factory = ServiceDiscoveryFactory()

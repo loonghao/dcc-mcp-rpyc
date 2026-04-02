@@ -8,14 +8,14 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.transport.base import BaseTransport
-from dcc_mcp_rpyc.transport.base import TransportConfig
-from dcc_mcp_rpyc.transport.base import TransportState
-from dcc_mcp_rpyc.transport.factory import _transport_instances
-from dcc_mcp_rpyc.transport.factory import _transport_registry
-from dcc_mcp_rpyc.transport.factory import create_transport
-from dcc_mcp_rpyc.transport.factory import get_transport
-from dcc_mcp_rpyc.transport.factory import register_transport
+from dcc_mcp_ipc.transport.base import BaseTransport
+from dcc_mcp_ipc.transport.base import TransportConfig
+from dcc_mcp_ipc.transport.base import TransportState
+from dcc_mcp_ipc.transport.factory import _transport_instances
+from dcc_mcp_ipc.transport.factory import _transport_registry
+from dcc_mcp_ipc.transport.factory import create_transport
+from dcc_mcp_ipc.transport.factory import get_transport
+from dcc_mcp_ipc.transport.factory import register_transport
 
 
 class DummyTransport(BaseTransport):
@@ -115,13 +115,13 @@ class TestBuiltinRegistration:
         assert "http" in _transport_registry
 
     def test_create_rpyc_transport(self):
-        from dcc_mcp_rpyc.transport.rpyc_transport import RPyCTransport
+        from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransport
 
         transport = create_transport("rpyc")
         assert isinstance(transport, RPyCTransport)
 
     def test_create_http_transport(self):
-        from dcc_mcp_rpyc.transport.http import HTTPTransport
+        from dcc_mcp_ipc.transport.http import HTTPTransport
 
         transport = create_transport("http")
         assert isinstance(transport, HTTPTransport)

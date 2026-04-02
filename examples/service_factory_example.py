@@ -1,4 +1,4 @@
-"""Example demonstrating the use of service factories and parameter handling in DCC-MCP-RPYC.
+"""Example demonstrating the use of service factories and parameter handling in DCC-MCP-IPC.
 
 This example shows how to create custom services with bound parameters and
 how to handle RPyC-specific parameter serialization issues.
@@ -15,10 +15,10 @@ from typing import List
 import rpyc
 
 # Import local modules
-from dcc_mcp_rpyc.parameters import process_rpyc_parameters
-from dcc_mcp_rpyc.server import create_raw_threaded_server
-from dcc_mcp_rpyc.server import create_shared_service_instance
-from dcc_mcp_rpyc.server import get_rpyc_config
+from dcc_mcp_ipc.parameters import process_rpyc_parameters
+from dcc_mcp_ipc.server import create_raw_threaded_server
+from dcc_mcp_ipc.server import create_shared_service_instance
+from dcc_mcp_ipc.server import get_rpyc_config
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")

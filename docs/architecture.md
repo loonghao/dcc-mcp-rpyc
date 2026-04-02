@@ -1,4 +1,4 @@
-# DCC-MCP-RPYC 架构
+# DCC-MCP-IPC 架构
 
 ## 组件关系图
 

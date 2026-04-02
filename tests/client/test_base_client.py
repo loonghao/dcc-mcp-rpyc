@@ -11,10 +11,10 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.client.base import BaseApplicationClient
-from dcc_mcp_rpyc.client.base import close_all_connections
-from dcc_mcp_rpyc.client.base import get_client
-from dcc_mcp_rpyc.discovery import ServiceInfo
+from dcc_mcp_ipc.client.base import BaseApplicationClient
+from dcc_mcp_ipc.client.base import close_all_connections
+from dcc_mcp_ipc.client.base import get_client
+from dcc_mcp_ipc.discovery import ServiceInfo
 
 
 def test_base_client_init():
@@ -29,7 +29,7 @@ def test_base_client_init():
 
 def test_base_client_discover_service():
     """Test service discovery functionality."""
-    with patch("dcc_mcp_rpyc.client.base.ServiceRegistry") as mock_registry:
+    with patch("dcc_mcp_ipc.client.base.ServiceRegistry") as mock_registry:
         # Set mock service registry
         mock_registry_instance = MagicMock()
         mock_registry.return_value = mock_registry_instance
@@ -56,7 +56,7 @@ def test_base_client_discover_service():
 
 def test_base_client_discover_service_no_services():
     """Test no service discovery."""
-    with patch("dcc_mcp_rpyc.client.base.ServiceRegistry") as mock_registry:
+    with patch("dcc_mcp_ipc.client.base.ServiceRegistry") as mock_registry:
         # Set mock strategy
         mock_strategy = MagicMock()
         mock_registry.return_value.get_strategy.return_value = mock_strategy
@@ -73,7 +73,7 @@ def test_base_client_discover_service_no_services():
 
 def test_base_client_discover_service_exception():
     """Test service discovery exception."""
-    with patch("dcc_mcp_rpyc.client.base.ServiceRegistry") as mock_registry:
+    with patch("dcc_mcp_ipc.client.base.ServiceRegistry") as mock_registry:
         # Set mock strategy
         mock_registry.return_value.get_strategy.side_effect = Exception("Test exception")
 
@@ -268,7 +268,7 @@ def test_base_client_is_connected_exception():
 
 def test_base_client_execute_remote_command():
     """Test client remote command execution functionality."""
-    with patch("dcc_mcp_rpyc.client.base._execute_remote_command") as mock_execute:
+    with patch("dcc_mcp_ipc.client.base._execute_remote_command") as mock_execute:
         # Set mock execution function return value
         mock_execute.return_value = "test_result"
 
@@ -299,7 +299,7 @@ def test_base_client_execute_remote_command_not_connected():
 
 def test_base_client_execute_remote_command_exception():
     """Test remote command execution when an exception occurs."""
-    with patch("dcc_mcp_rpyc.client.base._execute_remote_command") as mock_execute:
+    with patch("dcc_mcp_ipc.client.base._execute_remote_command") as mock_execute:
         # Set mock execution function to raise exception
         mock_execute.side_effect = Exception("Test exception")
 
@@ -432,7 +432,7 @@ def test_base_client_import_module_exception():
 
 def test_get_client():
     """Test get client function."""
-    with patch("dcc_mcp_rpyc.client.base.BaseApplicationClient") as mock_client_class:
+    with patch("dcc_mcp_ipc.client.base.BaseApplicationClient") as mock_client_class:
         # Set mock client class
         mock_client = MagicMock()
         mock_client_class.return_value = mock_client
@@ -452,7 +452,7 @@ def test_get_client_existing():
 
     # Use patch to mock _clients dictionary
     key = ("test_app", None, None)
-    with patch("dcc_mcp_rpyc.client.base._clients", {key: mock_client}):
+    with patch("dcc_mcp_ipc.client.base._clients", {key: mock_client}):
         # Test getting client
         client = get_client("test_app")
 
@@ -466,7 +466,7 @@ def test_close_all_connections():
     mock_client1 = MagicMock()
     mock_client2 = MagicMock()
 
-    with patch("dcc_mcp_rpyc.client.base._clients", {"app1": mock_client1, "app2": mock_client2}):
+    with patch("dcc_mcp_ipc.client.base._clients", {"app1": mock_client1, "app2": mock_client2}):
         # Test closing all connections
         close_all_connections()
 

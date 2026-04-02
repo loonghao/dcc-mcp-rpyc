@@ -19,8 +19,8 @@ if src_path not in sys.path:
 
 # Import local modules
 try:
-    from dcc_mcp_rpyc.application import start_application_server
-    from dcc_mcp_rpyc.application import connect_to_application
+    from dcc_mcp_ipc.application import start_application_server
+    from dcc_mcp_ipc.application import connect_to_application
 except ImportError:
     # This allows the example to be run without installing the package
     pass

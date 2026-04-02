@@ -13,7 +13,7 @@ from unittest import mock
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.application.adapter import GenericApplicationAdapter
+from dcc_mcp_ipc.application.adapter import GenericApplicationAdapter
 
 
 class TestGenericApplicationAdapter:
@@ -22,7 +22,7 @@ class TestGenericApplicationAdapter:
     @pytest.fixture
     def adapter(self):
         """Create a GenericApplicationAdapter instance for testing."""
-        with mock.patch("dcc_mcp_rpyc.action_adapter.get_action_adapter") as mock_get_action_adapter:
+        with mock.patch("dcc_mcp_ipc.action_adapter.get_action_adapter") as mock_get_action_adapter:
             mock_action_adapter = mock.MagicMock()
             mock_get_action_adapter.return_value = mock_action_adapter
 
@@ -34,7 +34,7 @@ class TestGenericApplicationAdapter:
     def test_init(self):
         """Test initialization of GenericApplicationAdapter."""
         # Mock action_adapter
-        with mock.patch("dcc_mcp_rpyc.action_adapter.get_action_adapter") as mock_get_action_adapter:
+        with mock.patch("dcc_mcp_ipc.action_adapter.get_action_adapter") as mock_get_action_adapter:
             mock_action_adapter = mock.MagicMock()
             mock_get_action_adapter.return_value = mock_action_adapter
 

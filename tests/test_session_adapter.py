@@ -10,9 +10,9 @@ from unittest import mock
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.adapter.session import SessionAdapter
-from dcc_mcp_rpyc.client import BaseApplicationClient
-from dcc_mcp_rpyc.utils.errors import ConnectionError
+from dcc_mcp_ipc.adapter.session import SessionAdapter
+from dcc_mcp_ipc.client import BaseApplicationClient
+from dcc_mcp_ipc.utils.errors import ConnectionError
 
 
 @pytest.mark.usefixtures()  # Mark as fixture, not test class
@@ -68,13 +68,13 @@ class TestSessionAdapter:
     @pytest.fixture
     def session_adapter(self):
         """Create a SessionAdapter instance for testing."""
-        with mock.patch("dcc_mcp_rpyc.adapter.session.get_client") as mock_get_client:
+        with mock.patch("dcc_mcp_ipc.adapter.session.get_client") as mock_get_client:
             mock_client = mock.MagicMock(spec=BaseApplicationClient)
             # Ensure mock_client has call method
             mock_client.call = mock.MagicMock()
             mock_get_client.return_value = mock_client
 
-            with mock.patch("dcc_mcp_rpyc.adapter.session.get_action_adapter") as mock_get_action_adapter:
+            with mock.patch("dcc_mcp_ipc.adapter.session.get_action_adapter") as mock_get_action_adapter:
                 mock_action_adapter = mock.MagicMock()
                 mock_get_action_adapter.return_value = mock_action_adapter
                 adapter = MockSessionAdapter("test_app", session_id="test_session")
@@ -89,7 +89,7 @@ class TestSessionAdapter:
     def test_init(self):
         """Test initialization of SessionAdapter."""
         # Mock action_adapter
-        with mock.patch("dcc_mcp_rpyc.adapter.session.get_action_adapter") as mock_get_action_adapter:
+        with mock.patch("dcc_mcp_ipc.adapter.session.get_action_adapter") as mock_get_action_adapter:
             mock_action_adapter = mock.MagicMock()
             mock_get_action_adapter.return_value = mock_action_adapter
 
@@ -109,7 +109,7 @@ class TestSessionAdapter:
 
     def test_connect_success(self, session_adapter, mock_client):
         """Test successful connection."""
-        with mock.patch("dcc_mcp_rpyc.adapter.session.get_client", return_value=mock_client):
+        with mock.patch("dcc_mcp_ipc.adapter.session.get_client", return_value=mock_client):
             result = session_adapter.connect()
             assert result is True
             assert session_adapter.client == mock_client
@@ -117,7 +117,7 @@ class TestSessionAdapter:
 
     def test_connect_failure(self, session_adapter):
         """Test connection failure."""
-        with mock.patch("dcc_mcp_rpyc.adapter.session.get_client") as mock_get_client:
+        with mock.patch("dcc_mcp_ipc.adapter.session.get_client") as mock_get_client:
             mock_client = mock_get_client.return_value
             mock_client.connect.side_effect = ConnectionError("Connection failed")
             result = session_adapter.connect()

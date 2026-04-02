@@ -1,1 +1,1 @@
-"""Test package for DCC MCP RPYC."""
+"""Test package for DCC MCP IPC."""

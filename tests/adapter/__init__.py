@@ -1,1 +1,1 @@
-"""Adapter module for DCC-MCP-RPYC."""
+"""Adapter module for DCC-MCP-IPC."""

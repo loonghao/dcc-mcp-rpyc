@@ -1,1 +1,1 @@
-"""Tests for DCC-MCP-RPYC discovery module."""
+"""Tests for DCC-MCP-IPC discovery module."""

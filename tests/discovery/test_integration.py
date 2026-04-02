@@ -13,9 +13,9 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.discovery.base import ServiceInfo
-from dcc_mcp_rpyc.discovery.file_strategy import FileDiscoveryStrategy
-from dcc_mcp_rpyc.discovery.registry import ServiceRegistry
+from dcc_mcp_ipc.discovery.base import ServiceInfo
+from dcc_mcp_ipc.discovery.file_strategy import FileDiscoveryStrategy
+from dcc_mcp_ipc.discovery.registry import ServiceRegistry
 
 
 @pytest.fixture
@@ -57,7 +57,7 @@ def test_multiple_strategies_registration(clean_registry, temp_registry_file, sa
     registry = ServiceRegistry()
 
     # Register file strategy
-    with patch("dcc_mcp_rpyc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
+    with patch("dcc_mcp_ipc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
         mock_file_strategy = MagicMock(spec=FileDiscoveryStrategy)
         mock_file_strategy.register_service.return_value = True
         mock_get_strategy.return_value = mock_file_strategy
@@ -85,7 +85,7 @@ def test_multiple_strategies_discovery(clean_registry, temp_registry_file, sampl
     registry = ServiceRegistry()
 
     # Register file strategy
-    with patch("dcc_mcp_rpyc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
+    with patch("dcc_mcp_ipc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
         mock_file_strategy = MagicMock(spec=FileDiscoveryStrategy)
         mock_file_strategy.discover_services.return_value = [sample_service_info]
         mock_get_strategy.return_value = mock_file_strategy
@@ -153,7 +153,7 @@ def test_register_service_with_strategy_helper(clean_registry, temp_registry_fil
     registry = ServiceRegistry()
 
     # Execute
-    with patch("dcc_mcp_rpyc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
+    with patch("dcc_mcp_ipc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
         mock_file_strategy = MagicMock(spec=FileDiscoveryStrategy)
         mock_file_strategy.register_service.return_value = True
         mock_get_strategy.return_value = mock_file_strategy
@@ -170,7 +170,7 @@ def test_register_service_with_strategy_helper_unregister(clean_registry, temp_r
     registry = ServiceRegistry()
 
     # Register file strategy
-    with patch("dcc_mcp_rpyc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
+    with patch("dcc_mcp_ipc.discovery.factory.ServiceDiscoveryFactory.get_strategy") as mock_get_strategy:
         mock_file_strategy = MagicMock(spec=FileDiscoveryStrategy)
         mock_file_strategy.register_service.return_value = True
         mock_file_strategy.unregister_service.return_value = True

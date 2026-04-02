@@ -11,8 +11,8 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.adapter.dcc import DCCAdapter
-from dcc_mcp_rpyc.client import BaseDCCClient
+from dcc_mcp_ipc.adapter.dcc import DCCAdapter
+from dcc_mcp_ipc.client import BaseDCCClient
 
 
 # Create a factory function to create test adapter instances
@@ -49,8 +49,8 @@ def mock_dcc_client():
 def test_dcc_adapter_basic():
     """Test basic functionality of DCCAdapter."""
     # Mock all dependencies
-    with patch("dcc_mcp_rpyc.adapter.base.get_action_adapter") as mock_get_adapter, patch(
-        "dcc_mcp_rpyc.adapter.dcc.get_client"
+    with patch("dcc_mcp_ipc.adapter.base.get_action_adapter") as mock_get_adapter, patch(
+        "dcc_mcp_ipc.adapter.dcc.get_client"
     ) as mock_get_client:
         # Set mock objects
         mock_action_adapter = MagicMock()
@@ -74,8 +74,8 @@ def test_dcc_adapter_basic():
 def test_get_application_info():
     """Test getting application information."""
     # Mock dependencies
-    with patch("dcc_mcp_rpyc.adapter.base.get_action_adapter"), patch(
-        "dcc_mcp_rpyc.adapter.dcc.get_client"
+    with patch("dcc_mcp_ipc.adapter.base.get_action_adapter"), patch(
+        "dcc_mcp_ipc.adapter.dcc.get_client"
     ) as mock_get_client:
         # Set mock client
         mock_client = MagicMock()
@@ -98,7 +98,7 @@ def test_get_application_info():
 def test_get_application_info_not_connected():
     """Test getting application information when not connected."""
     # Mock dependencies
-    with patch("dcc_mcp_rpyc.adapter.base.get_action_adapter"), patch("dcc_mcp_rpyc.adapter.dcc.get_client"):
+    with patch("dcc_mcp_ipc.adapter.base.get_action_adapter"), patch("dcc_mcp_ipc.adapter.dcc.get_client"):
         # Create adapter instance using factory function
         adapter = create_test_adapter("test_dcc", "localhost", 8000)
 
@@ -116,8 +116,8 @@ def test_get_application_info_not_connected():
 def test_execute_command():
     """Test executing a command."""
     # Mock dependencies
-    with patch("dcc_mcp_rpyc.adapter.base.get_action_adapter"), patch(
-        "dcc_mcp_rpyc.adapter.dcc.get_client"
+    with patch("dcc_mcp_ipc.adapter.base.get_action_adapter"), patch(
+        "dcc_mcp_ipc.adapter.dcc.get_client"
     ) as mock_get_client:
         # Set mock client
         mock_client = MagicMock()

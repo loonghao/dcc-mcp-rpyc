@@ -12,9 +12,9 @@ import pytest
 import rpyc
 
 # Import local modules
-from dcc_mcp_rpyc.client.async_base import AsyncBaseApplicationClient
-from dcc_mcp_rpyc.client.async_dcc import AsyncBaseDCCClient
-from dcc_mcp_rpyc.utils.errors import ConnectionError
+from dcc_mcp_ipc.client.async_base import AsyncBaseApplicationClient
+from dcc_mcp_ipc.client.async_dcc import AsyncBaseDCCClient
+from dcc_mcp_ipc.utils.errors import ConnectionError
 
 
 # Mock RPyC connection for testing

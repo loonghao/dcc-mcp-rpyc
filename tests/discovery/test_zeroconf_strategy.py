@@ -12,11 +12,11 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
-from dcc_mcp_rpyc.discovery.base import ServiceInfo
-from dcc_mcp_rpyc.discovery.zeroconf_strategy import ServiceListener
-from dcc_mcp_rpyc.discovery.zeroconf_strategy import ZEROCONF_AVAILABLE
-from dcc_mcp_rpyc.discovery.zeroconf_strategy import ZeroConfDiscoveryStrategy
-from dcc_mcp_rpyc.discovery.zeroconf_strategy import get_local_ip
+from dcc_mcp_ipc.discovery.base import ServiceInfo
+from dcc_mcp_ipc.discovery.zeroconf_strategy import ServiceListener
+from dcc_mcp_ipc.discovery.zeroconf_strategy import ZEROCONF_AVAILABLE
+from dcc_mcp_ipc.discovery.zeroconf_strategy import ZeroConfDiscoveryStrategy
+from dcc_mcp_ipc.discovery.zeroconf_strategy import get_local_ip
 
 
 @pytest.fixture
@@ -39,8 +39,8 @@ def test_init():
 
 
 @pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.Zeroconf")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.ServiceInfo")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.Zeroconf")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceInfo")
 def test_register_service(mock_service_info, mock_zeroconf, sample_service_info):
     """Test registering a service."""
     # Setup
@@ -62,8 +62,8 @@ def test_register_service(mock_service_info, mock_zeroconf, sample_service_info)
 
 
 @pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.Zeroconf")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.ServiceBrowser")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.Zeroconf")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceBrowser")
 def test_discover_services(mock_service_browser, mock_zeroconf, sample_service_info):
     """Test discovering services."""
     # Setup
@@ -85,7 +85,7 @@ def test_discover_services(mock_service_browser, mock_zeroconf, sample_service_i
         }
     }
 
-    with patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.ServiceListener", return_value=mock_listener):
+    with patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceListener", return_value=mock_listener):
         # Patch _ensure_zeroconf to return True
         with patch.object(ZeroConfDiscoveryStrategy, "_ensure_zeroconf", return_value=True):
             strategy = ZeroConfDiscoveryStrategy()
@@ -101,8 +101,8 @@ def test_discover_services(mock_service_browser, mock_zeroconf, sample_service_i
 
 
 @pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.Zeroconf")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.ServiceBrowser")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.Zeroconf")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceBrowser")
 def test_discover_services_with_type(mock_service_browser, mock_zeroconf, sample_service_info):
     """Test discovering services with a specific type."""
     # Setup
@@ -124,7 +124,7 @@ def test_discover_services_with_type(mock_service_browser, mock_zeroconf, sample
         }
     }
 
-    with patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.ServiceListener", return_value=mock_listener):
+    with patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceListener", return_value=mock_listener):
         # Patch _ensure_zeroconf to return True
         with patch.object(ZeroConfDiscoveryStrategy, "_ensure_zeroconf", return_value=True):
             strategy = ZeroConfDiscoveryStrategy()
@@ -139,8 +139,8 @@ def test_discover_services_with_type(mock_service_browser, mock_zeroconf, sample
 
 
 @pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.Zeroconf")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.ServiceInfo")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.Zeroconf")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceInfo")
 def test_unregister_service(mock_service_info, mock_zeroconf, sample_service_info):
     """Test unregistering a service."""
     # Setup
@@ -162,8 +162,8 @@ def test_unregister_service(mock_service_info, mock_zeroconf, sample_service_inf
 
 
 @pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.Zeroconf")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.ServiceInfo")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.Zeroconf")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceInfo")
 def test_unregister_service_by_name(mock_service_info, mock_zeroconf):
     """Test unregistering a service by name."""
     # Setup
@@ -221,7 +221,7 @@ def test_service_listener_init():
 
 
 @pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
-@patch("dcc_mcp_rpyc.discovery.zeroconf_strategy.socket.inet_ntoa")
+@patch("dcc_mcp_ipc.discovery.zeroconf_strategy.socket.inet_ntoa")
 def test_service_listener_add_service(mock_inet_ntoa):
     """Test adding a service to ServiceListener."""
     # Setup

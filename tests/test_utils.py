@@ -1,14 +1,14 @@
-"""Test utilities for DCC-MCP-RPYC tests.
+"""Test utilities for DCC-MCP-IPC tests.
 
-This module provides common utilities and fixtures for testing the DCC-MCP-RPYC package.
+This module provides common utilities and fixtures for testing the DCC-MCP-IPC package.
 """
 
 # Import built-in modules
 from unittest import mock
 
 # Import local modules
-from dcc_mcp_rpyc.server import BaseRPyCService
-from dcc_mcp_rpyc.server import DCCServer
+from dcc_mcp_ipc.server import BaseRPyCService
+from dcc_mcp_ipc.server import DCCServer
 
 
 def create_service_class():
@@ -72,7 +72,7 @@ def setup_server_for_start(server, port=12345):
     server._create_server = mock.MagicMock(return_value=mock_server)
 
     # Mock register_dcc_service to return a mock registry file
-    with mock.patch("dcc_mcp_rpyc.server.register_dcc_service", return_value="/tmp/test_registry.json"):
+    with mock.patch("dcc_mcp_ipc.server.register_dcc_service", return_value="/tmp/test_registry.json"):
         pass
 
     return server, mock_server
