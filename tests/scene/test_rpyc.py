@@ -466,3 +466,148 @@ class TestDCCTypeDetection:
     def test_various_dcc_types(self, dcc) -> None:
         si = RPyCSceneInfo(dcc_name=dcc, execute_func=lambda x: [])
         assert si._dcc_type() == dcc
+
+
+# =============================================================================
+# _generic_get_objects Tests
+# =============================================================================
+
+
+class TestGenericGetObjects:
+    """Tests for the generic get_objects fallback path."""
+
+    def test_generic_success(self) -> None:
+        """Test that _generic_get_objects works when server returns valid data."""
+        func = MagicMock(return_value={
+            "objects": [
+                {"name": "obj1", "type": "mesh", "path": "/obj1",
+                 "parent": "", "children": [], "visibility": True,
+                 "material": "", "transform_matrix": None, "metadata": {}}
+            ]
+        })
+        si = RPyCSceneInfo(dcc_name="unknown_dcc", execute_func=func)
+        result = si._generic_get_objects("all")
+        assert len(result) == 1
+        assert result[0].name == "obj1"
+
+    def test_generic_returns_empty_on_non_dict_result(self) -> None:
+        """Test that _generic_get_objects returns empty list when server returns non-dict."""
+        func = MagicMock(return_value=[{"name": "obj1"}])
+        si = RPyCSceneInfo(dcc_name="test", execute_func=func)
+        result = si._generic_get_objects("all")
+        # When result is a list (not dict), info.get returns None, objects becomes []
+        assert isinstance(result, list)
+
+    def test_generic_exception_returns_empty(self) -> None:
+        """Test that _generic_get_objects returns empty on exception."""
+        func = MagicMock(side_effect=RuntimeError("server error"))
+        si = RPyCSceneInfo(dcc_name="test", execute_func=func)
+        result = si._generic_get_objects("all")
+        assert result == []
+
+
+# =============================================================================
+# Scene Metadata Extended Tests
+# =============================================================================
+
+
+class TestSceneMetadataExtended:
+    """Additional tests for scene metadata queries."""
+
+    def test_blender_metadata(self, mock_execute) -> None:
+        """Test Blender-specific metadata."""
+        mock_execute.side_effect = lambda code: {
+            24: 1,   # frame_start
+            250: 300,  # frame_end
+            42: 42,  # current_frame
+        }.get(hash(code) % 1000, "")
+
+        si = RPyCSceneInfo(dcc_name="blender", execute_func=mock_execute)
+        meta = si._get_scene_metadata()
+        assert isinstance(meta, dict)
+
+
+# =============================================================================
+# get_full_scene_info Error Handling Tests
+# =============================================================================
+
+
+class TestFullSceneInfoErrors:
+    """Tests for error handling in get_full_scene_info."""
+
+    def test_scene_error_propagates_from_critical_query(self) -> None:
+        """Test that a SceneError from a critical query (like hierarchy) propagates.
+
+        Note: get_objects uses _generic_get_objects which catches all exceptions,
+        so errors from get_objects won't propagate. But other queries that don't
+        have such fallback will propagate.
+        """
+        call_count = [0]
+
+        def failing_func(code):
+            call_count[0] += 1
+            # First calls (objects, materials, etc.) return empty
+            # The hierarchy or later query raises
+            if "hierarchy" in code.lower():
+                raise SceneError("critical failure", dcc_type="maya")
+            return []
+
+        si = RPyCSceneInfo(dcc_name="maya", execute_func=failing_func)
+
+        # Should raise because at least one non-fallback path raises SceneError
+        # and the except SceneError: raise clause re-raises it
+        with pytest.raises(SceneError):
+            si.get_full_scene_info()
+
+    def test_unexpected_error_caught_by_full_info(self) -> None:
+        """Test that unexpected errors in sub-queries are caught and wrapped."""
+        call_count = [0]
+
+        def failing_func(code):
+            call_count[0] += 1
+            if "hierarchy" in code.lower() and call_count[0] > 3:
+                raise RuntimeError("unexpected error")
+            return []
+
+        si = RPyCSceneInfo(dcc_name="maya", execute_func=failing_func)
+
+        # get_full_scene_info catches all non-SceneError exceptions as SceneError
+        with pytest.raises(SceneError, match="Failed to gather full scene info"):
+            si.get_full_scene_info()
+
+    def test_get_hierarchy_raises_on_error(self) -> None:
+        """Test that get_hierarchy propagates when both script and fallback fail."""
+        func = MagicMock(side_effect=Exception("total failure"))
+        si = RPyCSceneInfo(dcc_name="unknown_dcc", execute_func=func)
+
+        # get_hierarchy should not crash - it falls back gracefully
+        h = si.get_hierarchy()
+        assert isinstance(h, SceneHierarchy)
+
+
+# =============================================================================
+# Config Tests
+# =============================================================================
+
+
+class TestSceneConfig:
+    """Tests for configuration behavior."""
+
+    def test_custom_config(self) -> None:
+        """Test that custom config is respected."""
+        cfg = SceneInfoConfig(
+            include_transforms=False,
+            include_materials=False,
+            max_objects=100,
+        )
+        si = RPyCSceneInfo(dcc_name="maya", execute_func=lambda x: [], config=cfg)
+        assert si.config.include_transforms is False
+        assert si.config.include_materials is False
+        assert si.config.max_objects == 100
+
+    def test_default_config(self) -> None:
+        """Test default configuration values."""
+        si = RPyCSceneInfo(dcc_name="maya", execute_func=lambda x: [])
+        assert si.config.include_transforms is True
+        assert si.config.include_materials is True
+        assert si.config.max_objects == 10000

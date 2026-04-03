@@ -24,6 +24,7 @@ from dcc_mcp_ipc.scene.base import ObjectTypeInfo
 from dcc_mcp_ipc.scene.base import SceneError
 from dcc_mcp_ipc.scene.base import SceneHierarchy
 from dcc_mcp_ipc.scene.base import SceneQueryFilter
+from dcc_mcp_ipc.scene.base import TransformMatrix
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -85,7 +86,7 @@ class HTTPSceneInfo(BaseSceneInfo):
                 "Install it with: pip install requests"
             )
 
-        self._dcc_type = dcc_type.lower()
+        self._dcc_type_val = dcc_type.lower()
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._session = session or requests.Session()
@@ -93,11 +94,11 @@ class HTTPSceneInfo(BaseSceneInfo):
     # ---- Abstract implementations ------------------------------------------
 
     def _dcc_type(self) -> str:
-        return self._dcc_type
+        return self._dcc_type_val
 
     def _get_scene_name(self) -> str:
         """Get current level/scene name."""
-        if self._dcc_type == "unreal":
+        if self._dcc_type_val == "unreal":
             try:
                 resp = self._request(
                     "post",
@@ -116,38 +117,38 @@ class HTTPSceneInfo(BaseSceneInfo):
 
     def get_objects(self, filter_: str | SceneQueryFilter = SceneQueryFilter.ALL) -> list[ObjectTypeInfo]:
         """Get scene objects via HTTP."""
-        if self._dcc_type == "unreal":
+        if self._dcc_type_val == "unreal":
             return self._unreal_get_objects(filter_)
-        elif self._dcc_type == "unity":
+        elif self._dcc_type_val == "unity":
             return self._unity_get_objects(filter_)
-        raise SceneError(f"Unsupported DCC type for HTTP: {self._dcc_type}", dcc_type=self._dcc_type)
+        raise SceneError(f"Unsupported DCC type for HTTP: {self._dcc_type_val}", dcc_type=self._dcc_type)
 
     def get_hierarchy(self) -> SceneHierarchy:
         """Get scene hierarchy."""
         objects = self.get_objects()
-        return self._build_hierarchy_from_objects(objects)
+        return HTTPSceneInfo._build_hierarchy_from_objects(objects)
 
     def get_materials(self) -> list[MaterialInfo]:
         """Get materials."""
-        if self._dcc_type == "unreal":
+        if self._dcc_type_val == "unreal":
             return self._unreal_get_materials()
         return []
 
     def get_cameras(self) -> list[CameraInfo]:
         """Get cameras."""
-        if self._dcc_type == "unreal":
+        if self._dcc_type_val == "unreal":
             return self._unreal_get_cameras()
         return []
 
     def get_lights(self) -> list[LightInfo]:
         """Get lights."""
-        if self._dcc_type == "unreal":
+        if self._dcc_type_val == "unreal":
             return self._unreal_get_lights()
         return []
 
     def get_selection(self) -> list[str]:
         """Get selected actors."""
-        if self._dcc_type == "unreal":
+        if self._dcc_type_val == "unreal":
             try:
                 resp = self._request(
                     "post",
@@ -169,7 +170,7 @@ class HTTPSceneInfo(BaseSceneInfo):
         """Get scene metadata."""
         meta = {}
         try:
-            if self._dcc_type == "unreal":
+            if self._dcc_type_val == "unreal":
                 # Query level info
                 resp = self._request(
                     "post",
@@ -236,8 +237,9 @@ class HTTPSceneInfo(BaseSceneInfo):
                     name = actor.get("Name", "")
                     path = actor.get("OuterPath", "")
 
-                    # Try to get transform
-                    transform = self._unreal_get_actor_transform(path)
+                    # Try to get transform (use default if unavailable)
+                    _transform = self._unreal_get_actor_transform(path)
+                    transform = _transform if _transform is not None else TransformMatrix()
 
                     all_objects.append(ObjectTypeInfo(
                         name=name,
@@ -472,7 +474,8 @@ class HTTPSceneInfo(BaseSceneInfo):
         parts = class_path.rsplit(".", 1)
         return parts[-1] if parts else class_path
 
-    def _build_hierarchy_from_objects(self, objects: list[ObjectTypeInfo]) -> SceneHierarchy:
+    @staticmethod
+    def _build_hierarchy_from_objects(objects: list[ObjectTypeInfo]) -> SceneHierarchy:
         """Build hierarchy from flat object list (same logic as RPyC version)."""
         if not objects:
             return SceneHierarchy(root_name="world", total_objects=0, max_depth=0, tree={})
@@ -518,18 +521,18 @@ class HTTPSceneInfo(BaseSceneInfo):
         except requests.exceptions.ConnectionError as e:
             raise SceneError(
                 f"Cannot connect to {url}: {e}",
-                dcc_type=self._dcc_type,
+                dcc_type=self._dcc_type_val,
                 cause=e,
             )
         except requests.exceptions.Timeout as e:
             raise SceneError(
                 f"Request to {url} timed out",
-                dcc_type=self._dcc_type,
+                dcc_type=self._dcc_type_val,
                 cause=e,
             )
         except requests.exceptions.HTTPError as e:
             raise SceneError(
                 f"HTTP error from {url}: {e.response.status_code}",
-                dcc_type=self._dcc_type,
+                dcc_type=self._dcc_type_val,
                 cause=e,
             )

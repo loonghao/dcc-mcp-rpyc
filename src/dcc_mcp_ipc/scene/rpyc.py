@@ -20,14 +20,6 @@ from dcc_mcp_ipc.scene.base import SceneInfo
 from dcc_mcp_ipc.scene.base import SceneInfoConfig
 from dcc_mcp_ipc.scene.base import SceneQueryFilter
 from dcc_mcp_ipc.scene.base import TransformMatrix
-from dcc_mcp_ipc.scene.base import CameraInfo
-from dcc_mcp_ipc.scene.base import LightInfo
-from dcc_mcp_ipc.scene.base import MaterialInfo
-from dcc_mcp_ipc.scene.base import ObjectTypeInfo
-from dcc_mcp_ipc.scene.base import SceneError
-from dcc_mcp_ipc.scene.base import SceneHierarchy
-from dcc_mcp_ipc.scene.base import SceneInfo
-from dcc_mcp_ipc.scene.base import SceneQueryFilter
 
 # Configure logging
 logger = logging.getLogger(__name__)

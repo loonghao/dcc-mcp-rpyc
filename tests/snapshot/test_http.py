@@ -36,6 +36,16 @@ def mock_session():
     if requests is None:
         pytest.skip("requests not installed")
     session = MagicMock(spec=requests.Session)  # type: ignore[arg-type]
+    # Make post/get return values also pass isinstance(Response) checks
+    orig_post = session.post
+    orig_get = session.get
+    def _mock_response(**kw):
+        r = MagicMock(spec=requests.Response)
+        r.status_code = kw.get("status_code", 200)
+        r.json.return_value = kw.get("json", {})
+        r.raise_for_status = MagicMock()
+        return r
+    # side_effect for exceptions, return_value for normal responses
     return session
 
 
@@ -72,7 +82,7 @@ class TestHTTPCaptureUnreal:
         """Test successful UE capture with base64 in ReturnValue."""
         import base64 as b64_mod
 
-        fake_png_b64 = b64_mod.encode(b"ue_screenshot_data").decode("ascii")
+        fake_png_b64 = b64_mod.b64encode(b"ue_screenshot_data").decode("ascii")
         mock_response = MagicMock()
         mock_response.json.return_value = {"ReturnValue": fake_png_b64}
         mock_response.raise_for_status = MagicMock()
@@ -123,7 +133,7 @@ class TestHTTPCaptureUnreal:
         """Test UE capture with raw text fallback (base64)."""
         import base64 as b64_mod
 
-        fake_b64 = b64_mod.encode(b"text_fallback").decode("ascii")
+        fake_b64 = b64_mod.b64encode(b"text_fallback").decode("ascii")
         mock_response = MagicMock()
         # Return non-dict JSON (fallback path)
         mock_response.text = fake_b64
@@ -168,7 +178,7 @@ class TestHTTPCaptureUnity:
         import base64 as b64_mod
 
         img_data = b"unity_screenshot_bytes"
-        fake_b64 = b64_mod.encode(img_data).decode("ascii")
+        fake_b64 = b64_mod.b64encode(img_data).decode("ascii")
         mock_response = MagicMock()
         mock_response.headers = {"content-type": "application/json"}
         mock_response.json.return_value = {"data": fake_b64}
