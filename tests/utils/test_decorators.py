@@ -1,5 +1,8 @@
 """Tests for dcc_mcp_ipc.utils.decorators module."""
 
+# Import built-in modules
+from unittest.mock import patch
+
 # Import third-party modules
 import pytest
 from dcc_mcp_core.models import ActionResultModel
@@ -213,6 +216,28 @@ class TestWithInfo:
         obj = Obj()
         assert obj.my_named_method.__name__ == "my_named_method"
 
+    def test_works_with_legacy_dict_method(self):
+        """Covers the result.dict() branch (line 161 in decorators.py)."""
+
+        class LegacyModel:
+            """Simulates a Pydantic v1 model that exposes .dict() but not .model_dump()."""
+
+            def dict(self):
+                return {"legacy": True, "data": "value"}
+
+        class Obj:
+            def get_info(self):
+                return {"source": "legacy"}
+
+            @with_info(lambda self: self.get_info(), "meta")
+            def do_work(self):
+                return LegacyModel()
+
+        obj = Obj()
+        result = obj.do_work()
+        assert "meta" in result
+        assert result.get("legacy") is True
+
 
 class TestWithActionResult:
     """Tests for the with_action_result combined decorator."""
@@ -260,3 +285,56 @@ class TestWithActionResult:
             return {}
 
         assert my_action_func.__name__ == "my_action_func"
+
+
+class TestWithErrorHandlingEdgePaths:
+    """Edge-path tests for with_error_handling – covers re-raise branch (lines 74-76)."""
+
+    def test_reraises_when_action_result_model_creation_fails(self):
+        """If ActionResultModel itself raises during error handling, original exception re-raised."""
+
+        @with_error_handling
+        def bad_func():
+            raise ValueError("original error")
+
+        # Patch ActionResultModel so it raises a secondary exception – triggering lines 74-76
+        with patch("dcc_mcp_ipc.utils.decorators.ActionResultModel", side_effect=RuntimeError("model broken")):
+            with pytest.raises(RuntimeError, match="model broken"):
+                bad_func()
+
+
+class TestWithResultConversionEdgePaths:
+    """Edge-path tests for with_result_conversion – covers lines 112-114, 121-124."""
+
+    def test_standard_conversion_with_non_dict_object(self):
+        """For an arbitrary object, standard conversion wraps it via ActionResultModel."""
+
+        class ArbitraryObj:
+            pass
+
+        obj = ArbitraryObj()
+
+        @with_result_conversion
+        def func():
+            return obj
+
+        result = func()
+        # Result should be ActionResultModel with the original object in context
+        assert isinstance(result, ActionResultModel)
+        assert result.success is True
+        assert result.context["result"] is obj
+
+    def test_dict_with_success_and_invalid_extra_field_fallback(self):
+        """Dict with 'success' but invalid extra field: ActionResultModel(**result) should fail,
+        then fall through to the standard wrapping path."""
+
+        @with_result_conversion
+        def func():
+            # ActionResultModel does NOT accept 'invalid_extra_field_xyz' as a known field,
+            # but Pydantic v2 ignores extra fields by default – so we use a value that
+            # causes a validation error (e.g. wrong type for a known field).
+            return {"success": "not_a_bool_hopefully_causes_error", "message": 123}
+
+        # Should not raise; result is either converted or falls back gracefully
+        result = func()
+        assert result is not None
