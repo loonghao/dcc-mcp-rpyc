@@ -53,6 +53,15 @@ from dcc_mcp_ipc.server import is_server_running
 from dcc_mcp_ipc.server import start_server
 from dcc_mcp_ipc.server import stop_server
 
+# Import from snapshot module
+from dcc_mcp_ipc.snapshot.base import BaseSnapshot
+from dcc_mcp_ipc.snapshot.base import SnapshotConfig
+from dcc_mcp_ipc.snapshot.base import SnapshotError
+from dcc_mcp_ipc.snapshot.base import SnapshotFormat
+from dcc_mcp_ipc.snapshot.base import SnapshotResult
+from dcc_mcp_ipc.snapshot.rpyc import RPyCSnapshot
+from dcc_mcp_ipc.snapshot import create_snapshot
+
 # Get default registry path
 config_dir = get_config_dir(ensure_exists=True)
 DEFAULT_REGISTRY_PATH = os.path.join(config_dir, "service_registry.json")
