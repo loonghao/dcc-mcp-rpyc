@@ -1,6 +1,8 @@
 """Tests for dcc_mcp_ipc.server.dcc module (DCCServer and DCCRPyCService)."""
 
 # Import built-in modules
+from typing import Any
+from typing import Dict
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -8,7 +10,75 @@ from unittest.mock import patch
 import pytest
 
 # Import local modules
+from dcc_mcp_ipc.server.dcc import DCCRPyCService
 from dcc_mcp_ipc.server.dcc import DCCServer
+
+
+# ---------------------------------------------------------------------------
+# Concrete subclass to test DCCRPyCService.exposed_create_primitive
+# ---------------------------------------------------------------------------
+
+
+class _ConcreteDCCService(DCCRPyCService):
+    """Minimal concrete subclass for testing the abstract base."""
+
+    def get_scene_info(self) -> Dict[str, Any]:
+        return {"objects": []}
+
+    def get_session_info(self) -> Dict[str, Any]:
+        return {"session": "test"}
+
+    def create_primitive(self, primitive_type: str, **kwargs) -> Any:
+        if primitive_type == "fail":
+            raise ValueError("unsupported primitive")
+        return {"created": primitive_type}
+
+    def get_application_info(self) -> Dict[str, Any]:
+        return {"name": "test_dcc"}
+
+    def get_environment_info(self) -> Dict[str, Any]:
+        return {"python_version": "3.12"}
+
+    def execute_python(self, code: str, context=None) -> Any:
+        return eval(code)  # test-only, safe in controlled test environment
+
+    def import_module(self, module_name: str) -> Any:
+        import importlib
+        return importlib.import_module(module_name)
+
+    def call_function(self, module_name: str, function_name: str, *args, **kwargs) -> Any:
+        import importlib
+        mod = importlib.import_module(module_name)
+        return getattr(mod, function_name)(*args, **kwargs)
+
+
+class TestDCCRPyCServiceSafeCreatePrimitive:
+    """Tests for exposed_create_primitive (safe_create_primitive wrapper)."""
+
+    def _make_service(self) -> _ConcreteDCCService:
+        # Bypass RPyC service __init__ which may require server context
+        svc = object.__new__(_ConcreteDCCService)
+        return svc
+
+    def test_success_returns_result_with_scene_info(self):
+        # exposed_create_primitive is decorated with @with_scene_info.
+        # The decorator merges scene_info into the original dict result:
+        # {"created": "sphere", "scene_info": {...}}
+        svc = self._make_service()
+        result = svc.exposed_create_primitive("sphere")
+        assert "scene_info" in result
+        assert result.get("created") == "sphere"
+
+    def test_exception_is_re_raised(self):
+        svc = self._make_service()
+        with pytest.raises(ValueError, match="unsupported primitive"):
+            svc.exposed_create_primitive("fail")
+
+    def test_kwargs_forwarded(self):
+        svc = self._make_service()
+        result = svc.exposed_create_primitive("cube", size=2.0, name="myCube")
+        assert result.get("created") == "cube"
+        assert "scene_info" in result
 
 
 class TestDCCServerInit:
@@ -177,6 +247,70 @@ class TestDCCServerStart:
         with patch.object(server, "_create_server", side_effect=RuntimeError("no service")):
             result = server.start()
             assert result is False
+
+    @patch("dcc_mcp_ipc.server.dcc.register_dcc_service")
+    def test_start_in_thread_exception_returns_false_and_clears_server(self, mock_reg):
+        """If register_dcc_service raises, _start_in_thread returns False and clears server."""
+        mock_srv = MagicMock()
+        mock_srv.port = 9999
+        # register_dcc_service is called in the background thread after server.start()
+        # Making it raise causes the except branch (lines 241-245) to execute
+        mock_reg.side_effect = RuntimeError("registration failed")
+
+        server = DCCServer(dcc_name="maya", server=mock_srv)
+        server.use_zeroconf = False
+
+        result = server.start(threaded=True)
+        assert result is False
+        assert server.server is None
+
+    @patch("dcc_mcp_ipc.server.dcc.register_dcc_service")
+    @patch("dcc_mcp_ipc.server.dcc.ServiceRegistry")
+    def test_start_in_thread_with_zeroconf_registers(self, MockRegistry, mock_reg):
+        """When use_zeroconf=True, _start_in_thread registers via ZeroConf."""
+        from dcc_mcp_ipc.discovery import ZEROCONF_AVAILABLE
+        if not ZEROCONF_AVAILABLE:
+            pytest.skip("zeroconf not available")
+
+        mock_srv = MagicMock()
+        mock_srv.port = 7777
+        mock_reg.return_value = "/tmp/reg.json"
+
+        mock_registry_instance = MagicMock()
+        mock_registry_instance.register_service_with_strategy.return_value = True
+        MockRegistry.return_value = mock_registry_instance
+
+        server = DCCServer(dcc_name="houdini", server=mock_srv)
+        server.use_zeroconf = True
+
+        result = server.start(threaded=True)
+        assert result == 7777
+        mock_registry_instance.register_service_with_strategy.assert_called_once()
+        assert server.zeroconf_info is not None
+
+    @patch("dcc_mcp_ipc.server.dcc.register_dcc_service")
+    @patch("dcc_mcp_ipc.server.dcc.ServiceRegistry")
+    def test_start_in_thread_zeroconf_failure_logs_warning(self, MockRegistry, mock_reg):
+        """When ZeroConf registration fails, a warning is logged but start succeeds."""
+        from dcc_mcp_ipc.discovery import ZEROCONF_AVAILABLE
+        if not ZEROCONF_AVAILABLE:
+            pytest.skip("zeroconf not available")
+
+        mock_srv = MagicMock()
+        mock_srv.port = 6666
+        mock_reg.return_value = "/tmp/reg.json"
+
+        mock_registry_instance = MagicMock()
+        mock_registry_instance.register_service_with_strategy.return_value = False
+        MockRegistry.return_value = mock_registry_instance
+
+        server = DCCServer(dcc_name="blender", server=mock_srv)
+        server.use_zeroconf = True
+
+        result = server.start(threaded=True)
+        # Even if ZeroConf fails, the server should still start
+        assert result == 6666
+        assert server.running is True
 
 
 class TestDCCServerCleanup:

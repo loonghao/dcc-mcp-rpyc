@@ -470,3 +470,43 @@ class TestMockServiceLifecycle:
             stop_all_mock_services()
 
         assert "fake_dcc_test" not in ms._mock_servers
+
+    def test_start_mock_dcc_service_registers_and_returns_host_port(self):
+        """start_mock_dcc_service should return (host, port) and add to _mock_servers."""
+        from dcc_mcp_ipc.testing import mock_services as ms
+        from dcc_mcp_ipc.testing.mock_services import start_mock_dcc_service
+
+        mock_server = MagicMock()
+        mock_server.port = 54321
+        mock_registry = MagicMock()
+        mock_service_instance = MagicMock()
+
+        with patch("dcc_mcp_ipc.testing.mock_services.MockDCCService", return_value=mock_service_instance):
+            with patch("dcc_mcp_ipc.testing.mock_services.ThreadedServer", return_value=mock_server):
+                with patch("dcc_mcp_ipc.testing.mock_services.ServiceRegistry", return_value=mock_registry):
+                    host, port = start_mock_dcc_service("test_dcc_unit", host="127.0.0.1", port=54321)
+
+        assert host == "127.0.0.1"
+        assert port == 54321
+        mock_registry.register_service_with_strategy.assert_called_once()
+        assert "test_dcc_unit" in ms._mock_servers
+        # Clean up
+        ms._mock_servers.pop("test_dcc_unit", None)
+
+    def test_start_mock_dcc_service_with_port_zero_uses_server_port(self):
+        """When port=0, start_mock_dcc_service should use the port assigned by the OS."""
+        from dcc_mcp_ipc.testing import mock_services as ms
+        from dcc_mcp_ipc.testing.mock_services import start_mock_dcc_service
+
+        mock_server = MagicMock()
+        mock_server.port = 11111  # OS-assigned port
+        mock_registry = MagicMock()
+        mock_service_instance = MagicMock()
+
+        with patch("dcc_mcp_ipc.testing.mock_services.MockDCCService", return_value=mock_service_instance):
+            with patch("dcc_mcp_ipc.testing.mock_services.ThreadedServer", return_value=mock_server):
+                with patch("dcc_mcp_ipc.testing.mock_services.ServiceRegistry", return_value=mock_registry):
+                    _host, port = start_mock_dcc_service("test_dcc_zero_port", host="localhost", port=0)
+
+        assert port == 11111
+        ms._mock_servers.pop("test_dcc_zero_port", None)
