@@ -15,7 +15,7 @@ from typing import Dict
 from typing import Optional
 
 # Import third-party modules
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 
 # Import local modules
 from dcc_mcp_ipc.adapter.base import ApplicationAdapter

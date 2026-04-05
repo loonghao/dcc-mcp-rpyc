@@ -5,7 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## 1.0.0 (2026-04-02)
+## [Unreleased] — 2.0.0
+
+### BREAKING CHANGES
+
+- **dcc-mcp-core ≥ 0.12.0 required**: The core library has been fully rewritten
+  from Python/Pydantic to Rust/PyO3. Minimum Python version raised to **3.9**.
+- `ActionResultModel.model_dump()` → `ActionResultModel.to_dict()`.
+- `dcc_mcp_core.models.ActionResultModel` → `dcc_mcp_core.ActionResultModel`.
+- `dcc_mcp_core.actions.{base,manager}` removed; replaced by
+  `ActionRegistry` + `ActionDispatcher`.
+- `dcc_mcp_core.utils.filesystem.get_config_dir` replaced by
+  `dcc_mcp_core.get_config_dir`.
+- `ActionAdapter.set_action_search_paths()` removed; use
+  `SkillManager.load_paths()` instead.
+
+### Added
+
+- **`transport/ipc_transport.py`**: `IpcClientTransport` and `IpcServerTransport`
+  backed by the Rust-native `IpcListener` / `FramedChannel` / `connect_ipc` API.
+  Registered as the `"ipc"` protocol in the transport factory.
+- **`skills/` sub-package**: `SkillManager` wraps `SkillScanner` / `SkillWatcher`
+  to auto-discover `SKILL.md`-based zero-code scripts and register them as MCP
+  tools via `ActionAdapter`. Supports hot-reload and env-var path configuration.
+- New test suite for `transport/ipc_transport.py` and `skills/`.
+
+### Changed
+
+- `ActionAdapter` completely rewritten to use `ActionRegistry` +
+  `ActionDispatcher`; action dispatch parameters now JSON-serialised.
+- `transport/__init__.py` exports `IpcClientTransport`, `IpcServerTransport`,
+  `IpcTransportConfig`.
+- `discovery/file_strategy.py` uses `dcc_mcp_core.get_config_dir` with OS fallback.
+- `adapter/base.py` `action_paths` setter no longer calls
+  `set_action_search_paths` (removed from `ActionAdapter`).
+
+
 
 ### BREAKING CHANGE
 

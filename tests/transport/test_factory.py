@@ -114,6 +114,15 @@ class TestBuiltinRegistration:
     def test_http_registered(self):
         assert "http" in _transport_registry
 
+    def test_ipc_registered(self):
+        """Rust IPC transport is auto-registered when dcc-mcp-core provides it."""
+        # ipc is registered only when the Rust extension is available
+        try:
+            from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport  # noqa: F401
+            assert "ipc" in _transport_registry
+        except ImportError:
+            pass  # Extension not installed in this environment
+
     def test_create_rpyc_transport(self):
         # Import local modules
         from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransport
@@ -127,3 +136,13 @@ class TestBuiltinRegistration:
 
         transport = create_transport("http")
         assert isinstance(transport, HTTPTransport)
+
+    def test_create_ipc_transport(self):
+        """IpcClientTransport is creatable via factory when extension available."""
+        try:
+            from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport
+
+            transport = create_transport("ipc")
+            assert isinstance(transport, IpcClientTransport)
+        except ImportError:
+            pass

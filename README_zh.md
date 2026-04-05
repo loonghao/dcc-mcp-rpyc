@@ -14,40 +14,53 @@
 
 [English](README.md) | [中文](README_zh.md)
 
-基于 RPyC 实现的数字内容创建 (DCC) 软件与模型上下文协议 (MCP) 的集成框架。该包提供了通过 RPYC 暴露 DCC 功能的框架，允许远程控制 DCC 应用程序。
+DCC 软件与模型上下文协议 (MCP) 集成的多协议 IPC 适配层。基于 **dcc-mcp-core**（Rust/PyO3 后端）构建，为将 DCC 功能作为 MCP 工具暴露提供高性能、类型安全的框架。
 
-## 为什么选择 RPyC？
+## 为什么选择 DCC-MCP-IPC？
 
-RPyC（远程 Python 调用）为 DCC 软件集成提供了显著的优势：
-
-- **动态接口暴露**：RPyC 能够动态地暴露 DCC 应用程序内的接口，通过消除创建静态 API 包装器的需求，减少了开发工作量。
-- **原生 API 访问**：能够直接使用原生 DCC API，如 Maya 的 `cmds`/`pymel`、Houdini 的 `hou`、Blender 的 `bpy` 和 Nuke 的 Python API，无需额外的转换层。
-- **透明的远程执行**：为本地执行编写的代码可以通过最小的更改远程运行，保留了开发者体验。
-- **减少样板代码**：与其他进程间通信方法相比，最小化了进程间通信所需的重复代码。
-- **对象引用**：维护对远程对象的实时引用，允许跨进程边界进行自然的面向对象编程。
-
-通过利用 RPyC，DCC-MCP-IPC 提供了一个统一的框架，在启用远程控制功能的同时保留了每个 DCC 原生 API 的使用体验。
+- **协议无关**：RPyC 用于内嵌 Python 的 DCC（Maya/Houdini/Blender），HTTP 用于 Unreal/Unity，Rust 原生 IPC 通道提供最高吞吐量。
+- **零代码 Skills**：在目录中放置一个 `SKILL.md` 文件，`SkillManager` 就会自动将其注册为 MCP 工具——无需 Python 样板代码。
+- **Rust 性能**：Action 派发、验证和遥测由 Rust 核心通过 PyO3 处理；Python 层专注于 DCC 特定的胶水代码。
+- **热重载**：`SkillWatcher` 监控 skill 目录，文件变更时无需重启 DCC 即可重新注册工具。
 
 ## 特性
 
-- 为 DCC 应用程序提供线程安全的 RPYC 服务器实现
-- 提供服务发现机制，用于在网络上查找 DCC 服务
+- 为 DCC 应用程序提供线程安全的 RPyC 服务器实现
+- **Rust 原生 IPC 传输**（`IpcListener` / `FramedChannel`）提供零拷贝低延迟消息传递
+- **Skills 系统** — 通过 `SKILL.md` frontmatter 进行零代码 MCP 工具注册
+- 通过 `SkillWatcher` 对 skills 进行**热重载**（防抖文件监控）
+- 服务发现：ZeroConf（mDNS）+ 文件备份策略
 - 提供抽象基类，用于创建特定 DCC 的适配器和服务
-- 支持多种 DCC 应用程序（Maya、Houdini、3ds Max、Nuke 等）
-- 与模型上下文协议 (MCP) 集成，实现 AI 驱动的 DCC 控制
-- 标准化的 Action 系统，可跨不同 DCC 应用程序执行操作
-- 模拟 DCC 服务，用于在没有实际 DCC 应用程序的情况下进行测试和开发
-- 异步客户端，支持非阻塞操作
+- 支持 Maya、Houdini、3ds Max、Nuke、Blender、Unreal Engine、Unity 等
+- 由 `ActionRegistry` + `ActionDispatcher`（Rust）支持的 Action 系统
+- 模拟 DCC 服务，用于无需实际 DCC 应用程序的测试
+- 异步客户端（asyncio）支持非阻塞操作
 - 全面的错误处理和连接管理
 
 ## 架构
 
-DCC-MCP-IPC 的架构设计旨在为控制各种 DCC 应用程序提供统一的接口：
-
 ```mermaid
 graph TD
-    A[客户端应用<br>AI 助手] --> B[MCP 服务器<br>协调器]
-    B --> C[DCC 软件<br>Maya/Houdini]
+    A[AI 助手 / MCP 客户端] --> B[MCP 服务器]
+    B --> C[ActionAdapter\nActionRegistry + ActionDispatcher]
+    C --> D[RPyC 传输\nDCC Python 环境]
+    C --> E[IPC 传输\nRust FramedChannel]
+    C --> F[HTTP 传输\nUnreal/Unity REST]
+    G[SkillManager\nSKILL.md 自动发现] --> C
+    H[dcc-mcp-core\nRust/PyO3] --> C
+    D --> I[DCC 应用\nMaya / Houdini / Blender]
+    E --> I
+    F --> J[DCC 应用\nUnreal / Unity]
+```
+
+核心组件：
+
+- **`ActionAdapter`**：包装 `ActionRegistry` + `ActionDispatcher`（Rust）— 注册处理程序并派发 JSON 参数化调用。
+- **`SkillManager`**：扫描 `SKILL.md` skills 目录，将其注册为 `ActionAdapter` 处理程序，支持热重载。
+- **`IpcClientTransport` / `IpcServerTransport`**：Rust 原生帧通道 IPC，注册为 `"ipc"` 协议。
+- **`DCCServer`**：管理 DCC 进程内的 RPyC 服务器生命周期。
+- **`BaseDCCClient` / `ConnectionPool`**：客户端连接管理，支持自动发现和连接池。
+- **`MockDCCService`**：模拟 DCC 应用程序用于测试和开发。
     A --> D[DCC-MCP<br>核心 API]
     D --> E[DCC-MCP-IPC<br>传输层]
     E --> C

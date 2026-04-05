@@ -13,11 +13,17 @@ from dcc_mcp_ipc.transport.base import TransportState
 from dcc_mcp_ipc.transport.factory import create_transport
 from dcc_mcp_ipc.transport.factory import get_transport
 from dcc_mcp_ipc.transport.factory import register_transport
+from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport
+from dcc_mcp_ipc.transport.ipc_transport import IpcServerTransport
+from dcc_mcp_ipc.transport.ipc_transport import IpcTransportConfig
 from dcc_mcp_ipc.transport.websocket import WebSocketTransport
 from dcc_mcp_ipc.transport.websocket import WebSocketTransportConfig
 
 __all__ = [
     "BaseTransport",
+    "IpcClientTransport",
+    "IpcServerTransport",
+    "IpcTransportConfig",
     "TransportConfig",
     "TransportError",
     "TransportState",

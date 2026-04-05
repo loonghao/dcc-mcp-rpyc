@@ -12,6 +12,7 @@ Key design choices:
 """
 
 # Import built-in modules
+import dataclasses
 import http.client
 import json
 import logging
@@ -19,7 +20,7 @@ import socket
 from typing import Any
 from typing import Dict
 from typing import Optional
-from urllib.parse import urljoin
+from urllib.parse import urljoin  # noqa: F401
 
 # Import local modules
 from dcc_mcp_ipc.transport.base import BaseTransport
@@ -32,6 +33,7 @@ from dcc_mcp_ipc.transport.base import TransportState
 logger = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
 class HTTPTransportConfig(TransportConfig):
     """HTTP-specific transport configuration.
 
@@ -46,7 +48,9 @@ class HTTPTransportConfig(TransportConfig):
 
     base_path: str = ""
     use_ssl: bool = False
-    headers: Dict[str, str] = {"Content-Type": "application/json", "Accept": "application/json"}
+    headers: Dict[str, str] = dataclasses.field(
+        default_factory=lambda: {"Content-Type": "application/json", "Accept": "application/json"}
+    )
     action_endpoint: str = "/api/v1/action/{action}"
 
 

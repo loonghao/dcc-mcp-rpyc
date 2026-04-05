@@ -12,7 +12,7 @@ from typing import List
 from typing import Optional
 
 # Import third-party modules
-from dcc_mcp_core.utils.filesystem import get_config_dir
+from dcc_mcp_core import get_config_dir
 
 # Import local modules
 from dcc_mcp_ipc.discovery.base import ServiceDiscoveryStrategy
@@ -21,9 +21,25 @@ from dcc_mcp_ipc.discovery.base import ServiceInfo
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Default registry path using dcc-mcp-core
-config_dir = get_config_dir(ensure_exists=True)
-DEFAULT_REGISTRY_PATH = os.path.join(config_dir, "service_registry.json")
+
+def _get_default_config_dir() -> str:
+    """Return the default per-user config directory for registry files."""
+    try:
+        config_dir = get_config_dir()
+        os.makedirs(config_dir, exist_ok=True)
+        return config_dir
+    except Exception:
+        # Fallback to OS-standard path if dcc_mcp_core is unavailable
+        if os.name == "nt":
+            base_dir = os.environ.get("APPDATA") or os.path.join(os.path.expanduser("~"), "AppData", "Roaming")
+        else:
+            base_dir = os.environ.get("XDG_CONFIG_HOME") or os.path.join(os.path.expanduser("~"), ".config")
+        config_dir = os.path.join(base_dir, "dcc_mcp_ipc")
+        os.makedirs(config_dir, exist_ok=True)
+        return config_dir
+
+
+DEFAULT_REGISTRY_PATH = os.path.join(_get_default_config_dir(), "service_registry.json")
 
 
 class FileDiscoveryStrategy(ServiceDiscoveryStrategy):

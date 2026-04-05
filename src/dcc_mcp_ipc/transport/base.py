@@ -8,15 +8,12 @@ adapters) should depend only on BaseTransport, never on a concrete protocol.
 # Import built-in modules
 from abc import ABC
 from abc import abstractmethod
+import dataclasses
 from enum import Enum
 import logging
 from typing import Any
 from typing import Dict
 from typing import Optional
-
-# Import third-party modules
-from pydantic import BaseModel
-from pydantic import Field
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +27,8 @@ class TransportState(str, Enum):
     ERROR = "error"
 
 
-class TransportConfig(BaseModel):
+@dataclasses.dataclass
+class TransportConfig:
     """Configuration for a transport connection.
 
     Attributes:
@@ -48,7 +46,7 @@ class TransportConfig(BaseModel):
     timeout: float = 30.0
     retry_count: int = 3
     retry_delay: float = 1.0
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
 class TransportError(Exception):
