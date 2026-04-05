@@ -18,6 +18,7 @@ Design notes:
 """
 
 # Import built-in modules
+import dataclasses
 import json
 import logging
 import queue
@@ -27,9 +28,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-
-# Import third-party modules
-from pydantic import Field
 
 # Import local modules
 from dcc_mcp_ipc.transport.base import BaseTransport
@@ -48,6 +46,7 @@ _STOP_SENTINEL = object()
 EventCallback = Callable[[str, Dict[str, Any]], None]
 
 
+@dataclasses.dataclass
 class WebSocketTransportConfig(TransportConfig):
     """WebSocket-specific transport configuration.
 
@@ -64,7 +63,7 @@ class WebSocketTransportConfig(TransportConfig):
     ping_interval: float = 20.0
     ping_timeout: float = 10.0
     max_message_size: int = 0
-    extra_headers: Dict[str, str] = Field(default_factory=dict)
+    extra_headers: Dict[str, str] = dataclasses.field(default_factory=dict)
 
 
 class WebSocketTransport(BaseTransport):

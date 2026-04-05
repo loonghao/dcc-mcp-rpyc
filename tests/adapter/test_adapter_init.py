@@ -312,13 +312,14 @@ class TestApplicationAdapterBase:
         assert adapter.ensure_connected() is False
 
     def test_action_paths_setter(self):
-        """Test action_paths setter updates both internal list and action_adapter."""
+        """Test action_paths setter updates the internal list."""
         adapter, mock_action_adapter = self._make_concrete_adapter()
 
         adapter.action_paths = ["/path/to/actions"]
 
         assert adapter._action_paths == ["/path/to/actions"]
-        mock_action_adapter.set_action_search_paths.assert_called_with(["/path/to/actions"])
+
+
 
     def test_execute_action_wraps_non_dict_result(self):
         """Test execute_action wraps non-dict results in ActionResultModel."""

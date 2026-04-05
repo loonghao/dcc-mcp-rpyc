@@ -255,8 +255,7 @@ result = execute_remote_command(connection, "create_sphere", radius=5.0, create=
 
 ```python
 from dcc_mcp_ipc.action_adapter import ActionAdapter, get_action_adapter
-from dcc_mcp_core.actions.base import Action
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 from pydantic import BaseModel, Field
 
 # 定义 Action 输入模型

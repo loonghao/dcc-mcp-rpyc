@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 # Import third-party modules
 import pytest
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 
 # Import local modules
 from dcc_mcp_ipc.utils.decorators import with_action_result
@@ -217,10 +217,10 @@ class TestWithInfo:
         assert obj.my_named_method.__name__ == "my_named_method"
 
     def test_works_with_legacy_dict_method(self):
-        """Covers the result.dict() branch (line 161 in decorators.py)."""
+        """Covers the non-dict/non-to_dict branch: object is wrapped in {'result': obj}."""
 
         class LegacyModel:
-            """Simulates a Pydantic v1 model that exposes .dict() but not .model_dump()."""
+            """Model that exposes .dict() but not .to_dict()."""
 
             def dict(self):
                 return {"legacy": True, "data": "value"}
@@ -235,8 +235,12 @@ class TestWithInfo:
 
         obj = Obj()
         result = obj.do_work()
+        # with_info wraps non-dict/non-to_dict objects in {"result": obj, "meta": info}
         assert "meta" in result
-        assert result.get("legacy") is True
+        assert isinstance(result.get("result"), LegacyModel)
+        assert result["meta"]["source"] == "legacy"
+
+
 
 
 class TestWithActionResult:
@@ -319,10 +323,14 @@ class TestWithResultConversionEdgePaths:
             return obj
 
         result = func()
-        # Result should be ActionResultModel with the original object in context
+        # Result should be ActionResultModel with the object in context
         assert isinstance(result, ActionResultModel)
         assert result.success is True
-        assert result.context["result"] is obj
+        # dcc-mcp-core 0.12+ serialises non-JSON-able objects to their str repr
+        ctx_result = result.context["result"]
+        assert ctx_result is obj or isinstance(ctx_result, str)
+
+
 
     def test_dict_with_success_and_invalid_extra_field_fallback(self):
         """Dict with 'success' but invalid extra field: ActionResultModel(**result) should fail,
