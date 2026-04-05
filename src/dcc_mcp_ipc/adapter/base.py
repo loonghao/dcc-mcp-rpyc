@@ -1,4 +1,4 @@
-"""Base adapter classes for DCC-MCP-IPC.
+﻿"""Base adapter classes for DCC-MCP-IPC.
 
 This module provides abstract base classes and utilities for creating application adapters
 that can be used with the MCP server. It defines the common interface that all
@@ -16,7 +16,7 @@ from typing import List
 from typing import Optional
 
 # Import third-party modules
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 
 # Import local modules
 from dcc_mcp_ipc.action_adapter import get_action_adapter
@@ -82,18 +82,13 @@ class ApplicationAdapter(ABC):
         """Initialize the paths to search for actions.
 
         This method should be implemented by subclasses to initialize the paths
-        to search for actions for the specific application.
+        to search for actions for the specific application.  Path-based skill
+        scanning is handled by :class:`~dcc_mcp_ipc.skills.SkillManager`.
         """
-        self.action_adapter.set_action_search_paths(self.action_paths)
 
     @property
     def action_paths(self) -> list:
         """Get the paths to search for actions.
-
-        This property returns the list of paths where the adapter will search for actions.
-        Subclasses should override this property to provide application-specific action paths.
-        These paths can be extended in the application implementation to include additional
-        directories for custom actions and plugins.
 
         Returns:
             List of paths to search for actions
@@ -110,7 +105,6 @@ class ApplicationAdapter(ABC):
 
         """
         self._action_paths = paths
-        self.action_adapter.set_action_search_paths(paths)
 
     def register_action(self, action_name: str, action_func: Callable) -> None:
         """Register an action with the adapter.
@@ -167,7 +161,7 @@ class ApplicationAdapter(ABC):
             # Otherwise, wrap it in an ActionResultModel
             return ActionResultModel(
                 success=True, message=f"Successfully executed action {action_name}", context={"result": result}
-            ).model_dump()
+            ).to_dict()
         except Exception as e:
             logger.error(f"Error executing action {action_name}: {e}")
             return ActionResultModel(
@@ -175,7 +169,7 @@ class ApplicationAdapter(ABC):
                 message=f"Failed to execute action {action_name}",
                 error=str(e),
                 context={"action_name": action_name, "kwargs": kwargs},
-            ).model_dump()
+            ).to_dict()
 
     @abstractmethod
     def get_application_info(self) -> Dict[str, Any]:

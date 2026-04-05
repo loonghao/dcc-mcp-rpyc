@@ -12,7 +12,7 @@ from typing import List
 from typing import Optional
 
 # Import third-party modules
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 
 # Configure logging
 logger = logging.getLogger(__name__)

@@ -1,4 +1,4 @@
-"""DCC client module for DCC-MCP-IPC.
+﻿"""DCC client module for DCC-MCP-IPC.
 
 This module provides the DCC client class for connecting to DCC RPYC servers and executing
 remote calls with connection management, timeout handling, and automatic reconnection.
@@ -13,7 +13,7 @@ from typing import Dict
 from typing import TypeVar
 
 # Import third-party modules
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 
 # Import local modules
 from dcc_mcp_ipc.client.base import BaseApplicationClient
@@ -168,7 +168,7 @@ class BaseDCCClient(BaseApplicationClient):
                 message=f"Failed to create {primitive_type}",
                 error=str(e),
                 context={"primitive_type": primitive_type, "kwargs": kwargs},
-            ).model_dump()
+            ).to_dict()
 
     def execute_command(self, command: str, *args, **kwargs) -> Dict[str, Any]:
         """Execute a command in the DCC application.
@@ -194,7 +194,7 @@ class BaseDCCClient(BaseApplicationClient):
                 message=f"Failed to execute command: {command}",
                 error=str(e),
                 context={"command": command, "args": args, "kwargs": kwargs},
-            ).model_dump()
+            ).to_dict()
 
     def execute_script(self, script: str, script_type: str = "python") -> Dict[str, Any]:
         """Execute a script in the DCC application.
@@ -219,7 +219,7 @@ class BaseDCCClient(BaseApplicationClient):
                 message=f"Failed to execute {script_type} script",
                 error=str(e),
                 context={"script_type": script_type, "script_length": len(script)},
-            ).model_dump()
+            ).to_dict()
 
     def execute_python(self, code: str) -> Any:
         """Execute Python code in the DCC application.

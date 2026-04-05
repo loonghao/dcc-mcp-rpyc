@@ -1,4 +1,4 @@
-"""Tests for the SessionAdapter class.
+﻿"""Tests for the SessionAdapter class.
 
 This module contains tests for the SessionAdapter class in the adapter.session module.
 """
@@ -36,7 +36,7 @@ class MockSessionAdapter(SessionAdapter):
 
         """
         # Import third-party modules
-        from dcc_mcp_core.models import ActionResultModel
+        from dcc_mcp_core import ActionResultModel
 
         return ActionResultModel(
             success=True,

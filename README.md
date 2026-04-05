@@ -14,56 +14,53 @@
 
 [English](README.md) | [中文](README_zh.md)
 
-RPyC implementation for DCC software integration with Model Context Protocol (MCP). This package provides a framework for exposing DCC functionality via RPYC, allowing for remote control of DCC applications.
+Multi-protocol IPC adapter layer for DCC software integration with Model Context Protocol (MCP). Built on top of **dcc-mcp-core** (Rust/PyO3 backend), it provides a high-performance, type-safe framework for exposing DCC functionality as MCP tools.
 
-## Why RPyC?
+## Why DCC-MCP-IPC?
 
-RPyC (Remote Python Call) offers significant advantages for DCC software integration:
-
-- **Dynamic Interface Exposure**: RPyC dynamically exposes interfaces within DCC applications, reducing development effort by eliminating the need to create static API wrappers.
-- **Native API Access**: Enables direct use of native DCC APIs like Maya's `cmds`/`pymel`, Houdini's `hou`, Blender's `bpy`, and Nuke's Python API without translation layers.
-- **Transparent Remote Execution**: Code written for local execution can run remotely with minimal changes, preserving the developer experience.
-- **Reduced Boilerplate**: Minimizes repetitive code needed for inter-process communication compared to other IPC methods.
-- **Object References**: Maintains live references to remote objects, allowing for natural object-oriented programming across process boundaries.
-
-By leveraging RPyC, DCC-MCP-IPC provides a unified framework that preserves the native feel of each DCC's API while enabling remote control capabilities.
+- **Protocol-agnostic**: RPyC for embedded-Python DCCs (Maya/Houdini/Blender), HTTP for Unreal/Unity, and the new Rust-native IPC channel for maximum throughput.
+- **Zero-code Skills**: Drop a `SKILL.md` file into a directory and the `SkillManager` auto-registers it as an MCP tool — no Python boilerplate required.
+- **Rust performance**: Action dispatch, validation, and telemetry are handled by the Rust core via PyO3; Python layer focuses on DCC-specific glue code.
+- **Hot-reload**: `SkillWatcher` monitors skill directories and re-registers tools on file changes without restarting the DCC.
 
 ## Features
 
-- Thread-safe RPYC server implementation for DCC applications
-- Service discovery for finding DCC services on the network
+- Thread-safe RPyC server implementation for DCC applications
+- **Rust-native IPC transport** (`IpcListener` / `FramedChannel`) for zero-copy low-latency messaging
+- **Skills system** — zero-code MCP tool registration from `SKILL.md` frontmatter
+- **Hot-reload** of skills via `SkillWatcher` (debounced file watching)
+- Service discovery: ZeroConf (mDNS) + file-based fallback
 - Abstract base classes for creating DCC-specific adapters and services
-- Support for multiple DCC applications (Maya, Houdini, 3ds Max, Nuke, etc.)
-- Integration with the Model Context Protocol (MCP) for AI-driven DCC control
-- Action system for standardized command execution across different DCCs
-- Mock DCC services for testing and development without actual DCC applications
-- Asynchronous client for non-blocking operations
+- Support for Maya, Houdini, 3ds Max, Nuke, Blender, Unreal Engine, Unity, etc.
+- Action system backed by `ActionRegistry` + `ActionDispatcher` (Rust)
+- Mock DCC services for testing without actual DCC applications
+- Async client (`asyncio`) for non-blocking operations
 - Comprehensive error handling and connection management
 
 ## Architecture
 
-The architecture of DCC-MCP-IPC is designed to provide a unified interface for controlling various DCC applications:
-
 ```mermaid
 graph TD
-    A[Client App<br>AI Assistant] --> B[MCP Server<br>Coordinator]
-    B --> C[DCC Software<br>Maya/Houdini]
-    A --> D[DCC-MCP<br>Core API]
-    D --> E[DCC-MCP-IPC<br>Transport]
-    E --> C
-    F[Action System] --> E
-    G[Mock DCC Services] -.-> E
+    A[AI Assistant / MCP Client] --> B[MCP Server]
+    B --> C[ActionAdapter\nActionRegistry + ActionDispatcher]
+    C --> D[RPyC Transport\nDCC Python env]
+    C --> E[IPC Transport\nRust FramedChannel]
+    C --> F[HTTP Transport\nUnreal/Unity REST]
+    G[SkillManager\nSKILL.md auto-discovery] --> C
+    H[dcc-mcp-core\nRust/PyO3] --> C
+    D --> I[DCC App\nMaya / Houdini / Blender]
+    E --> I
+    F --> J[DCC App\nUnreal / Unity]
 ```
 
 Key components:
 
-- **DCCServer**: Manages the RPYC server within the DCC application
-- **DCCRPyCService**: Base class for services that expose DCC functionality via RPYC
-- **BaseDCCClient**: Client-side interface for connecting to and controlling DCC applications
-- **DCCAdapter**: Abstract base class for DCC-specific adapters
-- **ConnectionPool**: Manages and reuses connections to DCC servers
-- **ActionAdapter**: Connects the Action system with RPYC services
-- **MockDCCService**: Simulates DCC applications for testing and development
+- **`ActionAdapter`**: Wraps `ActionRegistry` + `ActionDispatcher` (Rust) — registers handlers and dispatches JSON-parameterised calls.
+- **`SkillManager`**: Scans directories for `SKILL.md` skills, registers them as `ActionAdapter` handlers, supports hot-reload.
+- **`IpcClientTransport` / `IpcServerTransport`**: Rust-native framed-channel IPC, registered as `"ipc"` protocol.
+- **`DCCServer`**: Manages the RPyC server lifecycle inside a DCC process.
+- **`BaseDCCClient` / `ConnectionPool`**: Client-side connection management with auto-discovery and pooling.
+- **`MockDCCService`**: Simulates DCC applications for testing and development.
 
 ## Installation
 
@@ -134,103 +131,96 @@ server.start()
 ### Parameter Handling
 
 ```python
-from dcc_mcp_ipc.parameters import process_rpyc_parameters, execute_remote_command
+from dcc_mcp_ipc.utils.rpyc_utils import deliver_parameters, execute_remote_command
 
-# Process parameters for RPyC calls
+# Process RPyC NetRef parameters
 params = {"radius": 5.0, "create": True, "name": "mySphere"}
-processed = process_rpyc_parameters(params)
-
-# Execute a command on a remote connection with proper parameter handling
-result = execute_remote_command(connection, "create_sphere", radius=5.0, create=True)
+processed = deliver_parameters(params)
 ```
 
-### Client-side
-
-```python
-from dcc_mcp_ipc.client import BaseDCCClient
-
-# Connect to a DCC server
-client = BaseDCCClient(
-    dcc_name="maya",
-    host="localhost",
-    port=18812  # Optional, will discover automatically if not specified
-)
-
-# Connect to the server
-client.connect()
-
-# Execute Python code in the DCC
-result = client.execute_python("import maya.cmds as cmds; _result = cmds.ls()")
-print(result)
-
-# Execute DCC-specific command
-result = client.execute_dcc_command("sphere -name test_sphere;")
-print(result)
-
-# Get scene information
-scene_info = client.get_scene_info()
-print(scene_info)
-
-# Get DCC application information
-dcc_info = client.get_dcc_info()
-print(dcc_info)
-
-# Disconnect when done
-client.disconnect()
-```
-
-### Using Connection Pool
-
-```python
-from dcc_mcp_ipc.client import ConnectionPool
-
-# Create a connection pool
-pool = ConnectionPool()
-
-# Get a client from the pool (creates a new connection if needed)
-with pool.get_client("maya", host="localhost") as client:
-    # Call methods on the client
-    result = client.execute_python("import maya.cmds as cmds; _result = cmds.sphere()")
-    print(result)
-
-# Connection is automatically returned to the pool
-```
-
-### Using the Action System
+### Using the Action System (v2.0.0+)
 
 ```python
 from dcc_mcp_ipc.action_adapter import ActionAdapter, get_action_adapter
-from dcc_mcp_core.actions.base import Action
-from dcc_mcp_core.models import ActionResultModel
-from pydantic import BaseModel, Field
 
-# Define an Action input model
-class CreateSphereInput(BaseModel):
-    radius: float = Field(default=1.0, description="Sphere radius")
-    name: str = Field(default="sphere1", description="Sphere name")
-
-# Define an Action
-class CreateSphereAction(Action):
-    name = "create_sphere"
-    input_model = CreateSphereInput
-    
-    def execute(self, input_data: CreateSphereInput) -> ActionResultModel:
-        # Implementation would use DCC-specific API
-        return ActionResultModel(
-            success=True,
-            message=f"Created sphere {input_data.name} with radius {input_data.radius}",
-            context={"name": input_data.name, "radius": input_data.radius}
-        )
-
-# Get or create an action adapter
+# Get or create an adapter (cached by name)
 adapter = get_action_adapter("maya")
 
-# Register the action
-adapter.register_action(CreateSphereAction)
+# Register a handler function
+def create_sphere(radius: float = 1.0, name: str = "sphere1") -> dict:
+    # DCC-specific implementation
+    return {"success": True, "message": f"Created {name}", "context": {"name": name, "radius": radius}}
 
-# Call the action
+adapter.register_action(
+    "create_sphere",
+    create_sphere,
+    description="Create a sphere primitive",
+    category="modeling",
+    tags=["primitive", "mesh"],
+)
+
+# Dispatch the action — params are JSON-serialised automatically
 result = adapter.call_action("create_sphere", radius=2.0, name="mySphere")
-print(result.message)  # "Created sphere mySphere with radius 2.0"
+print(result.success)   # True
+print(result.message)   # "Created mySphere"
+
+# Serialise to plain dict
+data = result.to_dict()
+```
+
+### Zero-code Skills via SkillManager
+
+Drop a `SKILL.md` file anywhere:
+
+```
+my_skills/
+  create_light/
+    SKILL.md      ← frontmatter with name, description, tools, scripts
+    run.py        ← executed when the tool is called
+```
+
+```python
+from dcc_mcp_ipc.skills import SkillManager
+from dcc_mcp_ipc.action_adapter import get_action_adapter
+
+adapter = get_action_adapter("maya")
+mgr = SkillManager(adapter=adapter, dcc_name="maya")
+
+# Scan and register all skills from a directory
+mgr.load_paths(["/pipeline/skills"])
+
+# Enable hot-reload on file changes
+mgr.start_watching()
+
+# Now "create_light" is callable as an MCP tool
+result = adapter.call_action("create_light", intensity=100.0)
+```
+
+### Rust-native IPC Transport
+
+```python
+import os
+from dcc_mcp_core import TransportAddress
+from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport, IpcTransportConfig
+
+# Client side (MCP server / test)
+config = IpcTransportConfig(host="localhost", port=19000)
+transport = IpcClientTransport(config)
+transport.connect()
+result = transport.execute("get_scene_info")
+transport.disconnect()
+
+# Server side (inside DCC plugin)
+from dcc_mcp_ipc.transport.ipc_transport import IpcServerTransport
+
+def handle_channel(channel):
+    msg = channel.recv()
+    # ... process and respond ...
+
+addr = TransportAddress.default_local("maya", os.getpid())
+server = IpcServerTransport(addr, handler=handle_channel)
+bound_addr = server.start()
+print(f"IPC server at: {bound_addr}")
 ```
 
 ### Using Mock DCC Services for Testing
