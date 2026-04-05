@@ -1,4 +1,4 @@
-"""Mock services for testing DCC-MCP-IPC.
+﻿"""Mock services for testing DCC-MCP-IPC.
 
 This module provides mock services for testing DCC-MCP-IPC without requiring
 actual DCC applications. These mock services can be used in integration tests
@@ -15,7 +15,7 @@ from typing import Dict
 from typing import Optional
 
 # Import third-party modules
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 from rpyc.utils.server import ThreadedServer
 
 # Import local modules
@@ -241,7 +241,7 @@ class MockDCCService(DCCRPyCService):
             prompt="You can use this information to understand the current scene state",
             error=None,
             context=scene_info,
-        ).model_dump()
+        ).to_dict()
 
     def get_session_info(self):
         """Get information about the current session.
@@ -267,7 +267,7 @@ class MockDCCService(DCCRPyCService):
             prompt="You can use this information to understand the current session",
             error=None,
             context=session_info,
-        ).model_dump()
+        ).to_dict()
 
     def create_primitive(self, primitive_type: str, **kwargs):
         """Create a primitive object in the DCC application.
@@ -313,7 +313,7 @@ class MockDCCService(DCCRPyCService):
                     prompt="Please try with a supported primitive type like 'sphere' or 'cube'",
                     error=f"Unknown primitive type: {primitive_type}",
                     context={"supported_types": ["sphere", "cube"]},
-                ).model_dump()
+                ).to_dict()
 
             return ActionResultModel(
                 success=True,
@@ -321,7 +321,7 @@ class MockDCCService(DCCRPyCService):
                 prompt=prompt,
                 error=None,
                 context=result,
-            ).model_dump()
+            ).to_dict()
         except Exception as e:
             return ActionResultModel(
                 success=False,
@@ -329,7 +329,7 @@ class MockDCCService(DCCRPyCService):
                 prompt="Please check the error message and try again",
                 error=str(e),
                 context={"attempted_type": primitive_type},
-            ).model_dump()
+            ).to_dict()
 
     def exposed_get_application_info(self):
         """Get information about the application.
@@ -473,7 +473,7 @@ class MockDCCService(DCCRPyCService):
                 success=False,
                 message=f"Unknown action: {action_name}",
                 error=f"Action {action_name} not found",
-            ).model_dump()
+            ).to_dict()
 
         # Call the action function
         try:
@@ -486,13 +486,13 @@ class MockDCCService(DCCRPyCService):
                 success=True,
                 message=f"Action {action_name} executed successfully",
                 context=result if isinstance(result, dict) else {"result": result},
-            ).model_dump()
+            ).to_dict()
         except Exception as e:
             return ActionResultModel(
                 success=False,
                 message=f"Failed to execute action {action_name}",
                 error=str(e),
-            ).model_dump()
+            ).to_dict()
 
     def exposed_echo(self, arg):
         """Echo the argument back.

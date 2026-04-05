@@ -1,4 +1,4 @@
-"""Tests for the RPyC service classes.
+﻿"""Tests for the RPyC service classes.
 
 This module contains tests for the DCCRPyCService and ApplicationRPyCService classes.
 """
@@ -7,7 +7,7 @@ This module contains tests for the DCCRPyCService and ApplicationRPyCService cla
 import sys
 
 # Import third-party modules
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 
 # Import local modules
 from dcc_mcp_ipc.testing.mock_services import MockDCCService

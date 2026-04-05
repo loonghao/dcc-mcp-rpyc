@@ -1,4 +1,4 @@
-"""Common decorator utilities.
+﻿"""Common decorator utilities.
 
 This module provides common decorator factory functions for adding metadata,
 error handling, and result conversion.
@@ -15,7 +15,7 @@ from typing import TypeVar
 from typing import cast
 
 # Import third-party modules
-from dcc_mcp_core.models import ActionResultModel
+from dcc_mcp_core import ActionResultModel
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -155,10 +155,8 @@ def with_info(info_getter: Callable[[Any], Dict[str, Any]], info_name: str) -> C
                 info = info_getter(self)
 
                 # Check if the result is a model and convert to dictionary if needed
-                if hasattr(result, "model_dump") and callable(getattr(result, "model_dump")):
-                    result_dict = result.model_dump()
-                elif hasattr(result, "dict") and callable(getattr(result, "dict")):
-                    result_dict = result.dict()
+                if hasattr(result, "to_dict") and callable(getattr(result, "to_dict")):
+                    result_dict = result.to_dict()
                 elif isinstance(result, dict):
                     result_dict = result
                 else:

@@ -127,6 +127,14 @@ def _register_builtins() -> None:
     except ImportError:
         logger.debug("HTTP transport not available")
 
+    try:
+        # Import local modules
+        from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport
+
+        register_transport("ipc", IpcClientTransport)
+    except ImportError:
+        logger.debug("Rust IPC transport not available (dcc-mcp-core Rust extension not installed)")
+
 
 # Auto-register built-in transports on import
 _register_builtins()
