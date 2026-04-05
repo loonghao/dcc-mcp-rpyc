@@ -7,6 +7,7 @@ transport for DCC applications that embed a Python interpreter
 """
 
 # Import built-in modules
+import dataclasses
 import logging
 from typing import Any
 from typing import Dict
@@ -19,13 +20,13 @@ import rpyc
 from dcc_mcp_ipc.transport.base import BaseTransport
 from dcc_mcp_ipc.transport.base import ConnectionError
 from dcc_mcp_ipc.transport.base import ProtocolError
-from dcc_mcp_ipc.transport.base import TimeoutError
 from dcc_mcp_ipc.transport.base import TransportConfig
 from dcc_mcp_ipc.transport.base import TransportState
 
 logger = logging.getLogger(__name__)
 
 
+@dataclasses.dataclass
 class RPyCTransportConfig(TransportConfig):
     """RPyC-specific transport configuration.
 

@@ -1,22 +1,17 @@
-"""Base classes for service discovery strategies.
-
-This module defines the base interfaces and classes for service discovery strategies.
-"""
+"""Base classes for service discovery strategies."""
 
 # Import built-in modules
 from abc import ABC
 from abc import abstractmethod
+import dataclasses
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
 
-# Import third-party modules
-from pydantic import BaseModel
-from pydantic import Field
 
-
-class ServiceInfo(BaseModel):
+@dataclasses.dataclass
+class ServiceInfo:
     """Information about a discovered service.
 
     Attributes:
@@ -32,7 +27,7 @@ class ServiceInfo(BaseModel):
     host: str
     port: int
     dcc_type: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
 class ServiceDiscoveryStrategy(ABC):

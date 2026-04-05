@@ -23,6 +23,7 @@ Use :class:`IpcClientTransport` from an MCP server or test:
 """
 
 # Import built-in modules
+import dataclasses
 import json
 import logging
 import threading
@@ -52,6 +53,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 
+@dataclasses.dataclass
 class IpcTransportConfig(TransportConfig):
     """Configuration for the Rust-native IPC transport.
 
