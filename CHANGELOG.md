@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/loonghao/dcc-mcp-ipc/compare/1.0.0...2.0.0) (2026-04-05)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate to dcc-mcp-core v0.12.0 Rust/PyO3 API
+
+### Features
+
+* migrate to dcc-mcp-core v0.12.0 Rust/PyO3 API ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+* **skills:** add SkillManager for zero-code SKILL.md-based MCP tool registration ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+* **transport:** add Rust-native IpcClientTransport and IpcServerTransport ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+
+
+### Bug Fixes
+
+* **deps:** trim dependencies to rpyc+dcc-mcp-core; make zeroconf optional extra ([cd4e8f0](https://github.com/loonghao/dcc-mcp-ipc/commit/cd4e8f07bfebc46296e904f194ccab051cbd2c62))
+
+
+### Code Refactoring
+
+* **action_adapter:** rewrite ActionAdapter with ActionRegistry+ActionDispatcher ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+* update all imports and replace model_dump() -&gt; to_dict() globally ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+
+
+### Documentation
+
+* update README/README_zh and CHANGELOG for v2.0.0 ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+
 ## [Unreleased] — 2.0.0
 
 ### BREAKING CHANGES
