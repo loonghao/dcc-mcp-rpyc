@@ -36,17 +36,8 @@ def mock_session():
     if requests is None:
         pytest.skip("requests not installed")
     session = MagicMock(spec=requests.Session)  # type: ignore[arg-type]
-    # Make post/get return values also pass isinstance(Response) checks
-    orig_post = session.post
-    orig_get = session.get
-    def _mock_response(**kw):
-        r = MagicMock(spec=requests.Response)
-        r.status_code = kw.get("status_code", 200)
-        r.json.return_value = kw.get("json", {})
-        r.raise_for_status = MagicMock()
-        return r
-    # side_effect for exceptions, return_value for normal responses
     return session
+
 
 
 class TestHTTPSnapshotInit:

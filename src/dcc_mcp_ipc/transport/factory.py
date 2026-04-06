@@ -45,10 +45,13 @@ def create_transport(
 
     Args:
         protocol: Protocol identifier (e.g. ``"rpyc"``, ``"http"``).
-        config: Transport configuration. If not provided, a default config
-            is created using ``**kwargs``.
-        **kwargs: If ``config`` is not provided, these are passed to the
-            config class for the transport.
+        config: Transport configuration to pass to the transport constructor.
+            Callers that need protocol-specific options should build the
+            appropriate config object explicitly before calling this factory.
+        **kwargs: Reserved for future config-construction support. They are
+            currently ignored unless the caller has already materialized
+            the desired ``config`` instance.
+
 
     Returns:
         A new transport instance (not yet connected).

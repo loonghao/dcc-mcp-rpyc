@@ -27,8 +27,7 @@ Quick start::
 
 # Import built-in modules
 from typing import Any
-from typing import Dict
-from typing import Optional
+
 
 # Import local modules
 from dcc_mcp_ipc.snapshot.base import BaseSnapshot
