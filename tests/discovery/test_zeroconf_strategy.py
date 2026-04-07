@@ -496,3 +496,172 @@ def test_zeroconf_not_available():
     assert strategy._zeroconf is None
     assert strategy.discover_services() == []
     assert strategy.register_service(ServiceInfo(name="test", host="127.0.0.1", port=8000, dcc_type="maya")) is False
+
+
+# =============================================================================
+# Additional Coverage Tests for Missing Paths
+# =============================================================================
+
+
+@pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
+class TestServiceListenerMissingPaths:
+    """Tests for branches not covered in ServiceListener."""
+
+    def test_add_service_returns_early_when_info_is_none(self):
+        """add_service returns immediately when get_service_info returns None (line 83)."""
+        listener = ServiceListener()
+        mock_zc = MagicMock()
+        mock_zc.get_service_info.return_value = None
+
+        listener.add_service(mock_zc, "_dcc-mcp._tcp.local.", "missing_svc._dcc-mcp._tcp.local.")
+        assert len(listener.services) == 0
+
+    def test_add_service_skips_binary_properties(self):
+        """UnicodeDecodeError in property decode is silently skipped (lines 93-95)."""
+        listener = ServiceListener()
+        mock_zc = MagicMock()
+
+        mock_info = MagicMock()
+        # Mix of decodable and non-decodable properties
+        mock_info.properties = {
+            b"dcc_name": b"maya",
+            b"service_name": b"test_svc",
+            b"binary_key": b"\xff\xfe",  # Invalid UTF-8 → UnicodeDecodeError
+        }
+        type_a = 1
+        mock_info.addresses_by_version = {type_a: [b"\x7f\x00\x00\x01"]}
+        mock_info.port = 9001
+
+        with patch("dcc_mcp_ipc.discovery.zeroconf_strategy.socket.inet_ntoa", return_value="127.0.0.1"):
+            mock_zc.get_service_info.return_value = mock_info
+            listener.add_service(mock_zc, "_dcc-mcp._tcp.local.", "svc._dcc-mcp._tcp.local.")
+
+        # Service is still added (binary property is just skipped)
+        assert len(listener.services) == 1
+
+    def test_add_service_returns_early_when_no_addresses(self):
+        """add_service returns early when no IPv4 addresses found (line 113)."""
+        listener = ServiceListener()
+        mock_zc = MagicMock()
+
+        mock_info = MagicMock()
+        mock_info.properties = {b"dcc_name": b"maya", b"service_name": b"no_addr_svc"}
+        # No TYPE_A addresses at all
+        mock_info.addresses_by_version = {}
+        mock_info.port = 9002
+        mock_zc.get_service_info.return_value = mock_info
+
+        listener.add_service(mock_zc, "_dcc-mcp._tcp.local.", "no_addr._dcc-mcp._tcp.local.")
+        assert len(listener.services) == 0
+
+    def test_add_service_exception_handler(self):
+        """Exception in add_service body is caught and logged (lines 127-128)."""
+        listener = ServiceListener()
+        mock_zc = MagicMock()
+
+        mock_info = MagicMock()
+        mock_info.properties = {b"dcc_name": b"maya"}
+        # Make addresses_by_version raise to trigger the outer except
+        mock_info.addresses_by_version = MagicMock()
+        mock_info.addresses_by_version.items.side_effect = RuntimeError("unexpected error")
+        mock_zc.get_service_info.return_value = mock_info
+
+        # Must not raise
+        listener.add_service(mock_zc, "_dcc-mcp._tcp.local.", "svc._dcc-mcp._tcp.local.")
+        assert len(listener.services) == 0
+
+
+@pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
+class TestZeroConfStrategyMissingPaths:
+    """Tests for branches not covered in ZeroConfDiscoveryStrategy."""
+
+    def test_discover_services_serviceinfo_creation_error(self):
+        """ServiceInfo creation error per-entry is caught (lines 223-224)."""
+        strategy = ZeroConfDiscoveryStrategy()
+
+        mock_listener = MagicMock()
+        mock_listener.services = {
+            "bad_svc": {"name": "bad", "host": "h", "port": 1, "dcc_name": "maya", "properties": {}},
+        }
+
+        with (
+            patch.object(strategy, "_ensure_zeroconf", return_value=True),
+            patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceBrowser"),
+            patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ServiceListener", return_value=mock_listener),
+            patch("dcc_mcp_ipc.discovery.zeroconf_strategy.DccServiceInfo", side_effect=ValueError("bad")),
+        ):
+            services = strategy.discover_services()
+
+        assert services == []
+
+    def test_register_hostname_oserror_gaierror(self):
+        """Hostname resolution OSError fallback then gaierror → falls back to 127.0.0.1 (lines 266-272)."""
+        import socket as socket_mod
+
+        mock_zc = MagicMock()
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        service = ServiceInfo(name="test", host="unresolvable-host.invalid", port=9999, dcc_type="maya", metadata={})
+
+        # gethostbyname raises gaierror (line 270) → fallback to 127.0.0.1 (lines 271-272)
+        with patch(
+            "dcc_mcp_ipc.discovery.zeroconf_strategy.socket.gethostbyname",
+            side_effect=socket_mod.gaierror("no DNS"),
+        ):
+            result = strategy.register_service(service)
+
+        # Should succeed using 127.0.0.1 fallback (lines 271-272 executed)
+        assert result is True
+
+    def test_unregister_hostname_oserror_gaierror(self):
+        """Hostname resolution OSError/gaierror fallback in unregister (lines 318, 321-327)."""
+        import socket as socket_mod
+
+        mock_zc = MagicMock()
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        service = ServiceInfo(name="test", host="unresolvable.invalid", port=9999, dcc_type="maya", metadata={})
+
+        with patch(
+            "dcc_mcp_ipc.discovery.zeroconf_strategy.socket.gethostbyname",
+            side_effect=socket_mod.gaierror("no DNS"),
+        ):
+            result = strategy.unregister_service(service)
+
+        assert result is True
+
+    def test_unregister_service_by_name_not_in_cache(self):
+        """unregister_service_by_name falls back when service not in cache (lines 381-396)."""
+        mock_zc = MagicMock()
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        with patch.object(strategy, "_ensure_zeroconf", return_value=True):
+            result = strategy.unregister_service_by_name("not_cached_service")
+
+        assert result is True
+        mock_zc.unregister_service.assert_called_once()
+
+    def test_unregister_service_by_name_exception(self):
+        """unregister_service_by_name exception is caught (lines 394-396)."""
+        mock_zc = MagicMock()
+        mock_zc.unregister_service.side_effect = RuntimeError("network gone")
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        with patch.object(strategy, "_ensure_zeroconf", return_value=True):
+            result = strategy.unregister_service_by_name("some_service")
+
+        assert result is False
+
+    def test_del_exception_is_swallowed(self):
+        """__del__ exception from zeroconf.close() is caught (lines 403-404)."""
+        mock_zc = MagicMock()
+        mock_zc.close.side_effect = RuntimeError("close failed")
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        # Must not raise
+        strategy.__del__()
