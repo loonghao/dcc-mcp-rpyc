@@ -1,9 +1,5 @@
 """Tests for the transport factory module."""
 
-# Import built-in modules
-from unittest.mock import MagicMock
-from unittest.mock import patch
-
 # Import third-party modules
 import pytest
 
@@ -118,7 +114,9 @@ class TestBuiltinRegistration:
         """Rust IPC transport is auto-registered when dcc-mcp-core provides it."""
         # ipc is registered only when the Rust extension is available
         try:
-            from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport  # noqa: F401
+            from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport
+
+            assert IpcClientTransport is not None
             assert "ipc" in _transport_registry
         except ImportError:
             pass  # Extension not installed in this environment

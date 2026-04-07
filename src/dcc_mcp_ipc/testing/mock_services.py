@@ -1,4 +1,4 @@
-﻿"""Mock services for testing DCC-MCP-IPC.
+"""Mock services for testing DCC-MCP-IPC.
 
 This module provides mock services for testing DCC-MCP-IPC without requiring
 actual DCC applications. These mock services can be used in integration tests
@@ -584,7 +584,9 @@ def start_mock_dcc_service(dcc_name="mock_dcc", host="localhost", port=0):
     Example:
         >>> from dcc_mcp_ipc.testing.mock_services import start_mock_dcc_service
         >>> host, port = start_mock_dcc_service("maya")
-        >>> print(f"Mock Maya service running at {host}:{port}")
+        >>> isinstance(host, str) and isinstance(port, int)
+        True
+
 
     """
     # Create service instance

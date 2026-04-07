@@ -192,7 +192,25 @@ class ActionAdapter:
             params_json = json.dumps(kwargs) if kwargs else "null"
             result_dict = self.dispatcher.dispatch(action_name, params_json)
 
-            # dispatcher.dispatch returns a plain dict; wrap in ActionResultModel
+            # dcc-mcp-core 0.12+ dispatch returns {'action': str, 'output': Any, 'validation_skipped': bool}
+            if isinstance(result_dict, dict) and "output" in result_dict:
+                output = result_dict["output"]
+                if isinstance(output, ActionResultModel):
+                    return output
+                if isinstance(output, dict):
+                    return ActionResultModel(
+                        success=output.get("success", True),
+                        message=output.get("message", f"Executed {action_name}"),
+                        error=output.get("error"),
+                        context=output.get("context", output),
+                    )
+                return ActionResultModel(
+                    success=True,
+                    message=f"Successfully executed {action_name}",
+                    context={"result": output},
+                )
+
+            # Legacy / fallback: direct dict result
             if isinstance(result_dict, dict):
                 return ActionResultModel(
                     success=result_dict.get("success", True),

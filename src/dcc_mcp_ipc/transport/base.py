@@ -15,7 +15,6 @@ from typing import Any
 from typing import Dict
 from typing import Optional
 
-logger = logging.getLogger(__name__)
 
 
 class TransportState(str, Enum):

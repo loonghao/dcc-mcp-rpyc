@@ -20,7 +20,7 @@ import socket
 from typing import Any
 from typing import Dict
 from typing import Optional
-from urllib.parse import urljoin  # noqa: F401
+
 
 # Import local modules
 from dcc_mcp_ipc.transport.base import BaseTransport

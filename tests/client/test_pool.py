@@ -265,6 +265,119 @@ def test_connection_pool_cleanup_idle_connections():
     mock_client2.disconnect.assert_called_once()
 
 
+def test_connection_pool_close_client_disconnect_error():
+    """Test closing client when disconnect raises an exception."""
+    # Create mock client that raises on disconnect
+    mock_client = MagicMock(spec=BaseDCCClient)
+    mock_client.disconnect.side_effect = RuntimeError("disconnect error")
+
+    # Create connection pool and add client
+    pool = ConnectionPool()
+    pool.pool[("test_dcc", "localhost", 8000)] = (mock_client, time.time())
+
+    # Close client should not raise, returns False
+    result = pool.close_client("test_dcc", "localhost", 8000)
+
+    assert result is False
+    # Client was removed from pool despite error? No - check implementation
+    # Actually looking at the code: except returns False without del, so key remains
+
+
+def test_connection_pool_close_all_with_errors():
+    """Test closing all connections when some raise exceptions."""
+    mock_client1 = MagicMock(spec=BaseDCCClient)
+    mock_client2 = MagicMock(spec=BaseDCCClient)
+    mock_client2.disconnect.side_effect = RuntimeError("error")
+
+    pool = ConnectionPool()
+    pool.pool[("dcc1", "localhost", 8000)] = (mock_client1, time.time())
+    pool.pool[("dcc2", "localhost", 8001)] = (mock_client2, time.time())
+
+    pool.close_all_connections()
+
+    assert pool.pool == {}
+    mock_client1.disconnect.assert_called_once()
+    mock_client2.disconnect.assert_called_once()
+
+
+def test_connection_pool_get_client_with_client_class():
+    """Test get_client using client_class parameter."""
+    mock_client = MagicMock(spec=BaseDCCClient)
+    mock_client.is_connected.return_value = True
+
+    with patch.object(BaseDCCClient, "__init__", return_value=None):
+        BaseDCCClient.is_connected = lambda self: True  # type: ignore[attr-defined]
+
+        pool = ConnectionPool()
+        client = pool.get_client(
+            "test_dcc",
+            "localhost",
+            8000,
+            auto_connect=False,
+            client_class=type(
+                "MockClient",
+                (object,),
+                {
+                    "__init__": lambda s, **kw: None,
+                    "is_connected": lambda s: True,
+                },
+            ),
+        )
+        assert ("test_dcc", "localhost", 8000) in pool.pool
+
+
+def test_connection_pool_get_client_zeroconf_discovery():
+    """Test get_client using ZeroConf discovery when host/port is None."""
+    mock_factory = MagicMock(return_value=MagicMock(spec=BaseDCCClient))
+
+    pool = ConnectionPool()
+
+    with patch.object(pool, "_cleanup_idle_connections"):
+        with patch("dcc_mcp_ipc.client.pool.ZeroConfDiscoveryStrategy") as MockZC:
+            mock_zc = MagicMock()
+            MockZC.return_value = mock_zc
+
+            from dcc_mcp_ipc.discovery import ServiceInfo
+            mock_service = ServiceInfo(name="test_maya", host="192.168.1.100", port=9000, dcc_type="maya")
+            mock_zc.discover_services.return_value = [mock_service]
+
+            client = pool.get_client("maya", use_zeroconf=True, client_factory=mock_factory)
+
+            mock_zc.discover_services.assert_called_once_with("maya")
+            mock_factory.assert_called_once()
+
+
+def test_connection_pool_cleanup_not_triggered_yet():
+    """Test that cleanup is skipped if cleanup_interval hasn't elapsed."""
+    mock_client = MagicMock(spec=BaseDCCClient)
+    mock_client.is_connected.return_value = True
+
+    pool = ConnectionPool(cleanup_interval=60.0)
+    current_time = time.time()
+    pool.pool[("dcc1", "h", 8000)] = (mock_client, current_time)
+    pool.last_cleanup = current_time - 10.0  # Only 10s ago, less than 60s interval
+
+    with patch("time.time", return_value=current_time):
+        pool.get_client("dcc1", "h", 8000, client_factory=MagicMock(return_value=mock_client))
+
+    # Client should still be in pool (not cleaned up as idle)
+    assert ("dcc1", "h", 8000) in pool.pool
+
+
+def test_connection_pool_key_case_insensitive():
+    """Test that connection keys are case-insensitive for dcc_name."""
+    mock_client = MagicMock(spec=BaseDCCClient)
+    mock_client.is_connected.return_value = True
+    mock_factory = MagicMock(return_value=mock_client)
+
+    pool = ConnectionPool()
+
+    pool.get_client("Maya", "localhost", 8000, client_factory=mock_factory)
+
+    # Should find the same client using lowercase key
+    assert ("maya", "localhost", 8000) in pool.pool
+
+
 # Test global functions
 def test_global_get_client():
     """Test global get client function."""

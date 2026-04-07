@@ -64,8 +64,9 @@ class TestSkillManagerLoadPaths:
             yield scanner
 
     def test_load_paths_registers_skills(self, mock_scanner):
-        meta = _make_metadata("echo_skill")
+        meta = _make_metadata("echo_skill", skill_path="/skills/echo_skill")
         mock_scanner.scan.return_value = ["/skills/echo_skill"]
+
 
         with patch("dcc_mcp_ipc.skills.scanner.parse_skill_md", return_value=meta):
             adapter = ActionAdapter("test_load")
