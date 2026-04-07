@@ -8,26 +8,27 @@ for representing objects, hierarchies, materials, cameras, and lights.
 # Import built-in modules
 from abc import ABC
 from abc import abstractmethod
+from dataclasses import asdict
+from dataclasses import dataclass
+from dataclasses import field
 from enum import Enum
 from typing import Any
-
-# Import third-party modules
-from pydantic import BaseModel
-from pydantic import Field
+from typing import Optional
 
 # ---------------------------------------------------------------------------
 # Data Models
 # ---------------------------------------------------------------------------
 
 
-class TransformMatrix(BaseModel):
+@dataclass
+class TransformMatrix:
     """4x4 transformation matrix for object position/rotation/scale.
 
     Stored as a flat list of 16 floats in row-major order, compatible with
     Maya, Blender, Unreal, and Unity matrix conventions.
     """
 
-    matrix: list[float] = Field(
+    matrix: list = field(
         default_factory=lambda: [
             1.0,
             0.0,
@@ -45,18 +46,17 @@ class TransformMatrix(BaseModel):
             0.0,
             0.0,
             1.0,
-        ],
-        description="4x4 transformation matrix (row-major, 16 floats)",
+        ]
     )
 
     @property
-    def translation(self) -> tuple[float, float, float]:
+    def translation(self) -> tuple:
         """Extract translation component (tx, ty, tz)."""
         m = self.matrix
         return (m[12], m[13], m[14])
 
     @property
-    def rotation(self) -> tuple[float, float, float]:
+    def rotation(self) -> tuple:
         """Extract Euler rotation (rx, ry, rz) in degrees."""
         # Import built-in modules
         import math
@@ -74,7 +74,7 @@ class TransformMatrix(BaseModel):
         return (math.degrees(rx), math.degrees(ry), math.degrees(rz))
 
     @property
-    def scale(self) -> tuple[float, float, float]:
+    def scale(self) -> tuple:
         """Extract scale component (sx, sy, sz)."""
         # Import built-in modules
         import math
@@ -85,137 +85,99 @@ class TransformMatrix(BaseModel):
         sz = math.sqrt(m[8] ** 2 + m[9] ** 2 + m[10] ** 2)
         return (sx, sy, sz)
 
+    def model_dump(self) -> dict:
+        """Return a dict representation (dataclasses compatibility shim)."""
+        return asdict(self)
 
-class ObjectTypeInfo(BaseModel):
+
+@dataclass
+class ObjectTypeInfo:
     """Information about a single scene object.
 
     All DCC implementations return this standardized format so that the MCP
     layer can present a uniform interface regardless of the underlying DCC.
     """
 
-    name: str = Field(description="Unique name of the object")
-    type: str = Field(description="DCC-specific type (e.g., 'mesh', 'camera', 'light')")
-    path: str = Field(default="", description="Full DAG/hierarchy path to the object")
-    parent: str = Field(default="", description="Parent object name, empty if root-level")
-    children: list[str] = Field(default_factory=list, description="Names of child objects")
-    transform: TransformMatrix = Field(
-        default_factory=TransformMatrix,
-        description="World-space transformation matrix",
-    )
-    visibility: bool = Field(default=True, description="Whether the object is visible")
-    material: str = Field(default="", description="Assigned material name, if any")
-    metadata: dict[str, Any] = Field(
-        default_factory=dict,
-        description="DCC-specific additional attributes",
-    )
+    name: str = ""
+    type: str = ""
+    path: str = ""
+    parent: str = ""
+    children: list = field(default_factory=list)
+    transform: TransformMatrix = field(default_factory=TransformMatrix)
+    visibility: bool = True
+    material: str = ""
+    metadata: dict = field(default_factory=dict)
 
 
-class SceneHierarchy(BaseModel):
+@dataclass
+class SceneHierarchy:
     """Hierarchical representation of scene objects as a tree."""
 
-    root_name: str = Field(description="Name of the root / world node")
-    total_objects: int = Field(default=0, description="Total number of objects in tree")
-    max_depth: int = Field(default=0, description="Maximum hierarchy depth")
-    tree: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Nested dict representing the object hierarchy",
-    )
+    root_name: str = ""
+    total_objects: int = 0
+    max_depth: int = 0
+    tree: dict = field(default_factory=dict)
 
 
-class MaterialInfo(BaseModel):
+@dataclass
+class MaterialInfo:
     """Information about a material/shader in the scene."""
 
-    name: str = Field(description="Material name")
-    type: str = Field(description="Shader type (e.g., 'StandardSurface', 'PrincipledBSDF')")
-    assigned_objects: list[str] = Field(
-        default_factory=list,
-        description="Objects using this material",
-    )
-    properties: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Key material parameters (color, roughness, metalness, etc.)",
-    )
+    name: str = ""
+    type: str = ""
+    assigned_objects: list = field(default_factory=list)
+    properties: dict = field(default_factory=dict)
 
 
-class CameraInfo(BaseModel):
+@dataclass
+class CameraInfo:
     """Information about a camera in the scene."""
 
-    name: str = Field(description="Camera name")
-    type: str = Field(default="perspective", description="'perspective' or 'orthographic'")
-    focal_length: float = Field(default=35.0, description="Focal length in mm")
-    sensor_width: float = Field(default=36.0, description="Sensor/film width in mm")
-    sensor_height: float = Field(default=24.0, description="Sensor/film height in mm")
-    near_clip: float = Field(default=0.1, description="Near clipping plane")
-    far_clip: float = Field(default=10000.0, description="Far clipping plane")
-    field_of_view: float = Field(default=54.4, description="Vertical field of view in degrees")
-    aspect_ratio: float = Field(default=1.5, description="Aspect ratio (width/height)")
-    transform: TransformMatrix = Field(
-        default_factory=TransformMatrix,
-        description="World-space camera transform",
-    )
-    metadata: dict[str, Any] = Field(
-        default_factory=dict,
-        description="DCC-specific camera attributes",
-    )
+    name: str = ""
+    type: str = "perspective"
+    focal_length: float = 35.0
+    sensor_width: float = 36.0
+    sensor_height: float = 24.0
+    near_clip: float = 0.1
+    far_clip: float = 10000.0
+    field_of_view: float = 54.4
+    aspect_ratio: float = 1.5
+    transform: TransformMatrix = field(default_factory=TransformMatrix)
+    metadata: dict = field(default_factory=dict)
 
 
-class LightInfo(BaseModel):
+@dataclass
+class LightInfo:
     """Information about a light in the scene."""
 
-    name: str = Field(description="Light name")
-    type: str = Field(description="Light type: 'directional', 'point', 'spot', 'area', 'ambient'")
-    intensity: float = Field(default=1.0, description="Light intensity / strength")
-    color: tuple[float, float, float] = Field(
-        default=(1.0, 1.0, 1.0),
-        description="RGB color as (r, g, b), each 0.0-1.0",
-    )
-    temperature: float | None = Field(default=None, description="Color temperature in Kelvin")
-    transform: TransformMatrix = Field(
-        default_factory=TransformMatrix,
-        description="World-space light transform",
-    )
-    enabled: bool = Field(default=True, description="Whether the light is on")
-    metadata: dict[str, Any] = Field(
-        default_factory=dict,
-        description="DCC-specific light attributes (cone angle, decay radius, etc.)",
-    )
+    name: str = ""
+    type: str = ""
+    intensity: float = 1.0
+    color: tuple = (1.0, 1.0, 1.0)
+    temperature: Optional[float] = None
+    transform: TransformMatrix = field(default_factory=TransformMatrix)
+    enabled: bool = True
+    metadata: dict = field(default_factory=dict)
 
 
-class SceneInfo(BaseModel):
+@dataclass
+class SceneInfo:
     """Complete scene information container.
 
     Aggregates all scene query results into a single serializable structure
     that can be returned to the MCP layer as JSON.
     """
 
-    dcc_type: str = Field(description="DCC application type (e.g., 'maya', 'unreal')")
-    scene_name: str = Field(default="", description="Current scene/file name")
-    object_count: int = Field(default=0, description="Total number of objects")
-    objects: list[ObjectTypeInfo] = Field(
-        default_factory=list,
-        description="All scene objects matching the filter",
-    )
-    hierarchy: SceneHierarchy | None = Field(default=None, description="Scene hierarchy tree")
-    materials: list[MaterialInfo] = Field(
-        default_factory=list,
-        description="All materials in the scene",
-    )
-    cameras: list[CameraInfo] = Field(
-        default_factory=list,
-        description="All cameras in the scene",
-    )
-    lights: list[LightInfo] = Field(
-        default_factory=list,
-        description="All lights in the scene",
-    )
-    selection: list[str] = Field(
-        default_factory=list,
-        description="Currently selected object names",
-    )
-    metadata: dict[str, Any] = Field(
-        default_factory=dict,
-        description="Scene-level metadata (frame range, units, etc.)",
-    )
+    dcc_type: str = ""
+    scene_name: str = ""
+    object_count: int = 0
+    objects: list = field(default_factory=list)
+    hierarchy: Optional[SceneHierarchy] = None
+    materials: list = field(default_factory=list)
+    cameras: list = field(default_factory=list)
+    lights: list = field(default_factory=list)
+    selection: list = field(default_factory=list)
+    metadata: dict = field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -237,30 +199,16 @@ class SceneQueryFilter(str, Enum):
     CUSTOM = "custom"
 
 
-class SceneInfoConfig(BaseModel):
+@dataclass
+class SceneInfoConfig:
     """Configuration for scene info queries."""
 
-    include_transforms: bool = Field(
-        default=True,
-        description="Include transformation matrices (expensive for large scenes)",
-    )
-    include_materials: bool = Field(
-        default=True,
-        description="Include material assignments on objects",
-    )
-    include_hierarchy: bool = Field(
-        default=True,
-        description="Build full hierarchy tree",
-    )
-    include_metadata: bool = Field(
-        default=False,
-        description="Include DCC-specific metadata attributes",
-    )
-    max_objects: int = Field(
-        default=10000,
-        description="Maximum number of objects to return (pagination)",
-    )
-    page_offset: int = Field(default=0, description="Offset for paginated results")
+    include_transforms: bool = True
+    include_materials: bool = True
+    include_hierarchy: bool = True
+    include_metadata: bool = False
+    max_objects: int = 10000
+    page_offset: int = 0
 
 
 # ---------------------------------------------------------------------------
@@ -271,7 +219,7 @@ class SceneInfoConfig(BaseModel):
 class SceneError(Exception):
     """Base exception for scene information errors."""
 
-    def __init__(self, message: str, dcc_type: str = "", cause: Exception | None = None):
+    def __init__(self, message: str, dcc_type: str = "", cause: Optional[Exception] = None):
         self.dcc_type = dcc_type
         self.cause = cause
         super().__init__(f"[{dcc_type}] {message}" if dcc_type else message)
@@ -291,7 +239,7 @@ class BaseSceneInfo(ABC):
     which DCC it is communicating with.
     """
 
-    def __init__(self, config: SceneInfoConfig | None = None):
+    def __init__(self, config: Optional[SceneInfoConfig] = None):
         """Initialize with optional configuration.
 
         Args:
@@ -308,7 +256,7 @@ class BaseSceneInfo(ABC):
     # ---- Core query methods (all abstract) --------------------------------
 
     @abstractmethod
-    def get_objects(self, filter_: str | SceneQueryFilter = SceneQueryFilter.ALL) -> list[ObjectTypeInfo]:
+    def get_objects(self, filter_: Any = SceneQueryFilter.ALL) -> list:
         """Get scene objects matching the given filter.
 
         Args:
@@ -335,7 +283,7 @@ class BaseSceneInfo(ABC):
         """
 
     @abstractmethod
-    def get_materials(self) -> list[MaterialInfo]:
+    def get_materials(self) -> list:
         """Get all materials used in the scene.
 
         Returns:
@@ -347,7 +295,7 @@ class BaseSceneInfo(ABC):
         """
 
     @abstractmethod
-    def get_cameras(self) -> list[CameraInfo]:
+    def get_cameras(self) -> list:
         """Get all cameras in the scene.
 
         Returns:
@@ -359,7 +307,7 @@ class BaseSceneInfo(ABC):
         """
 
     @abstractmethod
-    def get_lights(self) -> list[LightInfo]:
+    def get_lights(self) -> list:
         """Get all lights in the scene.
 
         Returns:
@@ -371,7 +319,7 @@ class BaseSceneInfo(ABC):
         """
 
     @abstractmethod
-    def get_selection(self) -> list[str]:
+    def get_selection(self) -> list:
         """Get currently selected object names.
 
         Returns:
@@ -428,6 +376,6 @@ class BaseSceneInfo(ABC):
         """Get the current scene/file name. Override for custom behavior."""
         return ""
 
-    def _get_scene_metadata(self) -> dict[str, Any]:
+    def _get_scene_metadata(self) -> dict:
         """Get DCC-specific scene metadata. Override for custom behavior."""
         return {}

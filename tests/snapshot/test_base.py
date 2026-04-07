@@ -80,7 +80,7 @@ class TestSnapshotConfig:
 
     def test_model_validation(self) -> None:
         config = SnapshotConfig(width=-100)
-        # Pydantic may coerce or reject; we just check it doesn't crash on init
+        # dataclasses accept any value on init; we just check it doesn't crash
         assert config is not None
 
 

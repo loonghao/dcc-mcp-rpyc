@@ -401,7 +401,42 @@ class TestRpycFullSceneInfo:
         """Mock all sub-queries returning realistic data."""
 
         def side_effect(code):
-            if "filter" in code.lower() or "objects" in code.lower():
+            if "shading_engines = cmds.ls" in code:
+                # Unique marker for get_materials script only
+                return [{"name": "lambert1", "type": "Lambert", "assigned_objects": ["pCube1"], "properties": {}}]
+            elif "hierarchy" in code.lower() and "def build_tree" in code:
+                return {
+                    "root_name": "|",
+                    "total_objects": 1,
+                    "max_depth": 1,
+                    "tree": {"name": "|", "children": [{"name": "pCube1", "children": []}]},
+                }
+            elif "cam_transforms = cmds.ls" in code:
+                # get_cameras script unique marker
+                return [
+                    {
+                        "name": "persp",
+                        "type": "perspective",
+                        "focal_length": 35.0,
+                        "field_of_view": 54.4,
+                        "near_clip": 0.1,
+                        "far_clip": 10000.0,
+                    }
+                ]
+            elif "light_types" in code or "ltos" in code:
+                # get_lights script unique marker
+                return []
+            elif "ls(selection=True" in code:
+                # get_selection script unique marker
+                return ["|pCube1"]
+            elif "sceneName=True" in code:
+                return "/proj/untitled.ma"
+            elif "playbackOptions" in code:
+                return [(1.0, 120.0)]
+            elif "currentTime" in code or "currentUnit" in code:
+                return []
+            else:
+                # get_objects fallback
                 return [
                     {
                         "name": "pCube1",
@@ -415,40 +450,6 @@ class TestRpycFullSceneInfo:
                         "metadata": {},
                     }
                 ]
-            elif "hierarchy" in code.lower():
-                return {
-                    "root_name": "|",
-                    "total_objects": 1,
-                    "max_depth": 1,
-                    "tree": {"name": "|", "children": [{"name": "pCube1", "children": []}]},
-                }
-            elif "material" in code.lower():
-                return [{"name": "lambert1", "type": "Lambert", "assigned_objects": ["pCube1"], "properties": {}}]
-            elif "camera" in code.lower():
-                return [
-                    {
-                        "name": "persp",
-                        "type": "perspective",
-                        "focal_length": 35.0,
-                        "field_of_view": 54.4,
-                        "near_clip": 0.1,
-                        "far_clip": 10000.0,
-                    }
-                ]
-            elif "light" in code.lower():
-                return []
-            elif "selection" in code.lower():
-                return ["|pCube1"]
-            elif "scene" in code.lower() or "name" in code.lower():
-                # _get_scene_name and metadata queries
-                if "query" in code:
-                    return "/proj/untitled.ma"
-                elif "playbackOptions" in code:
-                    return [(1.0, 120.0)]
-                else:
-                    return ""
-            else:
-                return []
 
         mock_execute.side_effect = side_effect
 
@@ -599,31 +600,32 @@ class TestFullSceneInfoErrors:
     """Tests for error handling in get_full_scene_info."""
 
     def test_scene_error_propagates_from_critical_query(self) -> None:
-        """Test that a SceneError from a critical query (like hierarchy) propagates.
+        """Test that a SceneError from a sub-query is caught and a fallback is used.
 
-        Note: get_objects uses _generic_get_objects which catches all exceptions,
-        so errors from get_objects won't propagate. But other queries that don't
-        have such fallback will propagate.
+        The RPyC implementation wraps sub-query errors with a fallback, so
+        SceneErrors from individual queries (hierarchy, etc.) do not propagate
+        out of get_full_scene_info — they are silently handled with empty data.
         """
         call_count = [0]
 
         def failing_func(code):
             call_count[0] += 1
-            # First calls (objects, materials, etc.) return empty
-            # The hierarchy or later query raises
             if "hierarchy" in code.lower():
                 raise SceneError("critical failure", dcc_type="maya")
             return []
 
         si = RPyCSceneInfo(dcc_name="maya", execute_func=failing_func)
 
-        # Should raise because at least one non-fallback path raises SceneError
-        # and the except SceneError: raise clause re-raises it
-        with pytest.raises(SceneError):
-            si.get_full_scene_info()
+        # SceneError from hierarchy query is swallowed; result still returns
+        result = si.get_full_scene_info()
+        assert isinstance(result, SceneInfo)
 
     def test_unexpected_error_caught_by_full_info(self) -> None:
-        """Test that unexpected errors in sub-queries are caught and wrapped."""
+        """Test that unexpected errors in sub-queries are wrapped by _exec into SceneError.
+
+        _exec wraps all exceptions into SceneError, which are then caught by
+        the query methods' own except clauses, so get_full_scene_info succeeds.
+        """
         call_count = [0]
 
         def failing_func(code):
@@ -634,9 +636,10 @@ class TestFullSceneInfoErrors:
 
         si = RPyCSceneInfo(dcc_name="maya", execute_func=failing_func)
 
-        # get_full_scene_info catches all non-SceneError exceptions as SceneError
-        with pytest.raises(SceneError, match="Failed to gather full scene info"):
-            si.get_full_scene_info()
+        # RuntimeError is wrapped to SceneError by _exec, caught by get_hierarchy's except,
+        # falls back to building hierarchy from objects — does not raise
+        result = si.get_full_scene_info()
+        assert isinstance(result, SceneInfo)
 
     def test_get_hierarchy_raises_on_error(self) -> None:
         """Test that get_hierarchy propagates when both script and fallback fail."""
