@@ -7,6 +7,7 @@ standard scene query methods (``get_scene_info``, ``execute_python``, etc.).
 # Import built-in modules
 import logging
 from typing import Any
+from typing import Union
 
 # Import local modules
 from dcc_mcp_ipc.scene.base import BaseSceneInfo
@@ -431,7 +432,7 @@ class RPyCSceneInfo(BaseSceneInfo):
             pass
         return ""
 
-    def get_objects(self, filter_: str | SceneQueryFilter = SceneQueryFilter.ALL) -> list[ObjectTypeInfo]:
+    def get_objects(self, filter_: Union[str, SceneQueryFilter] = SceneQueryFilter.ALL) -> list[ObjectTypeInfo]:
         """Get objects by executing DCC-specific script or using generic API."""
         # Try DCC-specific optimized script first
         scripts = _DCC_SCRIPTS.get(self._dcc_name, {})

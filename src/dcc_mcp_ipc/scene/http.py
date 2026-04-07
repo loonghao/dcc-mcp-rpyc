@@ -7,6 +7,7 @@ Uses ``requests`` as an optional dependency — falls back gracefully when unava
 # Import built-in modules
 import logging
 from typing import Any
+from typing import Union
 
 # Import third-party modules (optional)
 try:
@@ -97,7 +98,7 @@ class HTTPSceneInfo(BaseSceneInfo):
                 pass
         return ""
 
-    def get_objects(self, filter_: str | SceneQueryFilter = SceneQueryFilter.ALL) -> list[ObjectTypeInfo]:
+    def get_objects(self, filter_: Union[str, SceneQueryFilter] = SceneQueryFilter.ALL) -> list[ObjectTypeInfo]:
         """Get scene objects via HTTP."""
         if self._dcc_type_val == "unreal":
             return self._unreal_get_objects(filter_)
