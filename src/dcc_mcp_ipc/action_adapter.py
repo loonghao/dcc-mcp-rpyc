@@ -18,6 +18,8 @@ from typing import Union
 from dcc_mcp_core import ActionDispatcher
 from dcc_mcp_core import ActionRegistry
 from dcc_mcp_core import ActionResultModel
+from dcc_mcp_core import error_result
+from dcc_mcp_core import success_result
 
 # Import local modules
 from dcc_mcp_ipc.utils.errors import ActionError
@@ -127,12 +129,71 @@ class ActionAdapter:
         """
         removed = self.dispatcher.remove_handler(name)
         if removed:
+            try:
+                self.registry.unregister(name, dcc_name=self.dcc_name)
+            except Exception:
+                pass  # unregister is best-effort; handler removal already succeeded
             logger.debug("Unregistered action '%s' from adapter '%s'", name, self.name)
         return removed
 
     # ------------------------------------------------------------------
     # Discovery
     # ------------------------------------------------------------------
+
+    def search_actions(
+        self,
+        category: Optional[str] = None,
+        tags: Optional[List[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Search actions by category and/or tags (requires dcc-mcp-core >= 0.12.5).
+
+        Args:
+            category: Optional category filter.
+            tags: Optional tag list filter.
+
+        Returns:
+            List of matching action metadata dicts.
+
+        """
+        try:
+            return self.registry.search_actions(
+                category=category,
+                tags=tags,
+                dcc_name=self.dcc_name,
+            )
+        except Exception as exc:
+            logger.error("Error searching actions: %s", exc)
+            return []
+
+    def register_actions_batch(
+        self,
+        actions: List[Dict[str, Any]],
+    ) -> int:
+        """Register multiple actions in a single call (requires dcc-mcp-core >= 0.12.6).
+
+        Each entry in *actions* must contain at minimum ``name`` and ``handler``
+        keys.  All other keys are forwarded to :meth:`register_action`.
+
+        Args:
+            actions: List of action specification dicts.
+
+        Returns:
+            Number of successfully registered actions.
+
+        """
+        registered = 0
+        for spec in actions:
+            handler = spec.pop("handler", None)
+            name = spec.get("name", "")
+            if not handler or not name:
+                logger.warning("Skipping action spec missing name or handler: %s", spec)
+                continue
+            try:
+                self.register_action(name, handler, **spec)
+                registered += 1
+            except Exception as exc:
+                logger.warning("Failed to register action '%s': %s", name, exc)
+        return registered
 
     def list_actions(self, names_only: bool = False) -> Union[Dict[str, Any], List[str]]:
         """List all registered actions and their metadata.
@@ -204,8 +265,7 @@ class ActionAdapter:
                         error=output.get("error"),
                         context=output.get("context", output),
                     )
-                return ActionResultModel(
-                    success=True,
+                return success_result(
                     message=f"Successfully executed {action_name}",
                     context={"result": output},
                 )
@@ -219,8 +279,7 @@ class ActionAdapter:
                     context=result_dict.get("context", result_dict),
                 )
 
-            return ActionResultModel(
-                success=True,
+            return success_result(
                 message=f"Successfully executed {action_name}",
                 context={"result": result_dict},
             )

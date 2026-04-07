@@ -14,6 +14,7 @@ from typing import TypeVar
 
 # Import third-party modules
 from dcc_mcp_core import ActionResultModel
+from dcc_mcp_core import error_result
 
 # Import local modules
 from dcc_mcp_ipc.client.base import BaseApplicationClient
@@ -162,9 +163,7 @@ class BaseDCCClient(BaseApplicationClient):
         try:
             return self.execute_with_connection(lambda conn: conn.root.create_primitive(primitive_type, **kwargs))
         except Exception as e:
-            # Return a structured error response
-            return ActionResultModel(
-                success=False,
+            return error_result(
                 message=f"Failed to create {primitive_type}",
                 error=str(e),
                 context={"primitive_type": primitive_type, "kwargs": kwargs},
@@ -188,9 +187,7 @@ class BaseDCCClient(BaseApplicationClient):
         try:
             return self.execute_with_connection(lambda conn: conn.root.execute_command(command, *args, **kwargs))
         except Exception as e:
-            # Return a structured error response
-            return ActionResultModel(
-                success=False,
+            return error_result(
                 message=f"Failed to execute command: {command}",
                 error=str(e),
                 context={"command": command, "args": args, "kwargs": kwargs},
@@ -213,9 +210,7 @@ class BaseDCCClient(BaseApplicationClient):
         try:
             return self.execute_with_connection(lambda conn: conn.root.execute_script(script, script_type))
         except Exception as e:
-            # Return a structured error response
-            return ActionResultModel(
-                success=False,
+            return error_result(
                 message=f"Failed to execute {script_type} script",
                 error=str(e),
                 context={"script_type": script_type, "script_length": len(script)},
