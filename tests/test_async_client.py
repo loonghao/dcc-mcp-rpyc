@@ -389,3 +389,70 @@ class TestAsyncBaseIsConnected:
         client = AsyncBaseApplicationClient("localhost", 18812)
         client.connection = MockConnection(closed=True)
         assert client.is_connected() is False
+
+
+class TestAsyncDCCClientMissingPaths:
+    """Cover uncovered lines in async_dcc.py:
+    - line 105: get_scene_info (delegates to call_action)
+    - lines 124-127: execute_dcc_command (ensure_connected + run_in_executor)
+    """
+
+    @pytest.mark.asyncio
+    async def test_get_scene_info_delegates_to_call_action(self):
+        """get_scene_info calls call_action('get_scene_info', include_selection=...)."""
+        client = AsyncBaseDCCClient("localhost", 18812, "maya")
+
+        expected = {"objects": [{"name": "pCube1"}]}
+        call_action_calls = []
+
+        async def _mock_call_action(action_name, **kwargs):
+            call_action_calls.append((action_name, kwargs))
+            return expected
+
+        client.call_action = _mock_call_action
+
+        result = await client.get_scene_info(include_selection=True)
+
+        assert result == expected
+        assert len(call_action_calls) == 1
+        assert call_action_calls[0][0] == "get_scene_info"
+        assert call_action_calls[0][1] == {"include_selection": True}
+
+    @pytest.mark.asyncio
+    async def test_get_scene_info_default_include_selection(self):
+        """get_scene_info defaults include_selection=True."""
+        client = AsyncBaseDCCClient("localhost", 18812, "blender")
+
+        call_action_calls = []
+
+        async def _mock_call_action(action_name, **kwargs):
+            call_action_calls.append((action_name, kwargs))
+            return {}
+
+        client.call_action = _mock_call_action
+        await client.get_scene_info()
+
+        assert call_action_calls[0][1]["include_selection"] is True
+
+    @pytest.mark.asyncio
+    async def test_execute_dcc_command_success(self, mock_rpyc_connect):
+        """execute_dcc_command runs command via run_in_executor (lines 124-127)."""
+        client = AsyncBaseDCCClient("localhost", 18812, "maya")
+        await client.connect()
+
+        client.connection.root.exposed_execute_dcc_command = mock.MagicMock(return_value="mel_ok")
+
+        result = await client.execute_dcc_command("polyCube")
+
+        client.connection.root.exposed_execute_dcc_command.assert_called_once_with("polyCube")
+        assert result == "mel_ok"
+
+    @pytest.mark.asyncio
+    async def test_execute_dcc_command_not_connected_raises(self):
+        """execute_dcc_command raises ConnectionError when not connected."""
+        client = AsyncBaseDCCClient("localhost", 18812, "maya")
+        # No connection set, ensure_connected will call connect() which will fail
+
+        with mock.patch.object(client, "connect", side_effect=Exception("cannot connect")):
+            with pytest.raises(Exception):
+                await client.execute_dcc_command("polyCube")

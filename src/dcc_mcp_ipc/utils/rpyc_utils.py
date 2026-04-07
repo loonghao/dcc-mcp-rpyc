@@ -5,13 +5,10 @@ including parameter delivery and remote command execution.
 """
 
 # Import built-in modules
-import logging
 from typing import Any
 
 # Import third-party modules
 import rpyc
-
-logger = logging.getLogger(__name__)
 
 
 def deliver_parameters(params: dict[str, Any]) -> dict[str, Any]:
@@ -24,16 +21,7 @@ def deliver_parameters(params: dict[str, Any]) -> dict[str, Any]:
         Processed parameters dictionary with NetRefs converted to values
 
     """
-    # Convert any NetRefs to actual values
-    delivered_params = {}
-    for key, value in params.items():
-        try:
-            delivered_params[key] = value
-        except Exception as e:
-            logger.warning(f"Error delivering parameter {key}: {e}")
-            delivered_params[key] = value
-
-    return delivered_params
+    return dict(params)
 
 
 def execute_remote_command(connection: "rpyc.Connection", command: str, *args, **kwargs) -> Any:

@@ -166,6 +166,41 @@ class TestRPyCSnapshotCaptureRender:
         result = snap.capture_render()
         assert result == b"rendered"
 
+    def test_render_with_str_response(self) -> None:
+        """Test capture_render when remote returns raw base64 string (line 167-168)."""
+        b64_str = base64.b64encode(b"render_str_data").decode("ascii")
+        exec_func = MagicMock(return_value=b64_str)
+        snap = RPyCSnapshot(dcc_name="blender", execute_func=exec_func)
+
+        result = snap.capture_render()
+        assert result == b"render_str_data"
+
+    def test_render_with_bytes_response(self) -> None:
+        """Test capture_render when remote returns raw bytes (line 170-171)."""
+        exec_func = MagicMock(return_value=b"raw_render_bytes")
+        snap = RPyCSnapshot(dcc_name="maya", execute_func=exec_func)
+
+        result = snap.capture_render()
+        assert result == b"raw_render_bytes"
+
+    def test_render_unexpected_type_raises(self) -> None:
+        """Test capture_render raises SnapshotError for unexpected result type (line 173)."""
+        exec_func = MagicMock(return_value=42)
+        snap = RPyCSnapshot(dcc_name="maya", execute_func=exec_func)
+
+        with pytest.raises(SnapshotError, match="Unexpected render result"):
+            snap.capture_render()
+
+    def test_render_with_config(self) -> None:
+        """Test capture_render uses provided config."""
+        b64_data = base64.b64encode(b"config_render").decode("ascii")
+        exec_func = MagicMock(return_value={"data": b64_data})
+        snap = RPyCSnapshot(dcc_name="maya", execute_func=exec_func)
+
+        config = SnapshotConfig(width=640, height=480)
+        result = snap.capture_render(config)
+        assert result == b"config_render"
+
 
 class TestRPyCDCCSpecificScripts:
     """Tests for DCC-specific capture script generation."""

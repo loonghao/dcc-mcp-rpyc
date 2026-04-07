@@ -1,9 +1,7 @@
 """Tests for dcc_mcp_ipc.utils.rpyc_utils module."""
 
 # Import built-in modules
-import logging
 from unittest.mock import MagicMock
-from unittest.mock import patch
 
 # Import third-party modules
 import pytest
@@ -56,46 +54,6 @@ class TestDeliverParameters:
         assert len(result) == len(params)
         for key in params:
             assert result[key] == params[key]
-
-    def test_exception_during_assignment_logs_warning_and_falls_back(self, caplog):
-        """Verify the warning+fallback branch (lines 32-34) by patching logger.warning."""
-        # Import built-in modules
-        from unittest.mock import patch
-
-        import dcc_mcp_ipc.utils.rpyc_utils as mod
-
-        warning_calls = []
-        with patch.object(mod.logger, "warning", side_effect=lambda msg, *a, **kw: warning_calls.append(msg)):
-            delivered: dict = {}
-            for key, value in {"fail_key": "test_value"}.items():
-                try:
-                    raise RuntimeError("simulated NetRef delivery failure")
-                except Exception as e:
-                    mod.logger.warning(f"Error delivering parameter {key}: {e}")
-                    delivered[key] = value
-
-        assert any("Error delivering parameter" in msg for msg in warning_calls)
-        assert delivered.get("fail_key") == "test_value"
-
-    def test_exception_during_value_access_triggers_fallback(self, caplog):
-        """Confirm fallback value is preserved after exception."""
-        # Import built-in modules
-        from unittest.mock import patch
-
-        import dcc_mcp_ipc.utils.rpyc_utils as mod
-
-        warning_calls = []
-        with patch.object(mod.logger, "warning", side_effect=lambda msg, *a, **kw: warning_calls.append(msg)):
-            delivered: dict = {}
-            for key, value in {"my_key": 42}.items():
-                try:
-                    raise ValueError("transient error")
-                except Exception as e:
-                    mod.logger.warning(f"Error delivering parameter {key}: {e}")
-                    delivered[key] = value
-
-        assert delivered.get("my_key") == 42
-        assert any("Error delivering parameter" in msg for msg in warning_calls)
 
 
 class TestExecuteRemoteCommand:
