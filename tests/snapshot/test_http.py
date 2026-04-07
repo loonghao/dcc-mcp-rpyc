@@ -324,3 +324,52 @@ class TestHTTPSnapshotInfo:
         assert info["dcc_type"] == "unreal"
         assert info["base_url"] == "http://localhost:30010"
         assert info["transport"] == "http"
+
+
+class TestHTTPHealthCheckFallback:
+    """Tests for health_check fallback path (base URL when /health fails)."""
+
+    def test_health_check_health_fails_root_succeeds(self, mock_session) -> None:
+        """/health raises, but root URL returns 200 → True."""
+        ok_resp = MagicMock()
+        ok_resp.status_code = 200
+
+        call_count = [0]
+
+        def side_effect(url, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                # First call: /health endpoint raises
+                raise requests.ConnectionError("health not found")
+            return ok_resp
+
+        mock_session.get.side_effect = side_effect
+        snap = HTTPSnapshot(base_url="http://localhost:30010", session=mock_session)
+        result = snap.health_check()
+        assert result is True
+
+    def test_health_check_both_fail_returns_false(self, mock_session) -> None:
+        """/health and root both raise → False."""
+        mock_session.get.side_effect = requests.ConnectionError("unreachable")
+        snap = HTTPSnapshot(base_url="http://localhost:30010", session=mock_session)
+        result = snap.health_check()
+        assert result is False
+
+    def test_health_check_root_server_error(self, mock_session) -> None:
+        """/health raises; root returns 500 → False."""
+        err_resp = MagicMock()
+        err_resp.status_code = 500
+
+        call_count = [0]
+
+        def side_effect(url, **kwargs):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise requests.ConnectionError("health not found")
+            return err_resp
+
+        mock_session.get.side_effect = side_effect
+        snap = HTTPSnapshot(base_url="http://localhost:30010", session=mock_session)
+        result = snap.health_check()
+        assert result is False
+

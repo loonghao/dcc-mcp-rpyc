@@ -526,6 +526,204 @@ if REQUESTS_AVAILABLE:
                 http_scene._request("post", "/notfound")
 
     # =============================================================================
+    # Non-Unreal DCC Paths (get_materials/cameras/lights for non-"unreal" types)
+    # =============================================================================
+
+    class TestNonUnrealPaths:
+        """Tests for HTTPSceneInfo methods when dcc_type is not 'unreal'."""
+
+        @pytest.fixture
+        def unity_scene(self, mock_session) -> HTTPSceneInfo:
+            return HTTPSceneInfo(dcc_type="unity", base_url="http://localhost:8080", session=mock_session)
+
+        def test_get_materials_non_unreal_returns_empty(self, unity_scene) -> None:
+            mats = unity_scene.get_materials()
+            assert mats == []
+
+        def test_get_cameras_non_unreal_returns_empty(self, unity_scene) -> None:
+            cams = unity_scene.get_cameras()
+            assert cams == []
+
+        def test_get_lights_non_unreal_returns_empty(self, unity_scene) -> None:
+            lights = unity_scene.get_lights()
+            assert lights == []
+
+        def test_get_selection_non_unreal_returns_empty(self, unity_scene) -> None:
+            sel = unity_scene.get_selection()
+            assert sel == []
+
+        def test_get_scene_name_non_unreal_returns_empty(self, unity_scene) -> None:
+            name = unity_scene._get_scene_name()
+            assert name == ""
+
+        def test_get_scene_metadata_non_unreal_returns_empty_dict(self, unity_scene) -> None:
+            meta = unity_scene._get_scene_metadata()
+            assert meta == {}
+
+    # =============================================================================
+    # _get_scene_name with raw-dict response (not requests.Response)
+    # =============================================================================
+
+    class TestSceneNameRawResponse:
+        """Tests for _get_scene_name when response is a plain dict (not requests.Response)."""
+
+        def test_scene_name_from_raw_dict(self, mock_session) -> None:
+            """When response is a plain dict (not requests.Response), must use .get()."""
+            si = HTTPSceneInfo(dcc_type="unreal", base_url="http://localhost:30010", session=mock_session)
+            # Patch _request to return a plain dict instead of requests.Response
+            with patch.object(si, "_request", return_value={"ReturnValue": "TestLevel"}):
+                name = si._get_scene_name()
+            assert name == "TestLevel"
+
+        def test_scene_name_graceful_failure(self, mock_session) -> None:
+            si = HTTPSceneInfo(dcc_type="unreal", base_url="http://localhost:30010", session=mock_session)
+            with patch.object(si, "_request", side_effect=SceneError("fail", dcc_type="unreal")):
+                name = si._get_scene_name()
+            assert name == ""
+
+    # =============================================================================
+    # _unreal_get_objects edge cases: non-dict response, non-list actors
+    # =============================================================================
+
+    class TestUnrealGetObjectsEdgeCases:
+        """Edge-case tests for _unreal_get_objects."""
+
+        def test_non_dict_response_skipped(self, http_scene, mock_session) -> None:
+            """When response data is not a dict, actors should be empty and skipped."""
+            # _request returns a plain list (not a dict), ReturnValue key absent
+            with patch.object(http_scene, "_request", return_value=["not", "a", "dict"]):
+                objects = http_scene._unreal_get_objects("all")
+            assert objects == []
+
+        def test_non_list_actors_continue(self, http_scene, mock_session) -> None:
+            """When ReturnValue is not a list, the loop should skip the class."""
+            with patch.object(http_scene, "_request", return_value={"ReturnValue": "not_a_list"}):
+                objects = http_scene._unreal_get_objects("all")
+            assert objects == []
+
+    # =============================================================================
+    # _unreal_get_cameras exception fallback
+    # =============================================================================
+
+    class TestUnrealCamerasExceptionFallback:
+        """Tests for _unreal_get_cameras when FOV property query raises."""
+
+        def test_fov_query_exception_uses_default(self, http_scene, mock_session) -> None:
+            """When the FOV property query fails, camera is still returned with default FOV."""
+            # Mock _unreal_get_objects to return one camera actor
+            mock_actor = MagicMock()
+            mock_actor.name = "Cam1"
+            mock_actor.path = "/Game/Cam1"
+            mock_actor.transform = MagicMock()
+            mock_actor.metadata = {}
+            with patch.object(http_scene, "_unreal_get_objects", return_value=[mock_actor]):
+                # Make FOV property request fail
+                with patch.object(http_scene, "_request", side_effect=SceneError("fail", dcc_type="unreal")):
+                    cams = http_scene._unreal_get_cameras()
+
+            assert len(cams) == 1
+            assert cams[0].field_of_view == 90.0  # default fallback
+
+        def test_no_cameras_returns_empty(self, http_scene, mock_session) -> None:
+            with patch.object(http_scene, "_unreal_get_objects", return_value=[]):
+                cams = http_scene._unreal_get_cameras()
+            assert cams == []
+
+    # =============================================================================
+    # _unreal_get_lights edge cases: non-list components, intensity/color failure
+    # =============================================================================
+
+    class TestUnrealLightsEdgeCases:
+        """Edge-case tests for _unreal_get_lights."""
+
+        def test_non_list_components_skipped(self, http_scene, mock_session) -> None:
+            """When ReturnValue is not a list, the light type is skipped."""
+            with patch.object(http_scene, "_request", return_value={"ReturnValue": None}):
+                lights = http_scene._unreal_get_lights()
+            assert lights == []
+
+        def test_intensity_color_exception_uses_defaults(self, http_scene, mock_session) -> None:
+            """When intensity/color property query fails, light is added with defaults."""
+            call_count = [0]
+
+            def side_effect(method, path, **kwargs):
+                call_count[0] += 1
+                if call_count[0] == 1:
+                    # First call: return one component
+                    return {"ReturnValue": [{"Name": "PLight", "OuterPath": "/Game/PLight"}]}
+                # All subsequent calls for intensity/color raise
+                raise SceneError("property fail", dcc_type="unreal")
+
+            with patch.object(http_scene, "_request", side_effect=side_effect):
+                # Only check that one light type is queried without crash
+                # Since all 4 light types are iterated, we need to control it carefully
+                # Use direct call to test just point light handling
+                pass
+
+            # Alternative: mock the entire loop — test the exception branch in _unreal_get_lights
+            # by patching _request to return one component then raise on property queries
+            responses = [
+                {"ReturnValue": [{"Name": "PLight", "OuterPath": "/Light"}]},  # point: found
+                SceneError("fail", dcc_type="unreal"),  # intensity: fail
+            ]
+            idx = [0]
+
+            def sequential_side(method, path, **kwargs):
+                item = responses[idx[0]]
+                idx[0] = min(idx[0] + 1, len(responses) - 1)
+                if isinstance(item, Exception):
+                    raise item
+                return item
+
+            with patch.object(http_scene, "_request", side_effect=sequential_side):
+                lights = http_scene._unreal_get_lights()
+
+            # Light should still appear with default intensity=1.0
+            assert len(lights) >= 1
+            assert lights[0].intensity == 1.0
+
+    # =============================================================================
+    # _unreal_get_actor_transform: include_transforms=False
+    # =============================================================================
+
+    class TestActorTransformDisabled:
+        """Tests for _unreal_get_actor_transform when include_transforms=False."""
+
+        def test_returns_none_when_transforms_disabled(self, mock_session) -> None:
+            from dcc_mcp_ipc.scene.base import SceneInfoConfig
+
+            cfg = SceneInfoConfig(include_transforms=False)
+            si = HTTPSceneInfo(
+                dcc_type="unreal",
+                base_url="http://localhost:30010",
+                config=cfg,
+                session=mock_session,
+            )
+            result = si._unreal_get_actor_transform("/Game/SomeActor")
+            assert result is None
+
+        def test_returns_transform_matrix_on_success(self, mock_session) -> None:
+            si = HTTPSceneInfo(
+                dcc_type="unreal",
+                base_url="http://localhost:30010",
+                session=mock_session,
+            )
+            with patch.object(si, "_request", return_value={"ReturnValue": {"X": 5.0, "Y": 10.0, "Z": 0.0}}):
+                result = si._unreal_get_actor_transform("/Game/A")
+            assert result is not None
+            assert result.translation[0] == 5.0
+
+        def test_returns_none_on_request_failure(self, mock_session) -> None:
+            si = HTTPSceneInfo(
+                dcc_type="unreal",
+                base_url="http://localhost:30010",
+                session=mock_session,
+            )
+            with patch.object(si, "_request", side_effect=SceneError("fail", dcc_type="unreal")):
+                result = si._unreal_get_actor_transform("/Game/A")
+            assert result is None
+
+    # =============================================================================
     # Full Integration Test via get_full_scene_info
     # =============================================================================
 

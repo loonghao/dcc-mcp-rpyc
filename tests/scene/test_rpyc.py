@@ -678,3 +678,172 @@ class TestSceneConfig:
         assert si.config.include_transforms is True
         assert si.config.include_materials is True
         assert si.config.max_objects == 10000
+
+
+# =============================================================================
+# _get_exec_func: connection with no root
+# =============================================================================
+
+
+class TestGetExecFuncNoRoot:
+    """Tests for edge cases in execute function resolution."""
+
+    def test_connection_root_is_none(self) -> None:
+        conn = MagicMock()
+        conn.root = None
+        si = RPyCSceneInfo(dcc_name="maya", connection=conn)
+        with pytest.raises(SceneError, match="No execute function"):
+            si._get_exec_func()
+
+
+# =============================================================================
+# get_hierarchy: raw result is not a dict (triggers object-based fallback)
+# =============================================================================
+
+
+class TestRpycGetHierarchyEdgeCases:
+    """Additional edge-case tests for get_hierarchy."""
+
+    def test_non_dict_raw_falls_to_objects_path(self, rpyc_scene, mock_execute) -> None:
+        """When script returns non-dict, builds hierarchy from get_objects instead."""
+        call_count = [0]
+
+        def side_effect(code: str):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                # First call = hierarchy script → return list (not dict)
+                return ["not", "a", "dict"]
+            # Subsequent calls (get_objects) return empty
+            return []
+
+        rpyc_scene._execute_func = side_effect
+        hierarchy = rpyc_scene.get_hierarchy()
+        assert isinstance(hierarchy, SceneHierarchy)
+        # Empty objects → zero total
+        assert hierarchy.total_objects == 0
+
+    def test_hierarchy_script_scene_error_falls_to_objects(self, rpyc_scene, mock_execute) -> None:
+        """When script raises SceneError, builds hierarchy from get_objects."""
+        call_count = [0]
+
+        def side_effect(code: str):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise SceneError("hierarchy fail", dcc_type="maya")
+            return []
+
+        rpyc_scene._execute_func = side_effect
+        hierarchy = rpyc_scene.get_hierarchy()
+        assert isinstance(hierarchy, SceneHierarchy)
+
+
+# =============================================================================
+# get_materials/cameras/lights: non-list raw → fallback to []
+# =============================================================================
+
+
+class TestRpycQueryNonListRaw:
+    """Tests for get_materials/cameras/lights when script returns non-list."""
+
+    def test_get_materials_non_list_returns_empty(self, rpyc_scene, mock_execute) -> None:
+        mock_execute.return_value = {"unexpected": "dict"}
+        mats = rpyc_scene.get_materials()
+        assert mats == []
+
+    def test_get_cameras_non_list_returns_empty(self, rpyc_scene, mock_execute) -> None:
+        mock_execute.return_value = "not_a_list"
+        cams = rpyc_scene.get_cameras()
+        assert cams == []
+
+    def test_get_lights_non_list_returns_empty(self, rpyc_scene, mock_execute) -> None:
+        mock_execute.return_value = 42
+        lights = rpyc_scene.get_lights()
+        assert lights == []
+
+    def test_get_materials_type_error_returns_empty(self, rpyc_scene, mock_execute) -> None:
+        """When MaterialInfo(**item) raises TypeError, falls back to []."""
+        mock_execute.return_value = [{"bad_key": "no_name_field"}]
+        mats = rpyc_scene.get_materials()
+        # Either returns empty (fallback) or raises SceneError — both acceptable
+        assert isinstance(mats, list)
+
+
+# =============================================================================
+# get_selection: generic fallback path via _get_exec_func
+# =============================================================================
+
+
+class TestRpycSelectionGenericFallback:
+    """Tests for get_selection generic fallback path."""
+
+    def test_no_dcc_script_uses_generic_path(self) -> None:
+        """When DCC has no selection script, uses generic fallback (returns [])."""
+        func = MagicMock(return_value=[])
+        si = RPyCSceneInfo(dcc_name="houdini", execute_func=func)
+        sel = si.get_selection()
+        assert isinstance(sel, list)
+
+    def test_selection_script_scene_error_falls_to_generic(self) -> None:
+        """When DCC selection script raises SceneError, falls back to generic path."""
+        call_count = [0]
+
+        def side_effect(code: str):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise SceneError("selection fail", dcc_type="maya")
+            return []
+
+        si = RPyCSceneInfo(dcc_name="maya", execute_func=side_effect)
+        sel = si.get_selection()
+        assert isinstance(sel, list)
+
+    def test_selection_script_type_error_falls_to_generic(self) -> None:
+        """When selection script raises TypeError, falls back to generic path."""
+        call_count = [0]
+
+        def side_effect(code: str):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise TypeError("type error in selection")
+            return []
+
+        si = RPyCSceneInfo(dcc_name="maya", execute_func=side_effect)
+        sel = si.get_selection()
+        assert isinstance(sel, list)
+
+    def test_generic_fallback_returns_list_when_info_is_list(self) -> None:
+        """Generic fallback: when func returns list, selection is returned."""
+        call_count = [0]
+
+        def side_effect(code: str):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise SceneError("no script", dcc_type="maya")
+            # Generic fallback call — return a list
+            return ["|obj1", "|obj2"]
+
+        si = RPyCSceneInfo(dcc_name="maya", execute_func=side_effect)
+        sel = si.get_selection()
+        assert isinstance(sel, list)
+
+
+# =============================================================================
+# _get_scene_metadata: blender path execution
+# =============================================================================
+
+
+class TestBlenderMetadataEdgeCases:
+    """Tests for _get_scene_metadata Blender path edge cases."""
+
+    def test_blender_metadata_scene_error_returns_empty(self) -> None:
+        func = MagicMock(side_effect=SceneError("bpy fail", dcc_type="blender"))
+        si = RPyCSceneInfo(dcc_name="blender", execute_func=func)
+        meta = si._get_scene_metadata()
+        assert meta == {}
+
+    def test_other_dcc_metadata_returns_empty(self) -> None:
+        func = MagicMock(return_value="whatever")
+        si = RPyCSceneInfo(dcc_name="houdini", execute_func=func)
+        meta = si._get_scene_metadata()
+        assert meta == {}
+

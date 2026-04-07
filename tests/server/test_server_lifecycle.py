@@ -212,3 +212,32 @@ class TestIsServerRunning:
     def test_unregistered_server(self):
         mock_server = MagicMock()
         assert is_server_running(mock_server) is False
+
+
+class TestServerThreadErrorPath:
+    """Tests for the _server_thread error path inside start_server."""
+
+    def test_server_thread_exception_sets_running_false(self):
+        """When server.start() raises, _server_thread should set running=False."""
+        import time
+
+        mock_server = MagicMock()
+        mock_server.host = "localhost"
+        mock_server.port = 0
+        mock_server.start.side_effect = RuntimeError("server crashed")
+
+        thread = start_server(mock_server)
+        # Wait briefly for the thread to finish processing the exception
+        thread.join(timeout=2.0)
+
+        # Find the registry entry for this server
+        server_info = None
+        for info in lifecycle_module._servers.values():
+            if info["server"] is mock_server:
+                server_info = info
+                break
+
+        assert server_info is not None
+        # running should be set to False by the exception handler
+        assert server_info["running"] is False
+
