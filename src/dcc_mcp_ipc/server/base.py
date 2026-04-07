@@ -8,13 +8,12 @@ from abc import ABC
 from abc import abstractmethod
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
-import rpyc
 from dcc_mcp_core import unwrap_parameters
 from dcc_mcp_core import wrap_value
+import rpyc
 
 # Import local modules
 from dcc_mcp_ipc.server.decorators import with_environment_info
@@ -62,7 +61,7 @@ class ApplicationRPyCService(BaseRPyCService, ABC):
     """
 
     @abstractmethod
-    def get_application_info(self) -> Dict[str, Any]:
+    def get_application_info(self) -> dict[str, Any]:
         """Get information about the application.
 
         Returns
@@ -72,7 +71,7 @@ class ApplicationRPyCService(BaseRPyCService, ABC):
         """
 
     @abstractmethod
-    def get_environment_info(self) -> Dict[str, Any]:
+    def get_environment_info(self) -> dict[str, Any]:
         """Get information about the Python environment.
 
         Returns
@@ -82,7 +81,7 @@ class ApplicationRPyCService(BaseRPyCService, ABC):
         """
 
     @abstractmethod
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Any:
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> Any:
         """Execute Python code in the application's environment.
 
         Args:
@@ -128,7 +127,7 @@ class ApplicationRPyCService(BaseRPyCService, ABC):
         """
 
     @with_environment_info
-    def exposed_execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Any:
+    def exposed_execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> Any:
         """Execute Python code in the application's environment.
 
         Args:
@@ -198,7 +197,7 @@ class ApplicationRPyCService(BaseRPyCService, ABC):
             logger.exception("Detailed exception information:")
             raise
 
-    def exposed_list_actions(self) -> Dict[str, Any]:
+    def exposed_list_actions(self) -> dict[str, Any]:
         """List all available actions in this application service.
 
         Returns

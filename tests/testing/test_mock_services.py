@@ -17,10 +17,10 @@ from dcc_mcp_ipc.testing.mock_services import MockDCCService
 from dcc_mcp_ipc.testing.mock_services import stop_all_mock_services
 from dcc_mcp_ipc.testing.mock_services import stop_mock_dcc_service
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_service(dcc_name="test_dcc"):
     """Return a MockDCCService instance bypassing RPyC internals."""
@@ -32,6 +32,7 @@ def _make_service(dcc_name="test_dcc"):
 # ---------------------------------------------------------------------------
 # MockDCCService - application info
 # ---------------------------------------------------------------------------
+
 
 class TestMockDCCServiceApplicationInfo:
     """Tests for get_application_info / exposed_get_application_info."""
@@ -65,6 +66,7 @@ class TestMockDCCServiceApplicationInfo:
 # MockDCCService - environment info
 # ---------------------------------------------------------------------------
 
+
 class TestMockDCCServiceEnvironmentInfo:
     """Tests for get_environment_info / exposed_get_environment_info."""
 
@@ -97,11 +99,14 @@ class TestMockDCCServiceEnvironmentInfo:
 # MockDCCService - get_module_version static method
 # ---------------------------------------------------------------------------
 
+
 class TestGetModuleVersion:
     """Tests for the static get_module_version method."""
 
     def test_known_package_returns_version(self):
+        # Import built-in modules
         import importlib.metadata as meta
+
         # Use a package we know exists in the test env
         pkg = "pytest"
         expected = meta.version(pkg)
@@ -110,7 +115,9 @@ class TestGetModuleVersion:
         assert result == expected
 
     def test_fallback_to_dunder_version(self):
+        # Import built-in modules
         import importlib.metadata as real_meta
+
         mock_module = MagicMock()
         mock_module.__version__ = "9.9.9"
         # Patch only the version function in the module's importlib.metadata reference
@@ -119,6 +126,7 @@ class TestGetModuleVersion:
         assert result == "9.9.9"
 
     def test_fallback_to_version_attr(self):
+        # Import built-in modules
         import importlib.metadata as real_meta
 
         class ModuleWithVersion:
@@ -131,6 +139,7 @@ class TestGetModuleVersion:
         assert result == "1.2.3"
 
     def test_fallback_to_VERSION_attr(self):
+        # Import built-in modules
         import importlib.metadata as real_meta
 
         class FakeModule:
@@ -141,6 +150,7 @@ class TestGetModuleVersion:
         assert result == "4.5.6"
 
     def test_returns_unknown_when_no_attr(self):
+        # Import built-in modules
         import importlib.metadata as real_meta
 
         class Bare:
@@ -154,6 +164,7 @@ class TestGetModuleVersion:
 # ---------------------------------------------------------------------------
 # MockDCCService - execute_python
 # ---------------------------------------------------------------------------
+
 
 class TestExecutePython:
     """Tests for execute_python / exposed_execute_python."""
@@ -191,6 +202,7 @@ class TestExecutePython:
 # MockDCCService - import_module
 # ---------------------------------------------------------------------------
 
+
 class TestImportModule:
     """Tests for import_module / exposed_import_module."""
 
@@ -218,11 +230,14 @@ class TestImportModule:
 # MockDCCService - call_function
 # ---------------------------------------------------------------------------
 
+
 class TestCallFunction:
     """Tests for call_function / exposed_call_function."""
 
     def test_call_existing_function(self):
+        # Import built-in modules
         import os
+
         svc = _make_service()
         result = svc.call_function("os.path", "join", "/tmp", "file.txt")
         assert result == os.path.join("/tmp", "file.txt")
@@ -251,6 +266,7 @@ class TestCallFunction:
 # ---------------------------------------------------------------------------
 # MockDCCService - get_scene_info / get_session_info
 # ---------------------------------------------------------------------------
+
 
 class TestSceneAndSessionInfo:
     """Tests for get_scene_info, get_session_info and their exposed variants."""
@@ -296,6 +312,7 @@ class TestSceneAndSessionInfo:
 # MockDCCService - create_primitive
 # ---------------------------------------------------------------------------
 
+
 class TestCreatePrimitive:
     """Tests for create_primitive."""
 
@@ -333,6 +350,7 @@ class TestCreatePrimitive:
 # MockDCCService - exposed_get_actions
 # ---------------------------------------------------------------------------
 
+
 class TestExposedGetActions:
     """Tests for exposed_get_actions."""
 
@@ -347,6 +365,7 @@ class TestExposedGetActions:
 # ---------------------------------------------------------------------------
 # MockDCCService - exposed_call_action
 # ---------------------------------------------------------------------------
+
 
 class TestExposedCallAction:
     """Tests for exposed_call_action."""
@@ -378,6 +397,7 @@ class TestExposedCallAction:
 # MockDCCService - exposed_echo and exposed_add
 # ---------------------------------------------------------------------------
 
+
 class TestExposedEchoAdd:
     """Tests for exposed_echo and exposed_add."""
 
@@ -404,6 +424,7 @@ class TestExposedEchoAdd:
 # MockDCCService - exposed_execute_dcc_command
 # ---------------------------------------------------------------------------
 
+
 class TestExposedExecuteDccCommand:
     """Tests for exposed_execute_dcc_command."""
 
@@ -427,6 +448,7 @@ class TestExposedExecuteDccCommand:
 # MockDCCService - exposed_get_dcc_info
 # ---------------------------------------------------------------------------
 
+
 class TestExposedGetDccInfo:
     """Tests for exposed_get_dcc_info."""
 
@@ -447,6 +469,7 @@ class TestExposedGetDccInfo:
 # start_mock_dcc_service / stop_mock_dcc_service / stop_all_mock_services
 # ---------------------------------------------------------------------------
 
+
 class TestMockServiceLifecycle:
     """Tests for module-level start/stop functions."""
 
@@ -460,7 +483,9 @@ class TestMockServiceLifecycle:
 
     def test_stop_all_clears_registry(self):
         """After stop_all_mock_services, the internal registry should be empty."""
+        # Import local modules
         from dcc_mcp_ipc.testing import mock_services as ms
+
         # Manually inject a fake server entry
         fake_server = MagicMock()
         fake_thread = MagicMock()
@@ -473,6 +498,7 @@ class TestMockServiceLifecycle:
 
     def test_start_mock_dcc_service_registers_and_returns_host_port(self):
         """start_mock_dcc_service should return (host, port) and add to _mock_servers."""
+        # Import local modules
         from dcc_mcp_ipc.testing import mock_services as ms
         from dcc_mcp_ipc.testing.mock_services import start_mock_dcc_service
 
@@ -495,6 +521,7 @@ class TestMockServiceLifecycle:
 
     def test_start_mock_dcc_service_with_port_zero_uses_server_port(self):
         """When port=0, start_mock_dcc_service should use the port assigned by the OS."""
+        # Import local modules
         from dcc_mcp_ipc.testing import mock_services as ms
         from dcc_mcp_ipc.testing.mock_services import start_mock_dcc_service
 

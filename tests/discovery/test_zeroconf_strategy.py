@@ -352,8 +352,7 @@ class TestEnsureZeroconf:
 
     def test_returns_false_on_init_error(self):
         """Test that _ensure_zeroconf returns False when init fails."""
-        with patch("dcc_mcp_ipc.discovery.zeroconf_strategy.Zeroconf",
-                   side_effect=OSError("network error")):
+        with patch("dcc_mcp_ipc.discovery.zeroconf_strategy.Zeroconf", side_effect=OSError("network error")):
             strategy = ZeroConfDiscoveryStrategy()
             # Reset to None so it tries to initialize
             strategy._zeroconf = None
@@ -481,10 +480,7 @@ class TestRegistrationDetails:
         strategy = ZeroConfDiscoveryStrategy()
         strategy._zeroconf = mock_zc
 
-        local_service = ServiceInfo(
-            name="local_test", host="localhost", port=8000,
-            dcc_type="maya", metadata={}
-        )
+        local_service = ServiceInfo(name="local_test", host="localhost", port=8000, dcc_type="maya", metadata={})
 
         result = strategy.register_service(local_service)
 
@@ -499,6 +495,4 @@ def test_zeroconf_not_available():
     strategy = ZeroConfDiscoveryStrategy()
     assert strategy._zeroconf is None
     assert strategy.discover_services() == []
-    assert strategy.register_service(
-        ServiceInfo(name="test", host="127.0.0.1", port=8000, dcc_type="maya")
-    ) is False
+    assert strategy.register_service(ServiceInfo(name="test", host="127.0.0.1", port=8000, dcc_type="maya")) is False

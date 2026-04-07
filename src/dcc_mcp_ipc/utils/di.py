@@ -8,8 +8,6 @@ to manage dependencies across the application.
 import logging
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import Type
 from typing import TypeVar
 from typing import cast
 
@@ -36,10 +34,10 @@ class Container:
 
     def __init__(self):
         """Initialize the container."""
-        self._factories: Dict[Type, Callable[..., Any]] = {}
-        self._singletons: Dict[Type, Any] = {}
+        self._factories: dict[type, Callable[..., Any]] = {}
+        self._singletons: dict[type, Any] = {}
 
-    def register_factory(self, interface_type: Type[T], factory: Callable[..., T]) -> None:
+    def register_factory(self, interface_type: type[T], factory: Callable[..., T]) -> None:
         """Register a factory function for a type.
 
         Args:
@@ -51,7 +49,7 @@ class Container:
         self._factories[interface_type] = factory
         logger.debug(f"Registered factory for {interface_type.__name__}")
 
-    def register_singleton(self, interface_type: Type[T], factory: Callable[..., T]) -> None:
+    def register_singleton(self, interface_type: type[T], factory: Callable[..., T]) -> None:
         """Register a singleton factory for a type.
 
         The factory will be called once, and the same instance will be returned
@@ -69,7 +67,7 @@ class Container:
         self._singletons[interface_type] = None
         logger.debug(f"Registered singleton factory for {interface_type.__name__}")
 
-    def register_instance(self, interface_type: Type[T], instance: T) -> None:
+    def register_instance(self, interface_type: type[T], instance: T) -> None:
         """Register an existing instance for a type.
 
         Args:
@@ -81,7 +79,7 @@ class Container:
         self._singletons[interface_type] = instance
         logger.debug(f"Registered instance for {interface_type.__name__}")
 
-    def resolve(self, interface_type: Type[T], *args, **kwargs) -> T:
+    def resolve(self, interface_type: type[T], *args, **kwargs) -> T:
         """Resolve a type to an instance.
 
         Args:
@@ -133,7 +131,7 @@ def get_container() -> Container:
     return _container
 
 
-def register_factory(interface_type: Type[T], factory: Callable[..., T]) -> None:
+def register_factory(interface_type: type[T], factory: Callable[..., T]) -> None:
     """Register a factory function for a type in the global container.
 
     Args:
@@ -145,7 +143,7 @@ def register_factory(interface_type: Type[T], factory: Callable[..., T]) -> None
     _container.register_factory(interface_type, factory)
 
 
-def register_singleton(interface_type: Type[T], factory: Callable[..., T]) -> None:
+def register_singleton(interface_type: type[T], factory: Callable[..., T]) -> None:
     """Register a singleton factory for a type in the global container.
 
     Args:
@@ -157,7 +155,7 @@ def register_singleton(interface_type: Type[T], factory: Callable[..., T]) -> No
     _container.register_singleton(interface_type, factory)
 
 
-def register_instance(interface_type: Type[T], instance: T) -> None:
+def register_instance(interface_type: type[T], instance: T) -> None:
     """Register an existing instance for a type in the global container.
 
     Args:
@@ -169,7 +167,7 @@ def register_instance(interface_type: Type[T], instance: T) -> None:
     _container.register_instance(interface_type, instance)
 
 
-def resolve(interface_type: Type[T], *args, **kwargs) -> T:
+def resolve(interface_type: type[T], *args, **kwargs) -> T:
     """Resolve a type to an instance from the global container.
 
     Args:

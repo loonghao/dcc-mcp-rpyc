@@ -7,13 +7,10 @@ This module provides error models and error handling utilities for the DCC-MCP-I
 import logging
 import traceback
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
 
 # Import third-party modules
 from dcc_mcp_core import ActionResultModel
-from dcc_mcp_core import error_result
 from dcc_mcp_core import from_exception
 
 # Configure logging
@@ -31,7 +28,7 @@ class DCCMCPError(Exception):
         self,
         message: str,
         error_code: Optional[Optional[str]] = None,
-        details: Optional[Dict[str, Any]] = None,
+        details: Optional[dict[str, Any]] = None,
         cause: Optional[Optional[Exception]] = None,
     ):
         """Initialize the DCCMCPError.
@@ -56,7 +53,7 @@ class DCCMCPError(Exception):
 
         super().__init__(full_message)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         """Convert the error to a dictionary.
 
         Returns
@@ -83,7 +80,7 @@ class DCCMCPError(Exception):
 
         return result
 
-    def to_action_result(self, context: Optional[Dict[str, Any]] = None) -> ActionResultModel:
+    def to_action_result(self, context: Optional[dict[str, Any]] = None) -> ActionResultModel:
         """Convert the error to an ActionResultModel.
 
         Args:
@@ -191,8 +188,8 @@ class ExecutionError(DCCMCPError):
         message: str,
         service_name: Optional[Optional[str]] = None,
         function_name: Optional[Optional[str]] = None,
-        args: Optional[Optional[List[Any]]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
+        args: Optional[Optional[list[Any]]] = None,
+        kwargs: Optional[dict[str, Any]] = None,
         cause: Optional[Optional[Exception]] = None,
     ):
         """Initialize the ExecutionError.
@@ -232,7 +229,7 @@ class ActionError(DCCMCPError):
         self,
         message: str,
         action_name: str,
-        args: Optional[Dict[str, Any]] = None,
+        args: Optional[dict[str, Any]] = None,
         cause: Optional[Optional[Exception]] = None,
     ):
         """Initialize the ActionError.
@@ -257,7 +254,7 @@ class ActionError(DCCMCPError):
         )
 
 
-def handle_error(error: Exception, context: Optional[Dict[str, Any]] = None) -> ActionResultModel:
+def handle_error(error: Exception, context: Optional[dict[str, Any]] = None) -> ActionResultModel:
     """Handle an exception and convert it to an ActionResultModel.
 
     This function takes an exception and converts it to an ActionResultModel,

@@ -309,7 +309,7 @@ def test_connection_pool_get_client_with_client_class():
         BaseDCCClient.is_connected = lambda self: True  # type: ignore[attr-defined]
 
         pool = ConnectionPool()
-        client = pool.get_client(
+        pool.get_client(
             "test_dcc",
             "localhost",
             8000,
@@ -337,11 +337,13 @@ def test_connection_pool_get_client_zeroconf_discovery():
             mock_zc = MagicMock()
             MockZC.return_value = mock_zc
 
+            # Import local modules
             from dcc_mcp_ipc.discovery import ServiceInfo
+
             mock_service = ServiceInfo(name="test_maya", host="192.168.1.100", port=9000, dcc_type="maya")
             mock_zc.discover_services.return_value = [mock_service]
 
-            client = pool.get_client("maya", use_zeroconf=True, client_factory=mock_factory)
+            pool.get_client("maya", use_zeroconf=True, client_factory=mock_factory)
 
             mock_zc.discover_services.assert_called_once_with("maya")
             mock_factory.assert_called_once()

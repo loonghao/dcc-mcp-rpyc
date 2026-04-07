@@ -257,6 +257,7 @@ class TestHandleError:
         assert result.success is False
 
     def test_returns_action_result_model(self):
+        # Import third-party modules
         from dcc_mcp_core import ActionResultModel
 
         exc = Exception("x")

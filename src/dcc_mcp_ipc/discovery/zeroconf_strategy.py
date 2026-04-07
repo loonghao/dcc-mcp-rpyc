@@ -7,7 +7,7 @@ This module provides a service discovery strategy that uses ZeroConf (mDNS/DNS-S
 import logging
 import socket
 import time
-from typing import List
+from typing import Any
 from typing import Optional
 
 try:
@@ -69,7 +69,7 @@ class ServiceListener:
         self.dcc_name = dcc_name.lower() if dcc_name else None
         self.services = {}
 
-    def add_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
+    def add_service(self, zeroconf: Any, type_: str, name: str) -> None:
         """Handle service added event.
 
         Args:
@@ -127,7 +127,7 @@ class ServiceListener:
         except Exception as e:
             logger.error(f"Error adding service {name}: {e}")
 
-    def remove_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
+    def remove_service(self, zeroconf: Any, type_: str, name: str) -> None:
         """Handle service removed event.
 
         Args:
@@ -141,7 +141,7 @@ class ServiceListener:
             logger.debug(f"Removed service: {service['name']} ({service['dcc_name']})")
             del self.services[name]
 
-    def update_service(self, zeroconf: Zeroconf, type_: str, name: str) -> None:
+    def update_service(self, zeroconf: Any, type_: str, name: str) -> None:
         """Handle service updated event.
 
         Args:
@@ -186,7 +186,7 @@ class ZeroConfDiscoveryStrategy(ServiceDiscoveryStrategy):
 
         return True
 
-    def discover_services(self, dcc_type: Optional[str] = None) -> List[DccServiceInfo]:
+    def discover_services(self, dcc_type: Optional[str] = None) -> list[DccServiceInfo]:
         """Discover available services.
 
         Args:

@@ -8,7 +8,6 @@ These clients extend the AsyncBaseApplicationClient with DCC-specific functional
 import asyncio
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import local modules
@@ -66,7 +65,7 @@ class AsyncBaseDCCClient(AsyncBaseApplicationClient):
         )
         self.dcc_name = dcc_name
 
-    async def get_dcc_info(self) -> Dict[str, Any]:
+    async def get_dcc_info(self) -> dict[str, Any]:
         """Get information about the DCC application asynchronously.
 
         Returns
@@ -86,7 +85,7 @@ class AsyncBaseDCCClient(AsyncBaseApplicationClient):
             lambda: self.connection.root.get_dcc_info(),
         )
 
-    async def get_scene_info(self, include_selection: bool = True) -> Dict[str, Any]:
+    async def get_scene_info(self, include_selection: bool = True) -> dict[str, Any]:
         """Get information about the current scene asynchronously.
 
         Args:

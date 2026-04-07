@@ -1,4 +1,4 @@
-﻿"""Common decorator utilities.
+"""Common decorator utilities.
 
 This module provides common decorator factory functions for adding metadata,
 error handling, and result conversion.
@@ -10,7 +10,6 @@ import logging
 import traceback
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import TypeVar
 from typing import cast
 
@@ -126,7 +125,7 @@ def with_result_conversion(func: F) -> F:
     return cast(F, wrapper)
 
 
-def with_info(info_getter: Callable[[Any], Dict[str, Any]], info_name: str) -> Callable[[F], F]:
+def with_info(info_getter: Callable[[Any], dict[str, Any]], info_name: str) -> Callable[[F], F]:
     """Add information to function return value.
 
     This decorator factory creates a decorator to add specific information to

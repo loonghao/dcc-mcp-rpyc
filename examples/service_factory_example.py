@@ -8,8 +8,6 @@ how to handle RPyC-specific parameter serialization issues.
 import logging
 import threading
 from typing import Any
-from typing import Dict
-from typing import List
 
 # Import third-party modules
 import rpyc
@@ -56,7 +54,7 @@ class SceneManager:
             }
             return True
 
-    def add_object(self, scene_name: str, object_data: Dict[str, Any]) -> bool:
+    def add_object(self, scene_name: str, object_data: dict[str, Any]) -> bool:
         """Add an object to a scene.
 
         Args:
@@ -76,7 +74,7 @@ class SceneManager:
             self.scenes[scene_name]["objects"].append(object_data)
             return True
 
-    def get_scene_info(self, scene_name: str) -> Dict[str, Any]:
+    def get_scene_info(self, scene_name: str) -> dict[str, Any]:
         """Get information about a scene.
 
         Args:
@@ -91,7 +89,7 @@ class SceneManager:
         with self.lock:
             return self.scenes.get(scene_name, {})
 
-    def list_scenes(self) -> List[str]:
+    def list_scenes(self) -> list[str]:
         """List all scene names.
 
         Returns

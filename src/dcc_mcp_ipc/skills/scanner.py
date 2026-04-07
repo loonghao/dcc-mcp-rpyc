@@ -22,8 +22,6 @@ import logging
 import os
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import List
 from typing import Optional
 
 # Import third-party modules
@@ -72,8 +70,8 @@ class SkillManager:
         self.adapter = adapter or ActionAdapter("skills", dcc_name=dcc_name)
         self._scanner = SkillScanner()
         self._watcher: Optional[SkillWatcher] = None
-        self._skill_paths: List[str] = []
-        self._registered_skills: Dict[str, SkillMetadata] = {}
+        self._skill_paths: list[str] = []
+        self._registered_skills: dict[str, SkillMetadata] = {}
 
     # ------------------------------------------------------------------
     # Loading
@@ -81,10 +79,10 @@ class SkillManager:
 
     def load_paths(
         self,
-        paths: List[str],
+        paths: list[str],
         *,
         force_refresh: bool = False,
-    ) -> List[str]:
+    ) -> list[str]:
         """Scan *paths* for Skills and register them as actions.
 
         Args:
@@ -102,7 +100,7 @@ class SkillManager:
             force_refresh=force_refresh,
         )
 
-        registered: List[str] = []
+        registered: list[str] = []
         for skill_dir in skill_dirs:
             metadata = parse_skill_md(skill_dir)
             if metadata is None:
@@ -118,7 +116,7 @@ class SkillManager:
         )
         return registered
 
-    def load_env_paths(self) -> List[str]:
+    def load_env_paths(self) -> list[str]:
         """Load skills from :envvar:`DCC_MCP_SKILL_PATHS` environment variable.
 
         Returns:
@@ -133,7 +131,7 @@ class SkillManager:
         paths = [p.strip() for p in skill_paths_env.split(os.pathsep) if p.strip()]
         return self.load_paths(paths)
 
-    def load_full_pipeline(self, extra_paths: Optional[List[str]] = None) -> List[str]:
+    def load_full_pipeline(self, extra_paths: Optional[list[str]] = None) -> list[str]:
         """Run the full scan-and-load pipeline (includes dependency resolution).
 
         Args:
@@ -150,7 +148,7 @@ class SkillManager:
         if errors:
             logger.warning("SkillManager: %d skills failed to load: %s", len(errors), errors)
 
-        registered: List[str] = []
+        registered: list[str] = []
         for metadata in skills:
             self._register_skill(metadata)
             registered.append(metadata.name)
@@ -188,7 +186,7 @@ class SkillManager:
             self._watcher = None
             logger.info("SkillWatcher stopped")
 
-    def reload(self) -> List[str]:
+    def reload(self) -> list[str]:
         """Force-reload all watched skills and re-register them.
 
         Returns:
@@ -200,7 +198,7 @@ class SkillManager:
 
         self._watcher.reload()
         skills = self._watcher.skills()
-        registered: List[str] = []
+        registered: list[str] = []
         for metadata in skills:
             self._register_skill(metadata)
             registered.append(metadata.name)
@@ -212,7 +210,7 @@ class SkillManager:
     # Introspection
     # ------------------------------------------------------------------
 
-    def list_skills(self) -> List[SkillMetadata]:
+    def list_skills(self) -> list[SkillMetadata]:
         """Return metadata for all currently registered skills."""
         return list(self._registered_skills.values())
 
@@ -247,13 +245,14 @@ class SkillManager:
             :meth:`~dcc_mcp_ipc.action_adapter.ActionAdapter.register_action`.
 
         """
-        def _handler(**kwargs: Any) -> Dict[str, Any]:
-            ctx: Dict[str, Any] = {
+
+        def _handler(**kwargs: Any) -> dict[str, Any]:
+            ctx: dict[str, Any] = {
                 "skill_path": metadata.skill_path,
                 "dcc": metadata.dcc,
                 **kwargs,
             }
-            results: List[Any] = []
+            results: list[Any] = []
 
             for script_rel in metadata.scripts:
                 script_path = os.path.join(metadata.skill_path, script_rel)
@@ -263,8 +262,8 @@ class SkillManager:
                 try:
                     with open(script_path, encoding="utf-8") as fh:
                         code = fh.read()
-                    local_ctx: Dict[str, Any] = dict(ctx)
-                    exec(compile(code, script_path, "exec"), {}, local_ctx)  # noqa: S102
+                    local_ctx: dict[str, Any] = dict(ctx)
+                    exec(compile(code, script_path, "exec"), {}, local_ctx)
                     results.append(local_ctx.get("result"))
                 except Exception as exc:
                     logger.error("Skill '%s' script '%s' failed: %s", metadata.name, script_path, exc)

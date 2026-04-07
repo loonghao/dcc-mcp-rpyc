@@ -5,8 +5,6 @@ from abc import ABC
 from abc import abstractmethod
 import dataclasses
 from typing import Any
-from typing import Dict
-from typing import List
 from typing import Optional
 
 
@@ -27,7 +25,7 @@ class ServiceInfo:
     host: str
     port: int
     dcc_type: str
-    metadata: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    metadata: dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
 class ServiceDiscoveryStrategy(ABC):
@@ -38,7 +36,7 @@ class ServiceDiscoveryStrategy(ABC):
     """
 
     @abstractmethod
-    def discover_services(self, service_type: Optional[str] = None) -> List[ServiceInfo]:
+    def discover_services(self, service_type: Optional[str] = None) -> list[ServiceInfo]:
         """Discover available services.
 
         Args:

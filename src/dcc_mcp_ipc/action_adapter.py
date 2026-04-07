@@ -9,8 +9,6 @@ import json
 import logging
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Union
 
@@ -18,7 +16,6 @@ from typing import Union
 from dcc_mcp_core import ActionDispatcher
 from dcc_mcp_core import ActionRegistry
 from dcc_mcp_core import ActionResultModel
-from dcc_mcp_core import error_result
 from dcc_mcp_core import success_result
 
 # Import local modules
@@ -29,7 +26,7 @@ from dcc_mcp_ipc.utils.errors import handle_error
 logger = logging.getLogger(__name__)
 
 # Module-level registry of (name → ActionAdapter) for reuse across callers
-_adapters: Dict[str, "ActionAdapter"] = {}
+_adapters: dict[str, "ActionAdapter"] = {}
 
 
 class ActionAdapter:
@@ -72,7 +69,7 @@ class ActionAdapter:
         *,
         description: str = "",
         category: str = "",
-        tags: Optional[List[str]] = None,
+        tags: Optional[list[str]] = None,
         version: str = "1.0.0",
         input_schema: str = "",
         output_schema: str = "",
@@ -143,8 +140,8 @@ class ActionAdapter:
     def search_actions(
         self,
         category: Optional[str] = None,
-        tags: Optional[List[str]] = None,
-    ) -> List[Dict[str, Any]]:
+        tags: Optional[list[str]] = None,
+    ) -> list[dict[str, Any]]:
         """Search actions by category and/or tags (requires dcc-mcp-core >= 0.12.5).
 
         Args:
@@ -167,7 +164,7 @@ class ActionAdapter:
 
     def register_actions_batch(
         self,
-        actions: List[Dict[str, Any]],
+        actions: list[dict[str, Any]],
     ) -> int:
         """Register multiple actions in a single call (requires dcc-mcp-core >= 0.12.6).
 
@@ -195,7 +192,7 @@ class ActionAdapter:
                 logger.warning("Failed to register action '%s': %s", name, exc)
         return registered
 
-    def list_actions(self, names_only: bool = False) -> Union[Dict[str, Any], List[str]]:
+    def list_actions(self, names_only: bool = False) -> Union[dict[str, Any], list[str]]:
         """List all registered actions and their metadata.
 
         Args:
@@ -219,7 +216,7 @@ class ActionAdapter:
             logger.error("Error listing actions: %s", exc)
             raise ActionError("Error listing actions", action_name="list_actions", cause=exc) from exc
 
-    def get_action_info(self, action_name: str) -> Optional[Dict[str, Any]]:
+    def get_action_info(self, action_name: str) -> Optional[dict[str, Any]]:
         """Get metadata for a single action.
 
         Args:
@@ -292,7 +289,7 @@ class ActionAdapter:
     # Convenience: call a raw Python callable stored in the dispatcher
     # ------------------------------------------------------------------
 
-    def execute_action(self, action_name: str, **kwargs: Any) -> Dict[str, Any]:
+    def execute_action(self, action_name: str, **kwargs: Any) -> dict[str, Any]:
         """Execute an action and return a plain dict.
 
         Thin wrapper over :meth:`call_action` that always returns a serialisable
@@ -313,6 +310,7 @@ class ActionAdapter:
 # ---------------------------------------------------------------------------
 # Module-level factory
 # ---------------------------------------------------------------------------
+
 
 def get_action_adapter(name: str, dcc_name: str = "python") -> ActionAdapter:
     """Get or create an :class:`ActionAdapter` for the given *name*.

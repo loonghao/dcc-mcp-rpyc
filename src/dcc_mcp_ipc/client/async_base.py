@@ -8,7 +8,6 @@ These clients use Python's asyncio to provide non-blocking operations.
 import asyncio
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
@@ -168,7 +167,7 @@ class AsyncBaseApplicationClient:
         if not self.is_connected():
             await self.connect()
 
-    async def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Any:
+    async def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> Any:
         """Execute Python code on the server asynchronously.
 
         Args:
@@ -194,7 +193,7 @@ class AsyncBaseApplicationClient:
             lambda: self.connection.root.exposed_execute_python(code, context or {}),
         )
 
-    async def get_application_info(self) -> Dict[str, Any]:
+    async def get_application_info(self) -> dict[str, Any]:
         """Get information about the application asynchronously.
 
         Returns
@@ -214,7 +213,7 @@ class AsyncBaseApplicationClient:
             lambda: self.connection.root.get_application_info(),
         )
 
-    async def get_environment_info(self) -> Dict[str, Any]:
+    async def get_environment_info(self) -> dict[str, Any]:
         """Get information about the Python environment asynchronously.
 
         Returns
@@ -262,7 +261,7 @@ class AsyncBaseApplicationClient:
             lambda: self.connection.root.exposed_call_function(module_name, function_name, *args, **kwargs),
         )
 
-    async def list_actions(self) -> Dict[str, Dict[str, Any]]:
+    async def list_actions(self) -> dict[str, dict[str, Any]]:
         """List all available actions on the server asynchronously.
 
         Returns

@@ -248,9 +248,7 @@ class TestRPyCTransport:
 
         result = transport.call_function("os.path", "join", "/tmp", "test")
         assert result == "/tmp/test"
-        mock_conn.root.exposed_call_function.assert_called_once_with(
-            "os.path", "join", "/tmp", "test"
-        )
+        mock_conn.root.exposed_call_function.assert_called_once_with("os.path", "join", "/tmp", "test")
 
     def test_call_function_not_connected(self):
         transport = RPyCTransport()

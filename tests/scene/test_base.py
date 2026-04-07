@@ -5,23 +5,24 @@ CameraInfo, LightInfo, SceneInfo, SceneInfoConfig, SceneQueryFilter,
 SceneError, and the BaseSceneInfo abstract interface.
 """
 
+# Import built-in modules
 import math
+
+# Import third-party modules
 import pytest
 
-from dcc_mcp_ipc.scene.base import (
-    BaseSceneInfo,
-    CameraInfo,
-    LightInfo,
-    MaterialInfo,
-    ObjectTypeInfo,
-    SceneError,
-    SceneHierarchy,
-    SceneInfo,
-    SceneInfoConfig,
-    SceneQueryFilter,
-    TransformMatrix,
-)
-
+# Import local modules
+from dcc_mcp_ipc.scene.base import BaseSceneInfo
+from dcc_mcp_ipc.scene.base import CameraInfo
+from dcc_mcp_ipc.scene.base import LightInfo
+from dcc_mcp_ipc.scene.base import MaterialInfo
+from dcc_mcp_ipc.scene.base import ObjectTypeInfo
+from dcc_mcp_ipc.scene.base import SceneError
+from dcc_mcp_ipc.scene.base import SceneHierarchy
+from dcc_mcp_ipc.scene.base import SceneInfo
+from dcc_mcp_ipc.scene.base import SceneInfoConfig
+from dcc_mcp_ipc.scene.base import SceneQueryFilter
+from dcc_mcp_ipc.scene.base import TransformMatrix
 
 # =============================================================================
 # TransformMatrix Tests
@@ -95,7 +96,7 @@ class TestTransformMatrix:
                 1,
             ]
         )
-        rx, ry, rz = tm.rotation
+        _rx, _ry, rz = tm.rotation
         assert abs(rz) == pytest.approx(45.0, abs=0.5)
 
     def test_scale_property(self) -> None:

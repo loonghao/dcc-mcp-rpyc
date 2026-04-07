@@ -18,9 +18,7 @@ import json
 import logging
 import socket
 from typing import Any
-from typing import Dict
 from typing import Optional
-
 
 # Import local modules
 from dcc_mcp_ipc.transport.base import BaseTransport
@@ -48,7 +46,7 @@ class HTTPTransportConfig(TransportConfig):
 
     base_path: str = ""
     use_ssl: bool = False
-    headers: Dict[str, str] = dataclasses.field(
+    headers: dict[str, str] = dataclasses.field(
         default_factory=lambda: {"Content-Type": "application/json", "Accept": "application/json"}
     )
     action_endpoint: str = "/api/v1/action/{action}"
@@ -147,9 +145,9 @@ class HTTPTransport(BaseTransport):
         self,
         method: str,
         path: str,
-        body: Optional[Dict[str, Any]] = None,
+        body: Optional[dict[str, Any]] = None,
         timeout: Optional[float] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Send an HTTP request and parse the JSON response.
 
         Args:
@@ -184,9 +182,7 @@ class HTTPTransport(BaseTransport):
             response_body = response.read().decode("utf-8")
 
             if response.status >= 400:
-                raise ProtocolError(
-                    f"HTTP {response.status} from {method} {full_path}: {response_body}"
-                )
+                raise ProtocolError(f"HTTP {response.status} from {method} {full_path}: {response_body}")
 
             if not response_body:
                 return {"success": True}
@@ -198,27 +194,23 @@ class HTTPTransport(BaseTransport):
 
         except socket.timeout as exc:
             self._state = TransportState.ERROR
-            raise TimeoutError(
-                f"HTTP request timed out: {method} {full_path}", cause=exc
-            ) from exc
+            raise TimeoutError(f"HTTP request timed out: {method} {full_path}", cause=exc) from exc
         except (ConnectionError, TimeoutError, ProtocolError):
             raise
         except Exception as exc:
             # Connection may be broken — reset
             self._state = TransportState.ERROR
             self._conn = None
-            raise ConnectionError(
-                f"HTTP request failed: {method} {full_path}: {exc}", cause=exc
-            ) from exc
+            raise ConnectionError(f"HTTP request failed: {method} {full_path}: {exc}", cause=exc) from exc
 
     # ── Action Execution ─────────────────────────────────────────────
 
     def execute(
         self,
         action: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         timeout: Optional[float] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute an action via HTTP POST.
 
         The action name is interpolated into the ``action_endpoint`` config
@@ -242,8 +234,8 @@ class HTTPTransport(BaseTransport):
         self,
         object_path: str,
         function_name: str,
-        params: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        params: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """Call a function on an Unreal Engine object via Remote Control API.
 
         Sends a POST to ``/remote/object/call``.
@@ -269,7 +261,7 @@ class HTTPTransport(BaseTransport):
         self,
         object_path: str,
         property_name: str,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Get a property value from an Unreal Engine object.
 
         Sends a PUT to ``/remote/object/property``.
@@ -294,7 +286,7 @@ class HTTPTransport(BaseTransport):
         object_path: str,
         property_name: str,
         value: Any,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Set a property value on an Unreal Engine object.
 
         Args:

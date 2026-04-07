@@ -43,6 +43,7 @@ class TestCreateServer:
 
     @patch("dcc_mcp_ipc.server.lifecycle._create_dcc_server")
     def test_create_dcc_server(self, mock_create_dcc):
+        # Import local modules
         from dcc_mcp_ipc.server.base import BaseRPyCService
 
         mock_server = MagicMock()
@@ -111,7 +112,7 @@ class TestStartServer:
         }
 
         mock_server.start = MagicMock()
-        thread = start_server(mock_server)
+        start_server(mock_server)
         assert lifecycle_module._servers[server_id]["running"] is True
 
     def test_start_already_running_raises(self):

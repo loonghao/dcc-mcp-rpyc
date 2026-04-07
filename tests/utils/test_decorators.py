@@ -4,8 +4,8 @@
 from unittest.mock import patch
 
 # Import third-party modules
-import pytest
 from dcc_mcp_core import ActionResultModel
+import pytest
 
 # Import local modules
 from dcc_mcp_ipc.utils.decorators import with_action_result
@@ -241,8 +241,6 @@ class TestWithInfo:
         assert result["meta"]["source"] == "legacy"
 
 
-
-
 class TestWithActionResult:
     """Tests for the with_action_result combined decorator."""
 
@@ -292,7 +290,7 @@ class TestWithActionResult:
 
 
 class TestWithErrorHandlingEdgePaths:
-    """Edge-path tests for with_error_handling – covers re-raise branch (lines 74-76)."""
+    """Edge-path tests for with_error_handling - covers re-raise branch (lines 74-76)."""
 
     def test_reraises_when_action_result_model_creation_fails(self):
         """If ActionResultModel itself raises during error handling, original exception re-raised."""
@@ -301,14 +299,14 @@ class TestWithErrorHandlingEdgePaths:
         def bad_func():
             raise ValueError("original error")
 
-        # Patch ActionResultModel so it raises a secondary exception – triggering lines 74-76
+        # Patch ActionResultModel so it raises a secondary exception - triggering lines 74-76
         with patch("dcc_mcp_ipc.utils.decorators.ActionResultModel", side_effect=RuntimeError("model broken")):
             with pytest.raises(RuntimeError, match="model broken"):
                 bad_func()
 
 
 class TestWithResultConversionEdgePaths:
-    """Edge-path tests for with_result_conversion – covers lines 112-114, 121-124."""
+    """Edge-path tests for with_result_conversion - covers lines 112-114, 121-124."""
 
     def test_standard_conversion_with_non_dict_object(self):
         """For an arbitrary object, standard conversion wraps it via ActionResultModel."""
@@ -330,16 +328,16 @@ class TestWithResultConversionEdgePaths:
         ctx_result = result.context["result"]
         assert ctx_result is obj or isinstance(ctx_result, str)
 
-
-
     def test_dict_with_success_and_invalid_extra_field_fallback(self):
-        """Dict with 'success' but invalid extra field: ActionResultModel(**result) should fail,
-        then fall through to the standard wrapping path."""
+        """Test dict with 'success' but invalid extra field falls through to standard wrapping.
+
+        ActionResultModel(**result) should fail, then fall through to the standard wrapping path.
+        """
 
         @with_result_conversion
         def func():
             # ActionResultModel does NOT accept 'invalid_extra_field_xyz' as a known field,
-            # but Pydantic v2 ignores extra fields by default – so we use a value that
+            # but Pydantic v2 ignores extra fields by default - so we use a value that
             # causes a validation error (e.g. wrong type for a known field).
             return {"success": "not_a_bool_hopefully_causes_error", "message": 123}
 

@@ -1,4 +1,4 @@
-﻿"""Tests for the RPyC service classes.
+"""Tests for the RPyC service classes.
 
 This module contains tests for the DCCRPyCService and ApplicationRPyCService classes.
 """

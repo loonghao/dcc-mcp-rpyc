@@ -8,9 +8,7 @@ for DCC applications.
 import logging
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Optional
-from typing import Type
 
 # Import third-party modules
 from rpyc.core import service
@@ -20,7 +18,7 @@ from rpyc.utils.server import ThreadedServer
 logger = logging.getLogger(__name__)
 
 
-def get_rpyc_config(allow_all_attrs=False, allow_public_attrs=True, allow_pickle=False) -> Dict[str, Any]:
+def get_rpyc_config(allow_all_attrs=False, allow_public_attrs=True, allow_pickle=False) -> dict[str, Any]:
     """Get a configuration dictionary for RPyC connections.
 
     This function creates a configuration dictionary with common settings
@@ -50,10 +48,10 @@ def get_rpyc_config(allow_all_attrs=False, allow_public_attrs=True, allow_pickle
 
 
 def create_raw_threaded_server(
-    service_class: Type[service.Service],
+    service_class: type[service.Service],
     hostname: str = "localhost",
     port: Optional[int] = None,
-    protocol_config: Optional[Dict[str, Any]] = None,
+    protocol_config: Optional[dict[str, Any]] = None,
     socket_path: Optional[str] = None,
     ipv6: bool = False,
     authenticator: Optional[Callable] = None,

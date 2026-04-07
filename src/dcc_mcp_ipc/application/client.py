@@ -8,7 +8,6 @@ for connecting to any application with a Python interpreter.
 import logging
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Optional
 from typing import Union
 
@@ -86,7 +85,7 @@ class ApplicationClient(BaseApplicationClient):
             logger.error(f"Error executing remote call: {e}")
             raise
 
-    def get_application_info(self) -> Dict[str, Any]:
+    def get_application_info(self) -> dict[str, Any]:
         """Get information about the application.
 
         Returns
@@ -101,7 +100,7 @@ class ApplicationClient(BaseApplicationClient):
         """
         return self.execute_remote_call(lambda conn: conn.root.get_application_info())
 
-    def get_environment_info(self) -> Dict[str, Any]:
+    def get_environment_info(self) -> dict[str, Any]:
         """Get information about the Python environment.
 
         Returns
@@ -116,7 +115,7 @@ class ApplicationClient(BaseApplicationClient):
         """
         return self.execute_remote_call(lambda conn: conn.root.get_environment_info())
 
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Any:
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> Any:
         """Execute Python code in the application's environment.
 
         Args:
@@ -179,7 +178,7 @@ class ApplicationClient(BaseApplicationClient):
             lambda conn: conn.root.call_function(module_name, function_name, *args, **kwargs)
         )
 
-    def get_actions(self) -> Dict[str, Any]:
+    def get_actions(self) -> dict[str, Any]:
         """Get all available actions for the application.
 
         Returns

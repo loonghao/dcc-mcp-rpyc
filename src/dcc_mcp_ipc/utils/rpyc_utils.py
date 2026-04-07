@@ -7,7 +7,6 @@ including parameter delivery and remote command execution.
 # Import built-in modules
 import logging
 from typing import Any
-from typing import Dict
 
 # Import third-party modules
 import rpyc
@@ -15,7 +14,7 @@ import rpyc
 logger = logging.getLogger(__name__)
 
 
-def deliver_parameters(params: Dict[str, Any]) -> Dict[str, Any]:
+def deliver_parameters(params: dict[str, Any]) -> dict[str, Any]:
     """Convert NetRefs to actual values in a parameters dictionary.
 
     Args:

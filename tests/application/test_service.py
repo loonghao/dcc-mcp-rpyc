@@ -129,6 +129,7 @@ class TestImportModule:
         """Test importing an existing module."""
         service = ApplicationService()
         mod = service.import_module("os")
+        # Import built-in modules
         import os
 
         assert mod is os
@@ -147,6 +148,7 @@ class TestCallFunction:
         """Test calling an existing function from a module."""
         service = ApplicationService()
         result = service.call_function("os.path", "join", "/tmp", "test.txt")
+        # Import built-in modules
         import os.path
 
         assert result == os.path.join("/tmp", "test.txt")

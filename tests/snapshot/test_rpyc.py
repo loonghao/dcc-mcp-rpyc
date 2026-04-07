@@ -195,6 +195,7 @@ class TestRPyCDCCSpecificScripts:
         """Test that the fallback generic script produces decodable PNG data."""
         snap = RPyCSnapshot(dcc_name="unknown")
         # Return a pre-built valid PNG response dict (as if remote executed successfully)
+        # Import built-in modules
         import base64 as b64_mod
 
         fake_png = b"\x89PNG\r\n\x1a\n" + b"fake_png_data"

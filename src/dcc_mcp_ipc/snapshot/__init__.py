@@ -28,7 +28,6 @@ Quick start::
 # Import built-in modules
 from typing import Any
 
-
 # Import local modules
 from dcc_mcp_ipc.snapshot.base import BaseSnapshot
 from dcc_mcp_ipc.snapshot.base import SnapshotConfig
@@ -36,7 +35,6 @@ from dcc_mcp_ipc.snapshot.base import SnapshotError
 from dcc_mcp_ipc.snapshot.base import SnapshotFormat
 from dcc_mcp_ipc.snapshot.base import SnapshotResult
 from dcc_mcp_ipc.snapshot.base import ViewportType
-
 
 __all__ = [
     # Abstract base
@@ -55,7 +53,7 @@ def create_snapshot(
     transport: str = "rpyc",
     **kwargs: Any,
 ) -> BaseSnapshot:
-    """Factory function to create the appropriate snapshot instance.
+    """Create the appropriate snapshot instance.
 
     This is the recommended way to create snapshot objects. It selects the
     correct implementation based on the specified transport protocol.
@@ -82,15 +80,14 @@ def create_snapshot(
 
     """
     if transport == "rpyc":
+        # Import local modules
         from dcc_mcp_ipc.snapshot.rpyc import RPyCSnapshot
 
         return RPyCSnapshot(dcc_name=dcc_name, **kwargs)
     elif transport == "http":
+        # Import local modules
         from dcc_mcp_ipc.snapshot.http import HTTPSnapshot
 
         return HTTPSnapshot(dcc_type=dcc_name, **kwargs)
     else:
-        raise ValueError(
-            f"Unsupported transport '{transport}'. "
-            f"Supported transports: 'rpyc', 'http'"
-        )
+        raise ValueError(f"Unsupported transport '{transport}'. Supported transports: 'rpyc', 'http'")

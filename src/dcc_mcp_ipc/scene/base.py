@@ -15,10 +15,10 @@ from typing import Any
 from pydantic import BaseModel
 from pydantic import Field
 
-
 # ---------------------------------------------------------------------------
 # Data Models
 # ---------------------------------------------------------------------------
+
 
 class TransformMatrix(BaseModel):
     """4x4 transformation matrix for object position/rotation/scale.
@@ -29,10 +29,22 @@ class TransformMatrix(BaseModel):
 
     matrix: list[float] = Field(
         default_factory=lambda: [
-            1.0, 0.0, 0.0, 0.0,
-            0.0, 1.0, 0.0, 0.0,
-            0.0, 0.0, 1.0, 0.0,
-            0.0, 0.0, 0.0, 1.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            1.0,
         ],
         description="4x4 transformation matrix (row-major, 16 floats)",
     )
@@ -46,7 +58,9 @@ class TransformMatrix(BaseModel):
     @property
     def rotation(self) -> tuple[float, float, float]:
         """Extract Euler rotation (rx, ry, rz) in degrees."""
+        # Import built-in modules
         import math
+
         m = self.matrix
         sy = math.sqrt(m[0] ** 2 + m[1] ** 2)
         if sy > 1e-6:
@@ -62,7 +76,9 @@ class TransformMatrix(BaseModel):
     @property
     def scale(self) -> tuple[float, float, float]:
         """Extract scale component (sx, sy, sz)."""
+        # Import built-in modules
         import math
+
         m = self.matrix
         sx = math.sqrt(m[0] ** 2 + m[1] ** 2 + m[2] ** 2)
         sy = math.sqrt(m[4] ** 2 + m[5] ** 2 + m[6] ** 2)
@@ -147,9 +163,7 @@ class LightInfo(BaseModel):
     """Information about a light in the scene."""
 
     name: str = Field(description="Light name")
-    type: str = Field(
-        description="Light type: 'directional', 'point', 'spot', 'area', 'ambient'"
-    )
+    type: str = Field(description="Light type: 'directional', 'point', 'spot', 'area', 'ambient'")
     intensity: float = Field(default=1.0, description="Light intensity / strength")
     color: tuple[float, float, float] = Field(
         default=(1.0, 1.0, 1.0),
@@ -208,6 +222,7 @@ class SceneInfo(BaseModel):
 # Configuration & Enums
 # ---------------------------------------------------------------------------
 
+
 class SceneQueryFilter(str, Enum):
     """Predefined filter types for object queries."""
 
@@ -252,6 +267,7 @@ class SceneInfoConfig(BaseModel):
 # Exceptions
 # ---------------------------------------------------------------------------
 
+
 class SceneError(Exception):
     """Base exception for scene information errors."""
 
@@ -264,6 +280,7 @@ class SceneError(Exception):
 # ---------------------------------------------------------------------------
 # Abstract Interface
 # ---------------------------------------------------------------------------
+
 
 class BaseSceneInfo(ABC):
     """Abstract base class for DCC scene information queries.
@@ -279,6 +296,7 @@ class BaseSceneInfo(ABC):
 
         Args:
             config: Query configuration options.
+
         """
         self._config = config or SceneInfoConfig()
 
@@ -301,6 +319,7 @@ class BaseSceneInfo(ABC):
 
         Raises:
             SceneError: If the query fails.
+
         """
 
     @abstractmethod
@@ -312,6 +331,7 @@ class BaseSceneInfo(ABC):
 
         Raises:
             SceneError: If building the hierarchy fails.
+
         """
 
     @abstractmethod
@@ -323,6 +343,7 @@ class BaseSceneInfo(ABC):
 
         Raises:
             SceneError: If the query fails.
+
         """
 
     @abstractmethod
@@ -334,6 +355,7 @@ class BaseSceneInfo(ABC):
 
         Raises:
             SceneError: If the query fails.
+
         """
 
     @abstractmethod
@@ -345,6 +367,7 @@ class BaseSceneInfo(ABC):
 
         Raises:
             SceneError: If the query fails.
+
         """
 
     @abstractmethod
@@ -356,6 +379,7 @@ class BaseSceneInfo(ABC):
 
         Raises:
             SceneError: If the query fails.
+
         """
 
     # ---- Convenience methods (default implementations) ---------------------
@@ -371,6 +395,7 @@ class BaseSceneInfo(ABC):
 
         Raises:
             SceneError: If any critical query fails.
+
         """
         try:
             return SceneInfo(

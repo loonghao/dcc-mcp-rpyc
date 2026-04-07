@@ -17,10 +17,10 @@ import pytest
 from dcc_mcp_ipc.action_adapter import ActionAdapter
 from dcc_mcp_ipc.skills.scanner import SkillManager
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_metadata(name="my_skill", description="A skill", scripts=None, skill_path="/skills/my_skill"):
     meta = MagicMock()
@@ -39,7 +39,9 @@ def _make_metadata(name="my_skill", description="A skill", scripts=None, skill_p
 # SkillManager unit tests
 # ---------------------------------------------------------------------------
 
+
 class TestSkillManagerInit:
+    """Tests for SkillManager initialization."""
 
     def test_creates_default_adapter(self):
         with patch("dcc_mcp_ipc.skills.scanner.SkillScanner"):
@@ -55,6 +57,7 @@ class TestSkillManagerInit:
 
 
 class TestSkillManagerLoadPaths:
+    """Tests for SkillManager path loading and scanning."""
 
     @pytest.fixture
     def mock_scanner(self):
@@ -66,7 +69,6 @@ class TestSkillManagerLoadPaths:
     def test_load_paths_registers_skills(self, mock_scanner):
         meta = _make_metadata("echo_skill", skill_path="/skills/echo_skill")
         mock_scanner.scan.return_value = ["/skills/echo_skill"]
-
 
         with patch("dcc_mcp_ipc.skills.scanner.parse_skill_md", return_value=meta):
             adapter = ActionAdapter("test_load")
@@ -119,8 +121,10 @@ class TestSkillManagerLoadPaths:
         meta = _make_metadata("env_skill")
         mock_scanner.scan.return_value = ["/env/env_skill"]
 
-        with patch("dcc_mcp_ipc.skills.scanner.parse_skill_md", return_value=meta), \
-             patch.dict(os.environ, {"DCC_MCP_SKILL_PATHS": "/env"}):
+        with (
+            patch("dcc_mcp_ipc.skills.scanner.parse_skill_md", return_value=meta),
+            patch.dict(os.environ, {"DCC_MCP_SKILL_PATHS": "/env"}),
+        ):
             mgr = SkillManager()
             mgr._scanner = mock_scanner
             names = mgr.load_env_paths()
@@ -129,11 +133,14 @@ class TestSkillManagerLoadPaths:
 
 
 class TestSkillManagerPipeline:
+    """Tests for SkillManager full pipeline loading."""
 
     def test_load_full_pipeline(self):
         meta = _make_metadata("pipe_skill")
-        with patch("dcc_mcp_ipc.skills.scanner.scan_and_load_lenient") as mock_scan, \
-             patch("dcc_mcp_ipc.skills.scanner.SkillScanner"):
+        with (
+            patch("dcc_mcp_ipc.skills.scanner.scan_and_load_lenient") as mock_scan,
+            patch("dcc_mcp_ipc.skills.scanner.SkillScanner"),
+        ):
             mock_scan.return_value = ([meta], [])
             adapter = ActionAdapter("pipeline_test")
             with patch.object(adapter, "register_action"):
@@ -145,8 +152,10 @@ class TestSkillManagerPipeline:
     def test_load_full_pipeline_with_errors(self):
         """Partial failures are logged but don't abort the load."""
         meta = _make_metadata("good_skill")
-        with patch("dcc_mcp_ipc.skills.scanner.scan_and_load_lenient") as mock_scan, \
-             patch("dcc_mcp_ipc.skills.scanner.SkillScanner"):
+        with (
+            patch("dcc_mcp_ipc.skills.scanner.scan_and_load_lenient") as mock_scan,
+            patch("dcc_mcp_ipc.skills.scanner.SkillScanner"),
+        ):
             mock_scan.return_value = ([meta], ["bad/skill/path"])
             adapter = ActionAdapter("partial_test")
             with patch.object(adapter, "register_action"):
@@ -157,10 +166,13 @@ class TestSkillManagerPipeline:
 
 
 class TestSkillManagerWatcher:
+    """Tests for SkillManager file watching functionality."""
 
     def test_start_watching_creates_watcher(self):
-        with patch("dcc_mcp_ipc.skills.scanner.SkillWatcher") as mock_cls, \
-             patch("dcc_mcp_ipc.skills.scanner.SkillScanner"):
+        with (
+            patch("dcc_mcp_ipc.skills.scanner.SkillWatcher") as mock_cls,
+            patch("dcc_mcp_ipc.skills.scanner.SkillScanner"),
+        ):
             mock_watcher = MagicMock()
             mock_cls.return_value = mock_watcher
 
@@ -173,8 +185,10 @@ class TestSkillManagerWatcher:
             assert mgr._watcher is mock_watcher
 
     def test_start_watching_idempotent(self):
-        with patch("dcc_mcp_ipc.skills.scanner.SkillWatcher") as mock_cls, \
-             patch("dcc_mcp_ipc.skills.scanner.SkillScanner"):
+        with (
+            patch("dcc_mcp_ipc.skills.scanner.SkillWatcher") as mock_cls,
+            patch("dcc_mcp_ipc.skills.scanner.SkillScanner"),
+        ):
             mgr = SkillManager()
             mgr._watcher = MagicMock()  # already watching
             mgr.start_watching()
@@ -209,6 +223,7 @@ class TestSkillManagerWatcher:
 
 
 class TestSkillManagerIntrospection:
+    """Tests for SkillManager introspection methods."""
 
     def test_list_skills_empty(self):
         with patch("dcc_mcp_ipc.skills.scanner.SkillScanner"):

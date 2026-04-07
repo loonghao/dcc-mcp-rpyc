@@ -16,7 +16,6 @@ Design notes:
   ensure thread safety when updating shared state.
 """
 
-
 # Import built-in modules
 import dataclasses
 import json
@@ -25,8 +24,6 @@ import queue
 import threading
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import List
 from typing import Optional
 
 # Import local modules
@@ -43,7 +40,7 @@ logger = logging.getLogger(__name__)
 _STOP_SENTINEL = object()
 
 # Type alias for event callback
-EventCallback = Callable[[str, Dict[str, Any]], None]
+EventCallback = Callable[[str, dict[str, Any]], None]
 
 
 @dataclasses.dataclass
@@ -63,7 +60,7 @@ class WebSocketTransportConfig(TransportConfig):
     ping_interval: float = 20.0
     ping_timeout: float = 10.0
     max_message_size: int = 0
-    extra_headers: Dict[str, str] = dataclasses.field(default_factory=dict)
+    extra_headers: dict[str, str] = dataclasses.field(default_factory=dict)
 
 
 class WebSocketTransport(BaseTransport):
@@ -114,13 +111,13 @@ class WebSocketTransport(BaseTransport):
         self._reader_thread: Optional[threading.Thread] = None
 
         # Pending RPC calls: {request_id: (Event, result_container)}
-        self._pending: Dict[str, tuple] = {}
+        self._pending: dict[str, tuple] = {}
         self._pending_lock = threading.Lock()
         self._request_counter = 0
         self._counter_lock = threading.Lock()
 
         # Event subscriptions: {event_name: [callback, ...]}
-        self._subscriptions: Dict[str, List[EventCallback]] = {}
+        self._subscriptions: dict[str, list[EventCallback]] = {}
         self._sub_lock = threading.RLock()
 
         # Outbound message queue (written by caller, consumed by writer thread)
@@ -239,9 +236,9 @@ class WebSocketTransport(BaseTransport):
     def execute(
         self,
         action: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         timeout: Optional[float] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute an action on the remote service over WebSocket.
 
         The request is serialised as JSON and sent asynchronously; this method
@@ -275,7 +272,7 @@ class WebSocketTransport(BaseTransport):
         }
 
         event = threading.Event()
-        container: Dict[str, Any] = {}
+        container: dict[str, Any] = {}
 
         with self._pending_lock:
             self._pending[request_id] = (event, container)
@@ -332,7 +329,7 @@ class WebSocketTransport(BaseTransport):
                 listeners.remove(callback)
                 logger.debug("Unsubscribed from event '%s'", event)
 
-    def subscriptions(self) -> Dict[str, List[EventCallback]]:
+    def subscriptions(self) -> dict[str, list[EventCallback]]:
         """Return a snapshot of current event subscriptions."""
         with self._sub_lock:
             return {k: list(v) for k, v in self._subscriptions.items()}
@@ -432,7 +429,7 @@ class WebSocketTransport(BaseTransport):
         else:
             logger.debug("Unknown WebSocket message type: %s", msg_type)
 
-    def _handle_response(self, data: Dict[str, Any]) -> None:
+    def _handle_response(self, data: dict[str, Any]) -> None:
         """Route a response message to the waiting RPC call."""
         req_id = data.get("id")
         if not req_id:
@@ -450,7 +447,7 @@ class WebSocketTransport(BaseTransport):
         container["result"] = data.get("result", {"success": True})
         event.set()
 
-    def _handle_error_message(self, data: Dict[str, Any]) -> None:
+    def _handle_error_message(self, data: dict[str, Any]) -> None:
         """Route an error response to the waiting RPC call."""
         req_id = data.get("id")
         error_msg = data.get("message", "Unknown remote error")
@@ -466,7 +463,7 @@ class WebSocketTransport(BaseTransport):
 
         logger.error("WebSocket server error: %s", error_msg)
 
-    def _handle_event(self, data: Dict[str, Any]) -> None:
+    def _handle_event(self, data: dict[str, Any]) -> None:
         """Dispatch a server-push event to registered callbacks."""
         event_name = data.get("event")
         event_data = data.get("data", {})
@@ -506,6 +503,7 @@ class WebSocketTransport(BaseTransport):
 
         """
         # Use websockets sync API (websockets >= 13.0)
+        # Import third-party modules
         import websockets.sync.client as _ws_sync
 
         extra_headers = list(self._ws_config.extra_headers.items()) if self._ws_config.extra_headers else None

@@ -7,9 +7,7 @@ transports without changing upper-level code.
 
 # Import built-in modules
 import logging
-from typing import Dict
 from typing import Optional
-from typing import Type
 
 # Import local modules
 from dcc_mcp_ipc.transport.base import BaseTransport
@@ -18,13 +16,13 @@ from dcc_mcp_ipc.transport.base import TransportConfig
 logger = logging.getLogger(__name__)
 
 # Global transport class registry: protocol_name -> transport_class
-_transport_registry: Dict[str, Type[BaseTransport]] = {}
+_transport_registry: dict[str, type[BaseTransport]] = {}
 
 # Global transport instance cache: (protocol, host, port) -> transport
-_transport_instances: Dict[tuple, BaseTransport] = {}
+_transport_instances: dict[tuple, BaseTransport] = {}
 
 
-def register_transport(protocol: str, transport_class: Type[BaseTransport]) -> None:
+def register_transport(protocol: str, transport_class: type[BaseTransport]) -> None:
     """Register a transport class for a protocol name.
 
     Args:
@@ -64,9 +62,7 @@ def create_transport(
     transport_class = _transport_registry.get(protocol)
     if transport_class is None:
         available = ", ".join(sorted(_transport_registry.keys())) or "(none)"
-        raise ValueError(
-            f"Unknown transport protocol '{protocol}'. Available: {available}"
-        )
+        raise ValueError(f"Unknown transport protocol '{protocol}'. Available: {available}")
 
     return transport_class(config)
 

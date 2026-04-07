@@ -11,7 +11,6 @@ Protocol: Images are fetched via HTTP GET/POST requests and returned as raw byte
 import base64
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import local modules
@@ -21,6 +20,7 @@ from dcc_mcp_ipc.snapshot.base import SnapshotError
 
 # Import third-party modules (optional — graceful fallback)
 try:
+    # Import third-party modules
     import requests
     from requests.exceptions import RequestException
 
@@ -211,7 +211,7 @@ class HTTPSnapshot(BaseSnapshot):
             ) from exc
 
     def _capture_generic(self, config: SnapshotConfig) -> bytes:
-        """Generic HTTP screenshot fallback.
+        """Provide a generic HTTP screenshot fallback.
 
         Attempts to fetch from ``/screenshot`` endpoint with standard query
         parameters. Useful for custom DCC HTTP servers that follow conventions.
@@ -245,7 +245,7 @@ class HTTPSnapshot(BaseSnapshot):
                 raise
             raise SnapshotError(f"Generic HTTP snapshot failed: {exc}", cause=exc) from exc
 
-    def get_snapshot_info(self) -> Dict[str, Any]:
+    def get_snapshot_info(self) -> dict[str, Any]:
         """Return snapshot capabilities for this HTTP snapshot."""
         info = super().get_snapshot_info()
         info["dcc_type"] = self.dcc_type

@@ -20,14 +20,14 @@ from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport
 from dcc_mcp_ipc.transport.ipc_transport import IpcServerTransport
 from dcc_mcp_ipc.transport.ipc_transport import IpcTransportConfig
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def mock_channel():
-    """A mock FramedChannel returned by connect_ipc."""
+    """Return a mock FramedChannel returned by connect_ipc."""
     ch = MagicMock()
     ch.ping.return_value = 5  # 5 ms RTT
     ch.call.return_value = {"success": True, "result": "ok"}
@@ -36,7 +36,7 @@ def mock_channel():
 
 @pytest.fixture
 def mock_transport_address():
-    """A mock TransportAddress."""
+    """Return a mock TransportAddress."""
     addr = MagicMock()
     addr.__str__ = lambda _: "tcp://localhost:19000"
     return addr
@@ -48,8 +48,10 @@ def connected_client(mock_channel, mock_transport_address):
     cfg = IpcTransportConfig(host="localhost", port=19000)
     transport = IpcClientTransport(cfg)
 
-    with patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", return_value=mock_channel), \
-         patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta:
+    with (
+        patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", return_value=mock_channel),
+        patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta,
+    ):
         mock_ta.tcp.return_value = mock_transport_address
         transport.connect()
 
@@ -62,6 +64,7 @@ def connected_client(mock_channel, mock_transport_address):
 # ---------------------------------------------------------------------------
 # IpcTransportConfig
 # ---------------------------------------------------------------------------
+
 
 class TestIpcTransportConfig:
     """Tests for IpcTransportConfig defaults and fields."""
@@ -88,6 +91,7 @@ class TestIpcTransportConfig:
 # IpcClientTransport — connection lifecycle
 # ---------------------------------------------------------------------------
 
+
 class TestIpcClientTransportConnect:
     """Tests for connect / disconnect / health_check."""
 
@@ -100,8 +104,10 @@ class TestIpcClientTransportConnect:
         cfg = IpcTransportConfig(host="localhost", port=19000)
         transport = IpcClientTransport(cfg)
 
-        with patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", return_value=mock_channel) as mock_connect, \
-             patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta:
+        with (
+            patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", return_value=mock_channel),
+            patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta,
+        ):
             mock_ta.tcp.return_value = mock_transport_address
             transport.connect()
 
@@ -116,8 +122,10 @@ class TestIpcClientTransportConnect:
 
     def test_connect_failure_raises(self):
         transport = IpcClientTransport()
-        with patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", side_effect=OSError("refused")), \
-             patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta:
+        with (
+            patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", side_effect=OSError("refused")),
+            patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta,
+        ):
             mock_ta.tcp.return_value = MagicMock()
             with pytest.raises(ConnectionError):
                 transport.connect()
@@ -128,8 +136,10 @@ class TestIpcClientTransportConnect:
         cfg = IpcTransportConfig(address_uri="pipe://my-pipe")
         transport = IpcClientTransport(cfg)
 
-        with patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", return_value=mock_channel), \
-             patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta:
+        with (
+            patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", return_value=mock_channel),
+            patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta,
+        ):
             mock_ta.parse.return_value = MagicMock()
             transport.connect()
             mock_ta.parse.assert_called_once_with("pipe://my-pipe")
@@ -150,8 +160,10 @@ class TestIpcClientTransportConnect:
         cfg = IpcTransportConfig(host="localhost", port=19000)
         transport = IpcClientTransport(cfg)
 
-        with patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", return_value=mock_channel), \
-             patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta:
+        with (
+            patch("dcc_mcp_ipc.transport.ipc_transport.connect_ipc", return_value=mock_channel),
+            patch("dcc_mcp_ipc.transport.ipc_transport.TransportAddress") as mock_ta,
+        ):
             mock_ta.tcp.return_value = mock_transport_address
             with transport:
                 transport._state = TransportState.CONNECTED
@@ -163,7 +175,9 @@ class TestIpcClientTransportConnect:
 # IpcClientTransport — health_check
 # ---------------------------------------------------------------------------
 
+
 class TestIpcClientTransportHealthCheck:
+    """Tests for IpcClientTransport health_check method."""
 
     def test_health_check_ok(self, connected_client, mock_channel):
         assert connected_client.health_check() is True
@@ -183,7 +197,9 @@ class TestIpcClientTransportHealthCheck:
 # IpcClientTransport — execute
 # ---------------------------------------------------------------------------
 
+
 class TestIpcClientTransportExecute:
+    """Tests for IpcClientTransport execute method."""
 
     def test_execute_success(self, connected_client, mock_channel):
         mock_channel.call.return_value = {"success": True, "result": "data"}
@@ -230,7 +246,9 @@ class TestIpcClientTransportExecute:
 # IpcServerTransport
 # ---------------------------------------------------------------------------
 
+
 class TestIpcServerTransport:
+    """Tests for IpcServerTransport."""
 
     def _make_server(self, handler=None):
         addr = MagicMock()
@@ -313,7 +331,9 @@ class TestIpcServerTransport:
             server.start()
 
         # Wait briefly for background thread
+        # Import built-in modules
         import time
+
         time.sleep(0.1)
 
         assert mock_channel in received

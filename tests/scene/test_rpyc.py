@@ -3,24 +3,25 @@
 All tests use mock execute functions; no real RPyC connection needed.
 """
 
-import pytest
+# Import built-in modules
 from unittest.mock import MagicMock
 
-from dcc_mcp_ipc.scene.base import (
-    BaseSceneInfo,
-    CameraInfo,
-    LightInfo,
-    MaterialInfo,
-    ObjectTypeInfo,
-    SceneError,
-    SceneHierarchy,
-    SceneInfo,
-    SceneInfoConfig,
-    SceneQueryFilter,
-    TransformMatrix,
-)
-from dcc_mcp_ipc.scene.rpyc import RPyCSceneInfo
+# Import third-party modules
+import pytest
 
+# Import local modules
+from dcc_mcp_ipc.scene.base import BaseSceneInfo
+from dcc_mcp_ipc.scene.base import CameraInfo
+from dcc_mcp_ipc.scene.base import LightInfo
+from dcc_mcp_ipc.scene.base import MaterialInfo
+from dcc_mcp_ipc.scene.base import ObjectTypeInfo
+from dcc_mcp_ipc.scene.base import SceneError
+from dcc_mcp_ipc.scene.base import SceneHierarchy
+from dcc_mcp_ipc.scene.base import SceneInfo
+from dcc_mcp_ipc.scene.base import SceneInfoConfig
+from dcc_mcp_ipc.scene.base import SceneQueryFilter
+from dcc_mcp_ipc.scene.base import TransformMatrix
+from dcc_mcp_ipc.scene.rpyc import RPyCSceneInfo
 
 # =============================================================================
 # Fixtures
@@ -44,7 +45,7 @@ def rpyc_scene(mock_execute) -> RPyCSceneInfo:
 
 @pytest.fixture
 def sample_raw_object() -> dict:
-    """A raw dict matching what Maya's script would return."""
+    """Return a raw dict matching what Maya's script would return."""
     return {
         "name": "pCube1",
         "type": "mesh",
@@ -587,7 +588,6 @@ class TestSceneMetadataExtended:
         si = RPyCSceneInfo(dcc_name="blender", execute_func=mock_execute)
         meta = si._get_scene_metadata()
         assert meta == {"frame_start": 1, "frame_end": 300, "current_frame": 42}
-
 
 
 # =============================================================================

@@ -19,10 +19,9 @@ from dcc_mcp_ipc.transport.base import ConnectionError
 from dcc_mcp_ipc.transport.base import ProtocolError
 from dcc_mcp_ipc.transport.base import TimeoutError
 from dcc_mcp_ipc.transport.base import TransportState
-from dcc_mcp_ipc.transport.websocket import _STOP_SENTINEL
 from dcc_mcp_ipc.transport.websocket import WebSocketTransport
 from dcc_mcp_ipc.transport.websocket import WebSocketTransportConfig
-
+from dcc_mcp_ipc.transport.websocket import _STOP_SENTINEL
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -532,7 +531,6 @@ class TestWebSocketReaderLoopPaths:
         t = _make_transport()
         fake_ws = _FakeWS()
         # Override recv to raise
-        original_recv = fake_ws.recv
         fake_ws.recv = lambda: (_ for _ in ()).throw(OSError("connection lost"))
 
         result = t._recv_message(fake_ws)
@@ -627,7 +625,6 @@ class TestWebSocketExecuteEdgeCases:
         _connect_no_threads(t, fake_ws)
 
         # Override _enqueue_message to raise something unexpected
-        orig_enqueue = t._enqueue_message
         t._enqueue_message = lambda msg: (_ for _ in ()).throw(RuntimeError("unexpected"))
 
         with pytest.raises(ProtocolError, match="Error executing"):
@@ -736,7 +733,6 @@ class TestWebSocketReaderLoopEdgeCases:
         t.disconnect()
 
 
-
 class TestWebSocketStartBackgroundThreads:
     """Tests for _start_background_threads (lines 355-366)."""
 
@@ -798,6 +794,7 @@ class TestWebSocketOpenConnection:
         t = _make_transport(host="localhost", port=8765)
         # We can't easily test the actual ImportError without uninstalling websockets,
         # but we verify the method is callable and has the right signature
+        # Import built-in modules
         import inspect
 
         sig = inspect.signature(t._open_connection)

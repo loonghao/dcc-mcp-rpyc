@@ -11,7 +11,6 @@ import os
 import platform
 import sys
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
@@ -112,7 +111,7 @@ class GenericApplicationAdapter(ApplicationAdapter):
 
         return ActionResultModel(success=True, message="Successfully retrieved environment information", context=info)
 
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> ActionResultModel:
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> ActionResultModel:
         """Execute Python code in the application's environment.
 
         Args:

@@ -11,7 +11,6 @@ import os
 import platform
 import sys
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
@@ -46,7 +45,7 @@ class ApplicationService(ApplicationRPyCService):
         self.app_version = app_version or sys.version
         logger.info(f"Initialized {self.app_name} service (version {self.app_version})")
 
-    def get_application_info(self) -> Dict[str, Any]:
+    def get_application_info(self) -> dict[str, Any]:
         """Get information about the application.
 
         Returns
@@ -62,7 +61,7 @@ class ApplicationService(ApplicationRPyCService):
             "pid": os.getpid(),
         }
 
-    def get_environment_info(self) -> Dict[str, Any]:
+    def get_environment_info(self) -> dict[str, Any]:
         """Get information about the Python environment.
 
         Returns
@@ -79,7 +78,7 @@ class ApplicationService(ApplicationRPyCService):
             "cwd": os.getcwd(),
         }
 
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """Execute Python code in the application's environment.
 
         Args:
@@ -159,7 +158,7 @@ class ApplicationService(ApplicationRPyCService):
             logger.error(f"Error calling function {module_name}.{function_name}: {e}")
             return {"error": str(e)}
 
-    def get_actions(self) -> Dict[str, Any]:
+    def get_actions(self) -> dict[str, Any]:
         """Get all available actions for the application.
 
         Returns

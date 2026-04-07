@@ -8,7 +8,6 @@ import json
 import logging
 import os
 import time
-from typing import List
 from typing import Optional
 
 # Import third-party modules
@@ -84,7 +83,7 @@ class FileDiscoveryStrategy(ServiceDiscoveryStrategy):
         except Exception as e:
             logger.error(f"Error saving registry: {e}")
 
-    def discover_services(self, service_type: Optional[str] = None) -> List[ServiceInfo]:
+    def discover_services(self, service_type: Optional[str] = None) -> list[ServiceInfo]:
         """Discover available services.
 
         Args:

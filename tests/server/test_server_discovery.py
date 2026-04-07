@@ -30,6 +30,7 @@ class TestRegisterDCCService:
 
     @patch("dcc_mcp_ipc.server.discovery.ServiceRegistry")
     def test_register_creates_correct_service_info(self, MockRegistry):
+        # Import local modules
         from dcc_mcp_ipc.server.discovery import ServiceInfo
 
         mock_registry = MagicMock()

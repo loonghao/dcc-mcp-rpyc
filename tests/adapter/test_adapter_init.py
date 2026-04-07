@@ -75,9 +75,10 @@ class TestGetAdapter:
     def test_get_adapter_registers_in_cache(self):
         """Test that a new adapter is stored in the global registry."""
         registry = {}
-        with patch("dcc_mcp_ipc.adapter._adapters", registry), patch(
-            "dcc_mcp_ipc.adapter.SessionAdapter"
-        ) as mock_session_cls:
+        with (
+            patch("dcc_mcp_ipc.adapter._adapters", registry),
+            patch("dcc_mcp_ipc.adapter.SessionAdapter") as mock_session_cls,
+        ):
             mock_adapter = MagicMock()
             mock_session_cls.return_value = mock_adapter
 
@@ -90,15 +91,16 @@ class TestDCCAdapterExtended:
     """Extended tests for DCCAdapter covering previously uncovered lines."""
 
     def _make_adapter(self, dcc_name="test_dcc", host="localhost", port=8000):
-        """Helper: create a concrete DCCAdapter with mocked dependencies."""
+        """Create a concrete DCCAdapter with mocked dependencies."""
 
         class ConcreteDCCAdapter(DCCAdapter):
             def _initialize_action_paths(self):
                 self._action_paths = []
 
-        with patch("dcc_mcp_ipc.adapter.base.get_action_adapter"), patch(
-            "dcc_mcp_ipc.adapter.dcc.get_client"
-        ) as mock_get_client:
+        with (
+            patch("dcc_mcp_ipc.adapter.base.get_action_adapter"),
+            patch("dcc_mcp_ipc.adapter.dcc.get_client") as mock_get_client,
+        ):
             mock_client = MagicMock()
             mock_client.is_connected.return_value = True
             mock_get_client.return_value = mock_client
@@ -117,7 +119,7 @@ class TestDCCAdapterExtended:
 
     def test_get_scene_info_not_connected(self):
         """Test get_scene_info returns error when not connected."""
-        adapter, mock_client = self._make_adapter()
+        adapter, _mock_client = self._make_adapter()
         adapter.client = None
 
         result = adapter.get_scene_info()
@@ -147,7 +149,7 @@ class TestDCCAdapterExtended:
 
     def test_get_session_info_not_connected(self):
         """Test get_session_info returns error when not connected."""
-        adapter, mock_client = self._make_adapter()
+        adapter, _mock_client = self._make_adapter()
         adapter.client = None
 
         result = adapter.get_session_info()
@@ -185,7 +187,7 @@ class TestDCCAdapterExtended:
 
     def test_create_primitive_not_connected(self):
         """Test create_primitive returns error when not connected."""
-        adapter, mock_client = self._make_adapter()
+        adapter, _mock_client = self._make_adapter()
         adapter.client = None
 
         result = adapter.create_primitive("cube")
@@ -224,7 +226,7 @@ class TestDCCAdapterExtended:
 
     def test_execute_script_not_connected(self):
         """Test execute_script returns error when not connected."""
-        adapter, mock_client = self._make_adapter()
+        adapter, _mock_client = self._make_adapter()
         adapter.client = None
 
         result = adapter.execute_script("print('hi')")
@@ -255,6 +257,7 @@ class TestApplicationAdapterBase:
 
     def _make_concrete_adapter(self):
         """Create a minimal concrete adapter for testing base class."""
+        # Import local modules
         from dcc_mcp_ipc.adapter.base import ApplicationAdapter
 
         class ConcreteAdapter(ApplicationAdapter):
@@ -313,13 +316,11 @@ class TestApplicationAdapterBase:
 
     def test_action_paths_setter(self):
         """Test action_paths setter updates the internal list."""
-        adapter, mock_action_adapter = self._make_concrete_adapter()
+        adapter, _mock_action_adapter = self._make_concrete_adapter()
 
         adapter.action_paths = ["/path/to/actions"]
 
         assert adapter._action_paths == ["/path/to/actions"]
-
-
 
     def test_execute_action_wraps_non_dict_result(self):
         """Test execute_action wraps non-dict results in ActionResultModel."""

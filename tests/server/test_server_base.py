@@ -16,10 +16,10 @@ import pytest
 from dcc_mcp_ipc.server.base import ApplicationRPyCService
 from dcc_mcp_ipc.server.base import BaseRPyCService
 
-
 # ---------------------------------------------------------------------------
 # Concrete stub - minimal implementation of the abstract class
 # ---------------------------------------------------------------------------
+
 
 class ConcreteAppService(ApplicationRPyCService):
     """Minimal concrete implementation for testing ApplicationRPyCService."""
@@ -34,11 +34,15 @@ class ConcreteAppService(ApplicationRPyCService):
         return eval(code, {}, context or {})
 
     def import_module(self, module_name):
+        # Import built-in modules
         import importlib
+
         return importlib.import_module(module_name)
 
     def call_function(self, module_name, function_name, *args, **kwargs):
+        # Import built-in modules
         import importlib
+
         mod = importlib.import_module(module_name)
         func = getattr(mod, function_name)
         return func(*args, **kwargs)
@@ -47,6 +51,7 @@ class ConcreteAppService(ApplicationRPyCService):
 # ---------------------------------------------------------------------------
 # BaseRPyCService - on_connect / on_disconnect logging
 # ---------------------------------------------------------------------------
+
 
 class TestBaseRPyCServiceCallbacks:
     """Tests for on_connect and on_disconnect log calls."""
@@ -80,6 +85,7 @@ class TestBaseRPyCServiceCallbacks:
 # ---------------------------------------------------------------------------
 # ApplicationRPyCService - exposed_execute_python
 # ---------------------------------------------------------------------------
+
 
 class TestExposedExecutePython:
     """Tests for ApplicationRPyCService.exposed_execute_python."""
@@ -127,6 +133,7 @@ class TestExposedExecutePython:
 # ApplicationRPyCService - exposed_get_module
 # ---------------------------------------------------------------------------
 
+
 class TestExposedGetModule:
     """Tests for ApplicationRPyCService.exposed_get_module."""
 
@@ -135,7 +142,9 @@ class TestExposedGetModule:
         return svc
 
     def test_import_existing_module(self):
+        # Import built-in modules
         import sys
+
         svc = self._make_svc()
         # exposed_get_module is wrapped with @with_environment_info
         result = svc.exposed_get_module("sys")
@@ -150,7 +159,9 @@ class TestExposedGetModule:
 
     def test_import_module_called(self):
         svc = self._make_svc()
+        # Import built-in modules
         import sys
+
         svc.import_module = MagicMock(return_value=sys)
         result = svc.exposed_get_module("os")
         svc.import_module.assert_called_once_with("os")
@@ -170,6 +181,7 @@ class TestExposedGetModule:
 # ApplicationRPyCService - exposed_call_function
 # ---------------------------------------------------------------------------
 
+
 class TestExposedCallFunction:
     """Tests for ApplicationRPyCService.exposed_call_function."""
 
@@ -178,7 +190,9 @@ class TestExposedCallFunction:
         return svc
 
     def test_call_existing_function(self):
+        # Import built-in modules
         import os
+
         svc = self._make_svc()
         # exposed_call_function is wrapped with @with_environment_info
         result = svc.exposed_call_function("os.path", "join", "/tmp", "file.txt")
@@ -211,6 +225,7 @@ class TestExposedCallFunction:
 # ---------------------------------------------------------------------------
 # ApplicationRPyCService - exposed_list_actions / exposed_call_action
 # ---------------------------------------------------------------------------
+
 
 class TestExposedListAndCallAction:
     """Tests for default list_actions and call_action implementations."""

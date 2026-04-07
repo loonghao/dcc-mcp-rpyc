@@ -9,9 +9,7 @@ import logging
 import threading
 import time
 from typing import Any
-from typing import Dict
 from typing import Optional
-from typing import Type
 from typing import Union
 
 # Import third-party modules
@@ -40,7 +38,7 @@ class DCCRPyCService(ApplicationRPyCService):
     """
 
     @abstractmethod
-    def get_scene_info(self) -> Dict[str, Any]:
+    def get_scene_info(self) -> dict[str, Any]:
         """Get information about the current scene.
 
         Returns
@@ -50,7 +48,7 @@ class DCCRPyCService(ApplicationRPyCService):
         """
 
     @abstractmethod
-    def get_session_info(self) -> Dict[str, Any]:
+    def get_session_info(self) -> dict[str, Any]:
         """Get information about the current session.
 
         Returns
@@ -107,11 +105,11 @@ class DCCServer:
     def __init__(
         self,
         dcc_name: str,
-        service_class: Optional[Type[service.Service]] = None,
+        service_class: Optional[type[service.Service]] = None,
         host: str = "0.0.0.0",  # Default: bind to all interfaces
         port: int = 0,
         server: Optional[ThreadedServer] = None,
-        protocol_config: Optional[Dict[str, Any]] = None,
+        protocol_config: Optional[dict[str, Any]] = None,
         registry_path: Optional[str] = None,
         use_zeroconf: bool = True,
     ):

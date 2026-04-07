@@ -2,7 +2,6 @@
 
 # Import built-in modules
 from typing import Any
-from typing import Dict
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
@@ -13,7 +12,6 @@ import pytest
 from dcc_mcp_ipc.server.dcc import DCCRPyCService
 from dcc_mcp_ipc.server.dcc import DCCServer
 
-
 # ---------------------------------------------------------------------------
 # Concrete subclass to test DCCRPyCService.exposed_create_primitive
 # ---------------------------------------------------------------------------
@@ -22,10 +20,10 @@ from dcc_mcp_ipc.server.dcc import DCCServer
 class _ConcreteDCCService(DCCRPyCService):
     """Minimal concrete subclass for testing the abstract base."""
 
-    def get_scene_info(self) -> Dict[str, Any]:
+    def get_scene_info(self) -> dict[str, Any]:
         return {"objects": []}
 
-    def get_session_info(self) -> Dict[str, Any]:
+    def get_session_info(self) -> dict[str, Any]:
         return {"session": "test"}
 
     def create_primitive(self, primitive_type: str, **kwargs) -> Any:
@@ -33,21 +31,25 @@ class _ConcreteDCCService(DCCRPyCService):
             raise ValueError("unsupported primitive")
         return {"created": primitive_type}
 
-    def get_application_info(self) -> Dict[str, Any]:
+    def get_application_info(self) -> dict[str, Any]:
         return {"name": "test_dcc"}
 
-    def get_environment_info(self) -> Dict[str, Any]:
+    def get_environment_info(self) -> dict[str, Any]:
         return {"python_version": "3.12"}
 
     def execute_python(self, code: str, context=None) -> Any:
         return eval(code)  # test-only, safe in controlled test environment
 
     def import_module(self, module_name: str) -> Any:
+        # Import built-in modules
         import importlib
+
         return importlib.import_module(module_name)
 
     def call_function(self, module_name: str, function_name: str, *args, **kwargs) -> Any:
+        # Import built-in modules
         import importlib
+
         mod = importlib.import_module(module_name)
         return getattr(mod, function_name)(*args, **kwargs)
 
@@ -111,7 +113,9 @@ class TestDCCServerInit:
 
     def test_use_zeroconf_defaults(self):
         # Without ZEROCONF_AVAILABLE, use_zeroconf should evaluate to False
+        # Import local modules
         from dcc_mcp_ipc.discovery import ZEROCONF_AVAILABLE
+
         server = DCCServer(dcc_name="maya", use_zeroconf=True)
         # use_zeroconf is True only if both param and ZEROCONF_AVAILABLE are True
         assert server.use_zeroconf == ZEROCONF_AVAILABLE
@@ -194,7 +198,9 @@ class TestDCCServerStop:
     @patch("dcc_mcp_ipc.server.dcc.unregister_dcc_service")
     @patch("dcc_mcp_ipc.server.dcc.ServiceRegistry")
     def test_stop_with_zeroconf(self, MockRegistry, mock_unreg):
+        # Import local modules
         from dcc_mcp_ipc.discovery import ZEROCONF_AVAILABLE
+
         if not ZEROCONF_AVAILABLE:
             pytest.skip("zeroconf not available")
 
@@ -268,7 +274,9 @@ class TestDCCServerStart:
     @patch("dcc_mcp_ipc.server.dcc.ServiceRegistry")
     def test_start_in_thread_with_zeroconf_registers(self, MockRegistry, mock_reg):
         """When use_zeroconf=True, _start_in_thread registers via ZeroConf."""
+        # Import local modules
         from dcc_mcp_ipc.discovery import ZEROCONF_AVAILABLE
+
         if not ZEROCONF_AVAILABLE:
             pytest.skip("zeroconf not available")
 
@@ -292,7 +300,9 @@ class TestDCCServerStart:
     @patch("dcc_mcp_ipc.server.dcc.ServiceRegistry")
     def test_start_in_thread_zeroconf_failure_logs_warning(self, MockRegistry, mock_reg):
         """When ZeroConf registration fails, a warning is logged but start succeeds."""
+        # Import local modules
         from dcc_mcp_ipc.discovery import ZEROCONF_AVAILABLE
+
         if not ZEROCONF_AVAILABLE:
             pytest.skip("zeroconf not available")
 

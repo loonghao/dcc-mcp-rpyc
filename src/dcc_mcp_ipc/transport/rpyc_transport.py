@@ -10,7 +10,6 @@ transport for DCC applications that embed a Python interpreter
 import dataclasses
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
@@ -148,9 +147,9 @@ class RPyCTransport(BaseTransport):
     def execute(
         self,
         action: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         timeout: Optional[float] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a named action via the RPyC service proxy.
 
         The method maps *action* to ``exposed_{action}`` on the RPyC root
@@ -197,7 +196,7 @@ class RPyCTransport(BaseTransport):
 
     # ── Convenience: raw RPyC access ─────────────────────────────────
 
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Any:
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> Any:
         """Execute Python code on the remote service via RPyC.
 
         Args:
@@ -239,9 +238,7 @@ class RPyCTransport(BaseTransport):
             raise ConnectionError("Not connected — call connect() first")
 
         try:
-            return self._connection.root.exposed_call_function(
-                module_name, function_name, *args, **kwargs
-            )
+            return self._connection.root.exposed_call_function(module_name, function_name, *args, **kwargs)
         except Exception as exc:
             raise ProtocolError(
                 f"Error calling {module_name}.{function_name}: {exc}",

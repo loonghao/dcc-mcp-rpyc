@@ -7,9 +7,7 @@ remote calls with connection management, timeout handling, and automatic reconne
 # Import built-in modules
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
-from typing import Tuple
 
 # Import third-party modules
 import rpyc
@@ -72,7 +70,7 @@ class BaseApplicationClient:
         if auto_connect and self.host and self.port:
             self.connect()
 
-    def _discover_service(self) -> Tuple[Optional[str], Optional[int]]:
+    def _discover_service(self) -> tuple[Optional[str], Optional[int]]:
         """Discover the host and port of the application RPYC server.
 
         Returns
@@ -251,7 +249,7 @@ class BaseApplicationClient:
             logger.error(f"Error executing remote command {command}: {e}")
             raise
 
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Any:
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> Any:
         """Execute Python code in the application's environment.
 
         Args:
@@ -333,7 +331,7 @@ class BaseApplicationClient:
             logger.error(f"Error calling function {module_name}.{function_name}: {e}")
             raise
 
-    def get_application_info(self) -> Dict[str, Any]:
+    def get_application_info(self) -> dict[str, Any]:
         """Get information about the application.
 
         Returns
@@ -355,7 +353,7 @@ class BaseApplicationClient:
             logger.error(f"Error getting application info: {e}")
             raise
 
-    def get_environment_info(self) -> Dict[str, Any]:
+    def get_environment_info(self) -> dict[str, Any]:
         """Get information about the Python environment.
 
         Returns
@@ -377,7 +375,7 @@ class BaseApplicationClient:
             logger.error(f"Error getting environment info: {e}")
             raise
 
-    def list_actions(self) -> Dict[str, Any]:
+    def list_actions(self) -> dict[str, Any]:
         """List all available actions in the application.
 
         Returns

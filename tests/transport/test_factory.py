@@ -114,6 +114,7 @@ class TestBuiltinRegistration:
         """Rust IPC transport is auto-registered when dcc-mcp-core provides it."""
         # ipc is registered only when the Rust extension is available
         try:
+            # Import local modules
             from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport
 
             assert IpcClientTransport is not None
@@ -138,6 +139,7 @@ class TestBuiltinRegistration:
     def test_create_ipc_transport(self):
         """IpcClientTransport is creatable via factory when extension available."""
         try:
+            # Import local modules
             from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport
 
             transport = create_transport("ipc")

@@ -1,4 +1,4 @@
-﻿"""Tests for the Action system in DCC-MCP-IPC.
+"""Tests for the Action system in DCC-MCP-IPC.
 
 Tests cover ActionAdapter against the dcc-mcp-core Rust
 ActionRegistry + ActionDispatcher backend.
@@ -6,6 +6,7 @@ ActionRegistry + ActionDispatcher backend.
 
 # Import built-in modules
 import json
+from typing import Optional
 
 # Import third-party modules
 from dcc_mcp_core import ActionResultModel
@@ -15,34 +16,35 @@ import pytest
 from dcc_mcp_ipc.action_adapter import ActionAdapter
 from dcc_mcp_ipc.action_adapter import get_action_adapter
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
-def _echo_handler(params: dict = None) -> dict:
-    """Simple handler that echoes the message back."""
+
+def _echo_handler(params: Optional[dict] = None) -> dict:
+    """Echo the message back."""
     params = params or {}
     message = params.get("message", "hello") if isinstance(params, dict) else "hello"
     return {"success": True, "message": f"echo: {message}", "context": {"message": message}}
 
 
-def _add_handler(params: dict = None) -> dict:
-    """Handler that adds two integers."""
+def _add_handler(params: Optional[dict] = None) -> dict:
+    """Add two integers."""
     params = params or {}
     a = int(params.get("a", 0)) if isinstance(params, dict) else 0
     b = int(params.get("b", 0)) if isinstance(params, dict) else 0
     return {"success": True, "message": "ok", "context": {"result": a + b}}
 
 
-def _failing_handler(params: dict = None):
-    """Handler that always raises."""
+def _failing_handler(params: Optional[dict] = None):
+    """Raise an error unconditionally."""
     raise RuntimeError("intentional failure")
 
 
 # ---------------------------------------------------------------------------
 # ActionAdapter unit tests
 # ---------------------------------------------------------------------------
+
 
 class TestActionAdapterCreation:
     """Tests for ActionAdapter initialisation."""

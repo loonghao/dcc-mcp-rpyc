@@ -13,13 +13,13 @@ import zlib
 import pytest
 
 # Import local modules
+from dcc_mcp_ipc.snapshot import create_snapshot
 from dcc_mcp_ipc.snapshot.base import BaseSnapshot
 from dcc_mcp_ipc.snapshot.base import SnapshotConfig
 from dcc_mcp_ipc.snapshot.base import SnapshotError
 from dcc_mcp_ipc.snapshot.base import SnapshotFormat
 from dcc_mcp_ipc.snapshot.base import SnapshotResult
 from dcc_mcp_ipc.snapshot.base import ViewportType
-from dcc_mcp_ipc.snapshot import create_snapshot
 
 
 class TestSnapshotFormat:
@@ -205,6 +205,7 @@ class TestCreateSnapshotFactory:
     """Tests for the create_snapshot factory function."""
 
     def test_create_rpyc_snapshot(self) -> None:
+        # Import local modules
         from dcc_mcp_ipc.snapshot.rpyc import RPyCSnapshot
 
         snap = create_snapshot("maya", "rpyc", execute_func=lambda x: None)
@@ -214,6 +215,7 @@ class TestCreateSnapshotFactory:
     def test_create_http_snapshot(self) -> None:
         if not _http_available():
             pytest.skip("requests not installed")
+        # Import local modules
         from dcc_mcp_ipc.snapshot.http import HTTPSnapshot
 
         snap = create_snapshot("unreal", "http", base_url="http://localhost:30010")
