@@ -7,7 +7,6 @@ session state across multiple requests.
 # Import built-in modules
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import local modules
@@ -121,7 +120,7 @@ class SessionAdapter(ApplicationAdapter):
         """
         return self.client is not None and self.client.is_connected()
 
-    def get_session_info(self) -> Dict[str, Any]:
+    def get_session_info(self) -> dict[str, Any]:
         """Get information about the current session.
 
         Returns
@@ -179,7 +178,7 @@ class SessionAdapter(ApplicationAdapter):
         self.session_data.clear()
         logger.debug(f"Cleared session data for session {self.session_id}")
 
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """Execute Python code in the application's environment.
 
         Args:
@@ -213,8 +212,8 @@ class SessionAdapter(ApplicationAdapter):
 
     @with_error_handling
     def call_action_function(
-        self, action_name: str, function_name: str, context: Optional[Dict[str, Any]] = None, *args, **kwargs
-    ) -> Dict[str, Any]:
+        self, action_name: str, function_name: str, context: Optional[dict[str, Any]] = None, *args, **kwargs
+    ) -> dict[str, Any]:
         """Call a function on an action.
 
         Args:

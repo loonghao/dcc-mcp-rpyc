@@ -1,4 +1,4 @@
-﻿"""Base adapter classes for DCC-MCP-IPC.
+"""Base adapter classes for DCC-MCP-IPC.
 
 This module provides abstract base classes and utilities for creating application adapters
 that can be used with the MCP server. It defines the common interface that all
@@ -11,12 +11,9 @@ from abc import abstractmethod
 import logging
 from typing import Any
 from typing import Callable
-from typing import Dict
-from typing import List
 from typing import Optional
 
 # Import third-party modules
-from dcc_mcp_core import ActionResultModel
 from dcc_mcp_core import error_result
 from dcc_mcp_core import success_result
 
@@ -120,7 +117,7 @@ class ApplicationAdapter(ABC):
         """
         self.action_adapter.register_action(action_name, action_func)
 
-    def get_available_actions(self) -> List[str]:
+    def get_available_actions(self) -> list[str]:
         """Get action list.
 
         Returns
@@ -130,7 +127,7 @@ class ApplicationAdapter(ABC):
         """
         return self.action_adapter.list_actions(names_only=True)
 
-    def get_action_info(self, action_name: str) -> Dict[str, Any]:
+    def get_action_info(self, action_name: str) -> dict[str, Any]:
         """Get information about an action.
 
         Args:
@@ -142,7 +139,7 @@ class ApplicationAdapter(ABC):
         """
         return self.action_adapter.get_action_info(action_name)
 
-    def execute_action(self, action_name: str, **kwargs) -> Dict[str, Any]:
+    def execute_action(self, action_name: str, **kwargs) -> dict[str, Any]:
         """Execute an action.
 
         Args:
@@ -174,7 +171,7 @@ class ApplicationAdapter(ABC):
             ).to_dict()
 
     @abstractmethod
-    def get_application_info(self) -> Dict[str, Any]:
+    def get_application_info(self) -> dict[str, Any]:
         """Get information about the application.
 
         Returns:

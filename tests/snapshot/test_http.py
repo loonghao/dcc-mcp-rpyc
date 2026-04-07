@@ -13,18 +13,18 @@ from unittest.mock import patch
 import pytest
 
 try:
+    # Import third-party modules
     import requests
 except ImportError:
     requests = None  # type: ignore[assignment]
-
-
-pytestmark = pytest.mark.skipif(requests is None, reason="requests library not installed (optional dependency)")
 
 # Import local modules
 from dcc_mcp_ipc.snapshot.base import SnapshotConfig
 from dcc_mcp_ipc.snapshot.base import SnapshotError
 from dcc_mcp_ipc.snapshot.base import SnapshotFormat
 from dcc_mcp_ipc.snapshot.http import HTTPSnapshot
+
+pytestmark = pytest.mark.skipif(requests is None, reason="requests library not installed (optional dependency)")
 
 
 @pytest.fixture
@@ -63,6 +63,7 @@ class TestHTTPCaptureUnreal:
 
     def test_unreal_capture_success_with_base64_return(self, mock_session) -> None:
         """Test successful UE capture with base64 in ReturnValue."""
+        # Import built-in modules
         import base64 as b64_mod
 
         fake_png_b64 = b64_mod.b64encode(b"ue_screenshot_data").decode("ascii")
@@ -112,6 +113,7 @@ class TestHTTPCaptureUnreal:
 
     def test_unreal_capture_fallback_to_text(self, mock_session) -> None:
         """Test UE capture with raw text fallback (base64)."""
+        # Import built-in modules
         import base64 as b64_mod
 
         fake_b64 = b64_mod.b64encode(b"text_fallback").decode("ascii")
@@ -156,6 +158,7 @@ class TestHTTPCaptureUnity:
 
     def test_unity_capture_json_base64(self, mock_session) -> None:
         """Test Unity capture returning JSON with base64 data."""
+        # Import built-in modules
         import base64 as b64_mod
 
         img_data = b"unity_screenshot_bytes"

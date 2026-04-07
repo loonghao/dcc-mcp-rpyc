@@ -4,13 +4,20 @@ All tests use mock HTTP responses; no real DCC needed.
 Tests are skipped if ``requests`` is not installed.
 """
 
+# Import built-in modules
 import json
+
+# Import third-party modules
 import pytest
 
 # Skip entire module if requests unavailable
 try:
+    # Import built-in modules
+    from unittest.mock import MagicMock
+    from unittest.mock import patch
+
+    # Import third-party modules
     import requests
-    from unittest.mock import MagicMock, patch
 
     REQUESTS_AVAILABLE = True
 except ImportError:
@@ -25,18 +32,17 @@ pytestmark = pytest.mark.skipif(
 
 
 if REQUESTS_AVAILABLE:
-    from dcc_mcp_ipc.scene.base import (
-        CameraInfo,
-        LightInfo,
-        MaterialInfo,
-        ObjectTypeInfo,
-        SceneError,
-        SceneHierarchy,
-        SceneInfo,
-        SceneInfoConfig,
-        SceneQueryFilter,
-        TransformMatrix,
-    )
+    # Import local modules
+    from dcc_mcp_ipc.scene.base import CameraInfo
+    from dcc_mcp_ipc.scene.base import LightInfo
+    from dcc_mcp_ipc.scene.base import MaterialInfo
+    from dcc_mcp_ipc.scene.base import ObjectTypeInfo
+    from dcc_mcp_ipc.scene.base import SceneError
+    from dcc_mcp_ipc.scene.base import SceneHierarchy
+    from dcc_mcp_ipc.scene.base import SceneInfo
+    from dcc_mcp_ipc.scene.base import SceneInfoConfig
+    from dcc_mcp_ipc.scene.base import SceneQueryFilter
+    from dcc_mcp_ipc.scene.base import TransformMatrix
     from dcc_mcp_ipc.scene.http import HTTPSceneInfo
 
 
@@ -106,6 +112,7 @@ if REQUESTS_AVAILABLE:
             with patch.dict("sys.modules", {"requests": None}):
                 with patch("dcc_mcp_ipc.scene.http.REQUESTS_AVAILABLE", False):
                     with pytest.raises(ImportError, match="requests"):
+                        # Import local modules
                         from dcc_mcp_ipc.scene.http import HTTPSceneInfo as HS
 
                         HS(dcc_type="unreal")
@@ -383,7 +390,7 @@ if REQUESTS_AVAILABLE:
             ]
 
             lights = scene.get_lights()
-            assert any(l.type == "point" for l in lights)
+            assert any(light.type == "point" for light in lights)
 
         def test_get_selection(self, http_scene, mock_session) -> None:
             # Single independent post query
@@ -498,7 +505,7 @@ if REQUESTS_AVAILABLE:
 
         def test_post_success(self, http_scene, mock_session) -> None:
             mock_session.post.return_value = _make_response({"ok": True}, 200)
-            result = http_scene._request("post", "/test/path", json={"key": "val"})
+            http_scene._request("post", "/test/path", json={"key": "val"})
             mock_session.post.assert_called_once()
 
         def test_post_connection_error(self, http_scene, mock_session) -> None:

@@ -145,9 +145,15 @@ cameras = []
 for tfm, shp in zip(cam_transforms, cam_shapes):
     try:
         fl = cmds.getAttr(shp + '.focalLength') if cmds.attributeQuery('focalLength', node=shp, exists=True) else 35.0
-        fov = cmds.getAttr(shp + '.horizontalFieldOfView') if cmds.attributeQuery('horizontalFieldOfView', node=shp, exists=True) else 54.4
-        near = cmds.getAttr(shp + '.nearClipPlane') if cmds.attributeQuery('nearClipPlane', node=shp, exists=True) else 0.1
-        far = cmds.getAttr(shp + '.farClipPlane') if cmds.attributeQuery('farClipPlane', node=shp, exists=True) else 10000.0
+        fov = (cmds.getAttr(shp + '.horizontalFieldOfView')
+               if cmds.attributeQuery('horizontalFieldOfView', node=shp, exists=True)
+               else 54.4)
+        near = (cmds.getAttr(shp + '.nearClipPlane')
+                if cmds.attributeQuery('nearClipPlane', node=shp, exists=True)
+                else 0.1)
+        far = (cmds.getAttr(shp + '.farClipPlane')
+               if cmds.attributeQuery('farClipPlane', node=shp, exists=True)
+               else 10000.0)
         cameras.append({{
             'name': tfm.split('|')[-1],
             'type': cmds.camera(shp, orthographic=True, q=True) and 'orthographic' or 'perspective',
@@ -155,9 +161,15 @@ for tfm, shp in zip(cam_transforms, cam_shapes):
             'field_of_view': float(fov),
             'near_clip': float(near),
             'far_clip': float(far),
-            'aspect_ratio': cmds.getAttr(shp + '.aspectRatio') if cmds.attributeQuery('aspectRatio', node=shp, exists=True) else 1.5,
-            'sensor_width': cmds.getAttr(shp + '.horizontalFilmAperture') * 25.4 if cmds.attributeQuery('horizontalFilmAperture', node=shp, exists=True) else 36.0,
-            'sensor_height': cmds.getAttr(shp + '.verticalFilmAperture') * 25.4 if cmds.attributeQuery('verticalFilmAperture', node=shp, exists=True) else 24.0,
+            'aspect_ratio': (cmds.getAttr(shp + '.aspectRatio')
+                             if cmds.attributeQuery('aspectRatio', node=shp, exists=True)
+                             else 1.5),
+            'sensor_width': (cmds.getAttr(shp + '.horizontalFilmAperture') * 25.4
+                             if cmds.attributeQuery('horizontalFilmAperture', node=shp, exists=True)
+                             else 36.0),
+            'sensor_height': (cmds.getAttr(shp + '.verticalFilmAperture') * 25.4
+                              if cmds.attributeQuery('verticalFilmAperture', node=shp, exists=True)
+                              else 24.0),
             'metadata': {{}}
         }})
     except Exception:
@@ -177,7 +189,9 @@ for lt, display_type in light_types:
         try:
             intensity = cmds.getAttr(n + '.intensity') if cmds.attributeQuery('intensity', node=n, exists=True) else 1.0
             col = cmds.getAttr(n + '.color') or (1,1,1)
-            enabled = not cmds.getAttr(n + '.visibility') if cmds.attributeQuery('visibility', node=n, exists=True) else True
+            enabled = (not cmds.getAttr(n + '.visibility')
+                       if cmds.attributeQuery('visibility', node=n, exists=True)
+                       else True)
             lights.append({{
                 'name': n.split('|')[-1],
                 'type': display_type,
@@ -185,8 +199,13 @@ for lt, display_type in light_types:
                 'color': tuple(col),
                 'enabled': bool(enabled),
                 'metadata': {{
-                    'cone_angle': float(cmds.getAttr(n + '.coneAngle')) if display_type == 'spot' and cmds.attributeQuery('coneAngle', node=n, exists=True) else None,
-                    'decay_rate': cmds.getAttr(n + '.decayRate', asString=True) if cmds.attributeQuery('decayRate', node=n, exists=True) else None
+                    'cone_angle': (float(cmds.getAttr(n + '.coneAngle'))
+                                    if display_type == 'spot'
+                                    and cmds.attributeQuery('coneAngle', node=n, exists=True)
+                                    else None),
+                    'decay_rate': (cmds.getAttr(n + '.decayRate', asString=True)
+                                    if cmds.attributeQuery('decayRate', node=n, exists=True)
+                                    else None)
                 }}
             }})
         except Exception:
@@ -319,7 +338,11 @@ for obj in bpy.data.objects:
         'name': obj.name,
         'type': light_map.get(light.type, light.type.lower()),
         'intensity': energy,
-        'color': (col.r if hasattr(col,'r') else col[0], col.g if hasattr(col,'g') else col[1], col.b if hasattr(col,'b') else col[2]),
+        'color': (
+            col.r if hasattr(col,'r') else col[0],
+            col.g if hasattr(col,'g') else col[1],
+            col.b if hasattr(col,'b') else col[2]
+        ),
         'enabled': not obj.hide_render,
         'metadata': meta
     }})
@@ -366,11 +389,11 @@ class RPyCSceneInfo(BaseSceneInfo):
         """Resolve the execution function."""
         func = self._execute_func
         if func is None and self._connection is not None:
-            root = getattr(self._connection, 'root', None)
+            root = getattr(self._connection, "root", None)
             if root is not None:
-                if hasattr(root, 'exposed_execute_python'):
+                if hasattr(root, "exposed_execute_python"):
                     func = root.exposed_execute_python
-                elif hasattr(root, 'execute_python'):
+                elif hasattr(root, "execute_python"):
                     func = root.execute_python
         if func is None:
             raise SceneError(

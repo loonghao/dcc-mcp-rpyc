@@ -10,7 +10,9 @@ from typing import Any
 
 # Import third-party modules (optional)
 try:
+    # Import third-party modules
     import requests
+
     REQUESTS_AVAILABLE = True
 except ImportError:
     REQUESTS_AVAILABLE = False
@@ -28,7 +30,6 @@ from dcc_mcp_ipc.scene.base import TransformMatrix
 
 # Configure logging
 logger = logging.getLogger(__name__)
-
 
 
 class HTTPSceneInfo(BaseSceneInfo):
@@ -64,8 +65,7 @@ class HTTPSceneInfo(BaseSceneInfo):
         super().__init__(config=config)
         if not REQUESTS_AVAILABLE:
             raise ImportError(
-                "The 'requests' package is required for HTTPSceneInfo. "
-                "Install it with: pip install requests"
+                "The 'requests' package is required for HTTPSceneInfo. Install it with: pip install requests"
             )
 
         self._dcc_type_val = dcc_type.lower()
@@ -224,17 +224,19 @@ class HTTPSceneInfo(BaseSceneInfo):
                     _transform = self._unreal_get_actor_transform(path)
                     transform = _transform if _transform is not None else TransformMatrix()
 
-                    all_objects.append(ObjectTypeInfo(
-                        name=name,
-                        type=self._extract_unreal_type(cls_path),
-                        path=path,
-                        parent="",  # UE doesn't expose parent easily
-                        children=[],
-                        visibility=True,
-                        material="",
-                        transform=transform,
-                        metadata={"actor_class": cls_path},
-                    ))
+                    all_objects.append(
+                        ObjectTypeInfo(
+                            name=name,
+                            type=self._extract_unreal_type(cls_path),
+                            path=path,
+                            parent="",  # UE doesn't expose parent easily
+                            children=[],
+                            visibility=True,
+                            material="",
+                            transform=transform,
+                            metadata={"actor_class": cls_path},
+                        )
+                    )
 
                     if len(all_objects) >= self.config.max_objects:
                         break
@@ -259,13 +261,15 @@ class HTTPSceneInfo(BaseSceneInfo):
             data = resp.json() if isinstance(resp, requests.Response) else resp
             mats = data.get("ReturnValue", [])
             results = []
-            for m in (mats if isinstance(mats, list) else []):
-                results.append(MaterialInfo(
-                    name=m.get("Name", "Unknown"),
-                    type=m.get("MaterialType", "M"),
-                    assigned_objects=[],
-                    properties={"base_color": m.get("BaseColor")},
-                ))
+            for m in mats if isinstance(mats, list) else []:
+                results.append(
+                    MaterialInfo(
+                        name=m.get("Name", "Unknown"),
+                        type=m.get("MaterialType", "M"),
+                        assigned_objects=[],
+                        properties={"base_color": m.get("BaseColor")},
+                    )
+                )
             return results
         except Exception as e:
             logger.debug(f"Failed to query materials: {e}")
@@ -291,22 +295,26 @@ class HTTPSceneInfo(BaseSceneInfo):
                     prop_data = resp.json()
                     fov = float(prop_data.get("PropertyValue", 90.0))
 
-                results.append(CameraInfo(
-                    name=cam_obj.name,
-                    type="perspective",
-                    focal_length=24.0,  # UE uses FOV instead
-                    field_of_view=fov,
-                    aspect_ratio=16.0 / 9.0,
-                    transform=cam_obj.transform,
-                    metadata={"actor_class": cam_obj.metadata.get("actor_class", "")},
-                ))
+                results.append(
+                    CameraInfo(
+                        name=cam_obj.name,
+                        type="perspective",
+                        focal_length=24.0,  # UE uses FOV instead
+                        field_of_view=fov,
+                        aspect_ratio=16.0 / 9.0,
+                        transform=cam_obj.transform,
+                        metadata={"actor_class": cam_obj.metadata.get("actor_class", "")},
+                    )
+                )
             except Exception:
-                results.append(CameraInfo(
-                    name=cam_obj.name,
-                    type="perspective",
-                    field_of_view=90.0,
-                    transform=cam_obj.transform,
-                ))
+                results.append(
+                    CameraInfo(
+                        name=cam_obj.name,
+                        type="perspective",
+                        field_of_view=90.0,
+                        transform=cam_obj.transform,
+                    )
+                )
         return results
 
     def _unreal_get_lights(self) -> list[LightInfo]:
@@ -370,14 +378,16 @@ class HTTPSceneInfo(BaseSceneInfo):
                     except Exception:
                         pass
 
-                    lights.append(LightInfo(
-                        name=name,
-                        type=light_type,
-                        intensity=intensity,
-                        color=color_val,
-                        enabled=True,
-                        metadata={"component_path": comp_path},
-                    ))
+                    lights.append(
+                        LightInfo(
+                            name=name,
+                            type=light_type,
+                            intensity=intensity,
+                            color=color_val,
+                            enabled=True,
+                            metadata={"component_path": comp_path},
+                        )
+                    )
 
             except Exception as e:
                 logger.debug(f"Failed to query {light_type} lights: {e}")
@@ -405,10 +415,22 @@ class HTTPSceneInfo(BaseSceneInfo):
             z = loc.get("Z", 0.0)
             # Build identity matrix with translation
             matrix = [
-                1, 0, 0, 0,
-                0, 1, 0, 0,
-                0, 0, 1, 0,
-                x, y, z, 1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                x,
+                y,
+                z,
+                1,
             ]
             return TransformMatrix(matrix=matrix)
         except Exception:

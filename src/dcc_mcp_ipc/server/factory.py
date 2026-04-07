@@ -9,9 +9,7 @@ import logging
 import threading
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Optional
-from typing import Type
 
 # Import third-party modules
 import rpyc
@@ -29,10 +27,10 @@ logger = logging.getLogger(__name__)
 
 def create_dcc_server(
     dcc_name: str,
-    service_class: Type[BaseRPyCService],
+    service_class: type[BaseRPyCService],
     host: str = "localhost",
     port: Optional[int] = None,
-    protocol_config: Optional[Dict[str, Any]] = None,
+    protocol_config: Optional[dict[str, Any]] = None,
     registry_path: Optional[str] = None,
     use_zeroconf: bool = False,
 ) -> DCCServer:
@@ -129,7 +127,7 @@ def cleanup_server(
     return success
 
 
-def create_service_factory(service_class: Type[rpyc.Service], *args, **kwargs) -> Callable[[Any], rpyc.Service]:
+def create_service_factory(service_class: type[rpyc.Service], *args, **kwargs) -> Callable[[Any], rpyc.Service]:
     """Create a factory function for a service class with bound arguments.
 
     This is similar to rpyc.utils.helpers.classpartial but with more flexibility
@@ -175,7 +173,7 @@ def create_service_factory(service_class: Type[rpyc.Service], *args, **kwargs) -
     return service_factory
 
 
-def create_shared_service_instance(service_class: Type[rpyc.Service], *args, **kwargs) -> Callable[[Any], rpyc.Service]:
+def create_shared_service_instance(service_class: type[rpyc.Service], *args, **kwargs) -> Callable[[Any], rpyc.Service]:
     """Create a shared service instance that will be used for all connections.
 
     This function creates a single instance of the service that will be

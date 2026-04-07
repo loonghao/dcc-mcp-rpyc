@@ -201,9 +201,10 @@ def test_base_client_disconnect_exception():
 
 def test_base_client_reconnect():
     """Test client reconnection functionality."""
-    with patch.object(BaseApplicationClient, "disconnect") as mock_disconnect, patch.object(
-        BaseApplicationClient, "connect"
-    ) as mock_connect:
+    with (
+        patch.object(BaseApplicationClient, "disconnect") as mock_disconnect,
+        patch.object(BaseApplicationClient, "connect") as mock_connect,
+    ):
         # Set mock method return values
         mock_disconnect.return_value = True
         mock_connect.return_value = True

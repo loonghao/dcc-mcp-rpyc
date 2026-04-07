@@ -53,9 +53,10 @@ class TestExecuteRemoteCall:
         client = make_client()
         client.connection = MagicMock()
 
-        with patch.object(client, "is_connected", return_value=True), patch.object(
-            client, "execute_remote_command", return_value="cmd_result"
-        ) as mock_cmd:
+        with (
+            patch.object(client, "is_connected", return_value=True),
+            patch.object(client, "execute_remote_command", return_value="cmd_result") as mock_cmd,
+        ):
             result = client.execute_remote_call("my_command", "arg1", kw="val")
 
         assert result == "cmd_result"
@@ -68,8 +69,9 @@ class TestExecuteRemoteCall:
         client.connection = mock_conn
         mock_conn.root.test.return_value = 1
 
-        with patch.object(client, "is_connected", return_value=False), patch.object(
-            client, "connect", return_value=True
+        with (
+            patch.object(client, "is_connected", return_value=False),
+            patch.object(client, "connect", return_value=True),
         ):
             result = client.execute_remote_call(lambda c: c.root.test())
 
@@ -79,8 +81,9 @@ class TestExecuteRemoteCall:
         """Test that ConnectionError is raised when connect fails."""
         client = make_client()
 
-        with patch.object(client, "is_connected", return_value=False), patch.object(
-            client, "connect", return_value=False
+        with (
+            patch.object(client, "is_connected", return_value=False),
+            patch.object(client, "connect", return_value=False),
         ):
             with pytest.raises(ConnectionError):
                 client.execute_remote_call(lambda c: None)
@@ -92,9 +95,7 @@ class TestExecuteRemoteCall:
 
         with patch.object(client, "is_connected", return_value=True):
             with pytest.raises(RuntimeError, match="remote failure"):
-                client.execute_remote_call(
-                    lambda c: (_ for _ in ()).throw(RuntimeError("remote failure"))
-                )
+                client.execute_remote_call(lambda c: (_ for _ in ()).throw(RuntimeError("remote failure")))
 
 
 class TestApplicationClientRemoteMethods:
@@ -145,7 +146,7 @@ class TestApplicationClientRemoteMethods:
         client.connection.root.execute_python.return_value = {"result": 10}
         ctx = {"x": 5}
 
-        result = client.execute_python("result = x * 2", ctx)
+        client.execute_python("result = x * 2", ctx)
 
         client.connection.root.execute_python.assert_called_once_with("result = x * 2", ctx)
 
@@ -167,9 +168,7 @@ class TestApplicationClientRemoteMethods:
 
         result = client.call_function("os.path", "join", "/tmp", "test.txt")
 
-        client.connection.root.call_function.assert_called_once_with(
-            "os.path", "join", "/tmp", "test.txt"
-        )
+        client.connection.root.call_function.assert_called_once_with("os.path", "join", "/tmp", "test.txt")
         assert result == "/tmp/test.txt"
 
     def test_get_actions(self):
@@ -187,9 +186,7 @@ class TestConnectToApplication:
 
     def test_returns_application_client(self):
         """Test that connect_to_application returns an ApplicationClient."""
-        client = connect_to_application(
-            host="127.0.0.1", port=18812, auto_connect=False
-        )
+        client = connect_to_application(host="127.0.0.1", port=18812, auto_connect=False)
         assert isinstance(client, ApplicationClient)
 
     def test_custom_params(self):

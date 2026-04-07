@@ -5,7 +5,6 @@ This module provides a factory for creating and managing different service disco
 
 # Import built-in modules
 import logging
-from typing import Dict
 from typing import Optional
 
 # Import local modules
@@ -86,7 +85,7 @@ class ServiceDiscoveryFactory:
             logger.error(f"Error creating strategy '{strategy_type}': {e}")
             return None
 
-    def list_available_strategies(self) -> Dict[str, bool]:
+    def list_available_strategies(self) -> dict[str, bool]:
         """List all available strategy types.
 
         Returns:

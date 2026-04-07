@@ -5,7 +5,6 @@ This package provides adapter classes for connecting DCC applications to MCP ser
 
 # Import built-in modules
 import logging
-from typing import Dict
 from typing import Optional
 
 # Import local modules
@@ -18,7 +17,7 @@ from dcc_mcp_ipc.adapter.session import SessionAdapter
 logger = logging.getLogger(__name__)
 
 # Global registry of adapters
-_adapters: Dict[str, ApplicationAdapter] = {}
+_adapters: dict[str, ApplicationAdapter] = {}
 
 
 def get_adapter(

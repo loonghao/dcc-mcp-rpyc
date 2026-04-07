@@ -237,9 +237,7 @@ class TestAsyncBaseConnectPaths:
             return MockConnection()
 
         with mock.patch("rpyc.connect", side_effect=_failing_then_success):
-            client = AsyncBaseApplicationClient(
-                "localhost", 18812, connection_attempts=2, connection_retry_delay=0.01
-            )
+            client = AsyncBaseApplicationClient("localhost", 18812, connection_attempts=2, connection_retry_delay=0.01)
             result = await client.connect()
             assert result is True
             assert call_count == 2
@@ -248,9 +246,7 @@ class TestAsyncBaseConnectPaths:
     async def test_connect_all_attempts_fail_raises_connection_error(self):
         """All connection attempts exhausted raises ConnectionError."""
         with mock.patch("rpyc.connect", side_effect=ConnectionRefusedError("refused")):
-            client = AsyncBaseApplicationClient(
-                "localhost", 18812, connection_attempts=3, connection_retry_delay=0.01
-            )
+            client = AsyncBaseApplicationClient("localhost", 18812, connection_attempts=3, connection_retry_delay=0.01)
             with pytest.raises(ConnectionError, match="Failed to connect"):
                 await client.connect()
 
@@ -281,7 +277,6 @@ class TestAsyncBaseEnsureConnected:
     async def test_ensure_connected_calls_connect_when_disconnected(self):
         """ensure_connected calls connect() when not connected."""
         client = AsyncBaseApplicationClient("localhost", 18812)
-        original_connect = client.connect
         connect_called = False
 
         async def _tracking_connect():
@@ -299,7 +294,6 @@ class TestAsyncBaseEnsureConnected:
         """ensure_connected does nothing when already connected."""
         client = AsyncBaseApplicationClient("localhost", 18812)
         client.connection = MockConnection()
-        original_connect = client.connect
         connect_called = False
 
         async def _tracking_connect():
@@ -313,8 +307,10 @@ class TestAsyncBaseEnsureConnected:
 
 
 class TestAsyncBaseRemoteMethodCoverage:
-    """Cover remaining remote method stubs: get_environment_info, call_function,
-    list_actions (lines 229-232, 257-260, 277-280)."""
+    """Cover remaining remote method stubs.
+
+    Covers get_environment_info, call_function, list_actions (lines 229-232, 257-260, 277-280).
+    """
 
     @pytest.mark.asyncio
     async def test_get_environment_info(self, mock_rpyc_connect):
@@ -359,6 +355,7 @@ class TestGetAsyncClientFactory:
     @pytest.mark.asyncio
     async def test_get_async_client_returns_client_instance(self):
         """Factory creates an AsyncBaseApplicationClient with given params."""
+        # Import local modules
         from dcc_mcp_ipc.client.async_base import get_async_client
 
         client = await get_async_client(

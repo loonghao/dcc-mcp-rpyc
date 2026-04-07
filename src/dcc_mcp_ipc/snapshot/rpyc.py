@@ -14,7 +14,6 @@ decoded back to raw bytes on the client side.
 import base64
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import local modules
@@ -76,8 +75,7 @@ class RPyCSnapshot(BaseSnapshot):
         """
         if self._execute is None:
             raise SnapshotError(
-                "No execute function configured for RPyCSnapshot. "
-                "Pass execute_func during initialization."
+                "No execute function configured for RPyCSnapshot. Pass execute_func during initialization."
             )
         try:
             return self._execute(code)
@@ -123,9 +121,7 @@ class RPyCSnapshot(BaseSnapshot):
         # Result should be a base64-encoded string from the remote DCC
         if isinstance(result, dict):
             if "error" in result:
-                raise SnapshotError(
-                    f"Remote capture error: {result['error']}"
-                )
+                raise SnapshotError(f"Remote capture error: {result['error']}")
             if "data" in result:
                 return base64.b64decode(result["data"])
             if "image_data" in result:
@@ -136,17 +132,13 @@ class RPyCSnapshot(BaseSnapshot):
             try:
                 return base64.b64decode(result)
             except Exception:
-                raise SnapshotError(
-                    f"Invalid base64 data returned from {self.dcc_name}"
-                )
+                raise SnapshotError(f"Invalid base64 data returned from {self.dcc_name}")
 
         if isinstance(result, bytes):
             # Already decoded bytes (some transports handle this natively)
             return result
 
-        raise SnapshotError(
-            f"Unexpected capture result type: {type(result).__name__}"
-        )
+        raise SnapshotError(f"Unexpected capture result type: {type(result).__name__}")
 
     def capture_render(self, config: Optional[SnapshotConfig] = None) -> bytes:
         """Capture a software-rendered image via RPyC.
@@ -178,9 +170,7 @@ class RPyCSnapshot(BaseSnapshot):
         if isinstance(result, bytes):
             return result
 
-        raise SnapshotError(
-            f"Unexpected render result type: {type(result).__name__}"
-        )
+        raise SnapshotError(f"Unexpected render result type: {type(result).__name__}")
 
     def _get_capture_script(self, config: SnapshotConfig) -> str:
         """Generate DCC-specific Python script for viewport capture.
@@ -408,12 +398,12 @@ def make_minimal_png(w=w, h=h):
 
     @staticmethod
     def _generic_render_script() -> str:
-        """Generic fallback render script (raises NotImplementedError)."""
+        """Return a generic fallback render script (raises NotImplementedError)."""
         return """
 {'error': 'Render capture not supported for this DCC type'}
 """.strip()
 
-    def get_snapshot_info(self) -> Dict[str, Any]:
+    def get_snapshot_info(self) -> dict[str, Any]:
         """Return snapshot capabilities including available DCC strategies."""
         info = super().get_snapshot_info()
         info["dcc_name"] = self.dcc_name

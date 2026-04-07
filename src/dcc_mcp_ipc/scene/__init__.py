@@ -42,7 +42,6 @@ from dcc_mcp_ipc.scene.base import SceneInfoConfig
 from dcc_mcp_ipc.scene.base import SceneQueryFilter
 from dcc_mcp_ipc.scene.base import TransformMatrix
 
-
 __all__ = [
     # Abstract base
     "BaseSceneInfo",
@@ -65,7 +64,7 @@ def create_scene_info(
     transport: str = "rpyc",
     **kwargs: Any,
 ) -> BaseSceneInfo:
-    """Factory function to create the appropriate scene info instance.
+    """Create the appropriate scene info instance.
 
     This is the recommended way to create scene info objects. It selects the
     correct implementation based on the specified transport protocol.
@@ -91,17 +90,17 @@ def create_scene_info(
         # HTTP scene info for Unreal
         scene = create_scene_info("unreal", "http", base_url="http://localhost:30010")
         hierarchy = scene.get_hierarchy()
+
     """
     if transport == "rpyc":
+        # Import local modules
         from dcc_mcp_ipc.scene.rpyc import RPyCSceneInfo
 
         return RPyCSceneInfo(dcc_name=dcc_name, **kwargs)
     elif transport == "http":
+        # Import local modules
         from dcc_mcp_ipc.scene.http import HTTPSceneInfo
 
         return HTTPSceneInfo(dcc_type=dcc_name, **kwargs)
     else:
-        raise ValueError(
-            f"Unsupported transport '{transport}'. "
-            f"Supported transports: 'rpyc', 'http'"
-        )
+        raise ValueError(f"Unsupported transport '{transport}'. Supported transports: 'rpyc', 'http'")

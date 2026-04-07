@@ -29,7 +29,6 @@ import logging
 import threading
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
@@ -53,6 +52,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 
+
 @dataclasses.dataclass
 class IpcTransportConfig(TransportConfig):
     """Configuration for the Rust-native IPC transport.
@@ -75,6 +75,7 @@ class IpcTransportConfig(TransportConfig):
 # ---------------------------------------------------------------------------
 # Client transport
 # ---------------------------------------------------------------------------
+
 
 class IpcClientTransport(BaseTransport):
     """Client-side IPC transport backed by ``FramedChannel``.
@@ -155,9 +156,9 @@ class IpcClientTransport(BaseTransport):
     def execute(
         self,
         action: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         timeout: Optional[float] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a named action via the IPC channel.
 
         Parameters are serialised to ``bytes`` (JSON) and sent as a
@@ -211,6 +212,7 @@ class IpcClientTransport(BaseTransport):
 # ---------------------------------------------------------------------------
 # Server transport
 # ---------------------------------------------------------------------------
+
 
 class IpcServerTransport:
     """Server-side IPC listener backed by ``IpcListener``.

@@ -12,17 +12,17 @@ from unittest.mock import MagicMock
 from unittest.mock import patch
 
 # Import third-party modules
-import pytest
 from dcc_mcp_core import ActionResultModel
+import pytest
 
 # Import local modules
 from dcc_mcp_ipc.action_adapter import ActionAdapter
 from dcc_mcp_ipc.action_adapter import get_action_adapter
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_adapter(name="test_adapter_cov"):
     """Return ActionAdapter with fully mocked registry and dispatcher."""
@@ -38,6 +38,7 @@ def _make_adapter(name="test_adapter_cov"):
 # register_action
 # ---------------------------------------------------------------------------
 
+
 class TestRegisterAction:
     """Tests for register_action."""
 
@@ -50,7 +51,9 @@ class TestRegisterAction:
         adapter.dispatcher.register_handler.assert_called_once_with("my_action", handler)
 
     def test_register_raises_action_error_on_registry_failure(self):
+        # Import local modules
         from dcc_mcp_ipc.utils.errors import ActionError
+
         adapter = _make_adapter()
         adapter.registry.register.side_effect = Exception("registry broken")
         with pytest.raises(ActionError):
@@ -77,6 +80,7 @@ class TestRegisterAction:
 # unregister_action
 # ---------------------------------------------------------------------------
 
+
 class TestUnregisterAction:
     """Tests for unregister_action."""
 
@@ -97,6 +101,7 @@ class TestUnregisterAction:
 # ---------------------------------------------------------------------------
 # list_actions
 # ---------------------------------------------------------------------------
+
 
 class TestListActions:
     """Tests for list_actions."""
@@ -123,7 +128,9 @@ class TestListActions:
         assert "action_b" in result
 
     def test_list_actions_failure_raises_action_error(self):
+        # Import local modules
         from dcc_mcp_ipc.utils.errors import ActionError
+
         adapter = _make_adapter()
         adapter.registry.list_actions.side_effect = Exception("registry error")
         with pytest.raises(ActionError):
@@ -147,6 +154,7 @@ class TestListActions:
 # get_action_info
 # ---------------------------------------------------------------------------
 
+
 class TestGetActionInfo:
     """Tests for get_action_info."""
 
@@ -167,6 +175,7 @@ class TestGetActionInfo:
 # ---------------------------------------------------------------------------
 # call_action
 # ---------------------------------------------------------------------------
+
 
 class TestCallAction:
     """Tests for call_action."""
@@ -195,7 +204,7 @@ class TestCallAction:
     def test_call_action_no_params(self):
         adapter = _make_adapter()
         adapter.dispatcher.dispatch.return_value = {"success": True, "message": "ok"}
-        result = adapter.call_action("simple_action")
+        adapter.call_action("simple_action")
         # dispatch should be called with "null" for no params
         call_args = adapter.dispatcher.dispatch.call_args
         assert call_args[0][0] == "simple_action"
@@ -206,7 +215,9 @@ class TestCallAction:
         adapter.dispatcher.dispatch.return_value = {"success": True, "message": "ok"}
         adapter.call_action("action_with_params", x=1, y=2)
         call_args = adapter.dispatcher.dispatch.call_args
+        # Import built-in modules
         import json
+
         params = json.loads(call_args[0][1])
         assert params == {"x": 1, "y": 2}
 
@@ -214,6 +225,7 @@ class TestCallAction:
 # ---------------------------------------------------------------------------
 # execute_action
 # ---------------------------------------------------------------------------
+
 
 class TestExecuteAction:
     """Tests for execute_action (returns dict)."""
@@ -228,6 +240,7 @@ class TestExecuteAction:
 # ---------------------------------------------------------------------------
 # get_action_adapter module-level factory
 # ---------------------------------------------------------------------------
+
 
 class TestGetActionAdapter:
     """Tests for the get_action_adapter factory function."""

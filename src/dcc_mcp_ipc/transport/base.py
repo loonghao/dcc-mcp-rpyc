@@ -12,9 +12,7 @@ import dataclasses
 from enum import Enum
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
-
 
 
 class TransportState(str, Enum):
@@ -45,7 +43,7 @@ class TransportConfig:
     timeout: float = 30.0
     retry_count: int = 3
     retry_delay: float = 1.0
-    metadata: Dict[str, Any] = dataclasses.field(default_factory=dict)
+    metadata: dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
 class TransportError(Exception):
@@ -155,9 +153,9 @@ class BaseTransport(ABC):
     def execute(
         self,
         action: str,
-        params: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
         timeout: Optional[float] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Execute a named action on the remote service.
 
         This is the primary RPC entry point. All DCC operations (screenshot,
@@ -181,7 +179,7 @@ class BaseTransport(ABC):
 
     # ── Raw / Low-Level Access ───────────────────────────────────────
 
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None) -> Any:
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None) -> Any:
         """Execute arbitrary Python code on the remote service.
 
         This is a convenience wrapper around ``execute`` for transports that

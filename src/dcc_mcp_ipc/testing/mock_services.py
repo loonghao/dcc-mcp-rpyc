@@ -11,7 +11,6 @@ import importlib.metadata
 import sys
 import threading
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
@@ -132,7 +131,7 @@ class MockDCCService(DCCRPyCService):
                     except AttributeError:
                         return "unknown"
 
-    def execute_python(self, code: str, context: Optional[Dict[str, Any]] = None):
+    def execute_python(self, code: str, context: Optional[dict[str, Any]] = None):
         """Execute Python code in the application's environment.
 
         Args:
@@ -351,7 +350,7 @@ class MockDCCService(DCCRPyCService):
         """
         return self.get_environment_info()
 
-    def exposed_execute_python(self, code: str, context: Optional[Dict[str, Any]] = None):
+    def exposed_execute_python(self, code: str, context: Optional[dict[str, Any]] = None):
         """Execute Python code in the application's environment.
 
         Args:
@@ -446,7 +445,7 @@ class MockDCCService(DCCRPyCService):
             }
         }
 
-    def exposed_call_action(self, action_name: str, *args, **kwargs) -> Dict[str, Any]:
+    def exposed_call_action(self, action_name: str, *args, **kwargs) -> dict[str, Any]:
         """Call an action by name.
 
         Args:

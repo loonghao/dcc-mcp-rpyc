@@ -14,19 +14,16 @@ Design principles:
 - Each DCC-specific subclass should only need to implement a small capture surface.
 """
 
-
 # Import built-in modules
 from abc import ABC
 from abc import abstractmethod
 from enum import Enum
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
 from pydantic import BaseModel
 from pydantic import Field
-
 
 
 class SnapshotFormat(str, Enum):
@@ -90,7 +87,7 @@ class SnapshotResult(BaseModel):
     height: int = 0
     data_size: int = 0
     error: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class BaseSnapshot(ABC):
@@ -168,8 +165,7 @@ class BaseSnapshot(ABC):
 
         """
         raise NotImplementedError(
-            f"{self.__class__.__name__} does not support render capture. "
-            "Use capture_viewport() instead."
+            f"{self.__class__.__name__} does not support render capture. Use capture_viewport() instead."
         )
 
     def capture_to_base64(
@@ -189,12 +185,13 @@ class BaseSnapshot(ABC):
             Base64-encoded image string.
 
         """
+        # Import built-in modules
         import base64
 
         data = self.capture_viewport(config)
         return base64.b64encode(data).decode("ascii")
 
-    def get_snapshot_info(self) -> Dict[str, Any]:
+    def get_snapshot_info(self) -> dict[str, Any]:
         """Return information about the snapshot capabilities.
 
         Returns a dict describing what this snapshot implementation supports,
@@ -207,9 +204,7 @@ class BaseSnapshot(ABC):
         return {
             "type": self.__class__.__name__,
             "supports_viewport": True,
-            "supports_render": (
-                type(self).capture_render != BaseSnapshot.capture_render
-            ),
+            "supports_render": (type(self).capture_render != BaseSnapshot.capture_render),
             "supported_formats": [f.value for f in SnapshotFormat],
             "supported_viewports": [v.value for v in ViewportType],
         }

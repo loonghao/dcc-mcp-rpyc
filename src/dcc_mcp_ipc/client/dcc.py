@@ -1,4 +1,4 @@
-﻿"""DCC client module for DCC-MCP-IPC.
+"""DCC client module for DCC-MCP-IPC.
 
 This module provides the DCC client class for connecting to DCC RPYC servers and executing
 remote calls with connection management, timeout handling, and automatic reconnection.
@@ -9,11 +9,9 @@ from contextlib import contextmanager
 import logging
 from typing import Any
 from typing import Callable
-from typing import Dict
 from typing import TypeVar
 
 # Import third-party modules
-from dcc_mcp_core import ActionResultModel
 from dcc_mcp_core import error_result
 
 # Import local modules
@@ -107,7 +105,7 @@ class BaseDCCClient(BaseApplicationClient):
         with self.ensure_connection() as connection:
             return func(connection)
 
-    def get_dcc_info(self) -> Dict[str, Any]:
+    def get_dcc_info(self) -> dict[str, Any]:
         """Get information about the DCC application.
 
         Returns:
@@ -120,7 +118,7 @@ class BaseDCCClient(BaseApplicationClient):
         """
         return self.execute_with_connection(lambda conn: conn.root.get_dcc_info())
 
-    def get_scene_info(self) -> Dict[str, Any]:
+    def get_scene_info(self) -> dict[str, Any]:
         """Get information about the current scene.
 
         Returns:
@@ -133,7 +131,7 @@ class BaseDCCClient(BaseApplicationClient):
         """
         return self.execute_with_connection(lambda conn: conn.root.get_scene_info())
 
-    def get_session_info(self) -> Dict[str, Any]:
+    def get_session_info(self) -> dict[str, Any]:
         """Get information about the current session.
 
         Returns:
@@ -146,7 +144,7 @@ class BaseDCCClient(BaseApplicationClient):
         """
         return self.execute_with_connection(lambda conn: conn.root.get_session_info())
 
-    def create_primitive(self, primitive_type: str, **kwargs) -> Dict[str, Any]:
+    def create_primitive(self, primitive_type: str, **kwargs) -> dict[str, Any]:
         """Create a primitive object in the DCC application.
 
         Args:
@@ -169,7 +167,7 @@ class BaseDCCClient(BaseApplicationClient):
                 context={"primitive_type": primitive_type, "kwargs": kwargs},
             ).to_dict()
 
-    def execute_command(self, command: str, *args, **kwargs) -> Dict[str, Any]:
+    def execute_command(self, command: str, *args, **kwargs) -> dict[str, Any]:
         """Execute a command in the DCC application.
 
         Args:
@@ -193,7 +191,7 @@ class BaseDCCClient(BaseApplicationClient):
                 context={"command": command, "args": args, "kwargs": kwargs},
             ).to_dict()
 
-    def execute_script(self, script: str, script_type: str = "python") -> Dict[str, Any]:
+    def execute_script(self, script: str, script_type: str = "python") -> dict[str, Any]:
         """Execute a script in the DCC application.
 
         Args:

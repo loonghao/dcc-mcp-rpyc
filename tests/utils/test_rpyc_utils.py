@@ -64,9 +64,10 @@ class TestDeliverParameters:
         on assignment, we test it by directly calling the same logic as the function body.
         This ensures the warning+fallback semantics are exercised.
         """
+        # Import local modules
         import dcc_mcp_ipc.utils.rpyc_utils as rpyc_utils_mod
 
-        # Call the actual function – all normal params should work fine
+        # Call the actual function - all normal params should work fine
         params = {"key1": "value1", "key2": 42}
         result = deliver_parameters(params)
         assert result == {"key1": "value1", "key2": 42}
@@ -76,10 +77,6 @@ class TestDeliverParameters:
             rpyc_utils_mod.logger.warning("Error delivering parameter test_key: simulated error")
 
         assert any("Error delivering parameter" in r.message for r in caplog.records)
-
-
-
-
 
 
 class TestExecuteRemoteCommand:

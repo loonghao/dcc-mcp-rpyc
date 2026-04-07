@@ -1,4 +1,4 @@
-﻿"""Tests for the SessionAdapter class.
+"""Tests for the SessionAdapter class.
 
 This module contains tests for the SessionAdapter class in the adapter.session module.
 """

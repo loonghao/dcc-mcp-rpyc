@@ -6,12 +6,9 @@ server workflows.
 """
 
 # Import built-in modules
-import os
 from importlib import import_module
+import os
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Tuple
 
 # Import third-party modules
 from dcc_mcp_core import ActionResultModel
@@ -41,7 +38,7 @@ __all__ = [
     "stop_server",
 ]
 
-_LAZY_IMPORTS: Dict[str, Tuple[str, str]] = {
+_LAZY_IMPORTS: dict[str, tuple[str, str]] = {
     "DEFAULT_REGISTRY_PATH": ("dcc_mcp_ipc.discovery.file_strategy", "DEFAULT_REGISTRY_PATH"),
     "ActionAdapter": ("dcc_mcp_ipc.action_adapter", "ActionAdapter"),
     "ApplicationAdapter": ("dcc_mcp_ipc.adapter", "ApplicationAdapter"),
@@ -78,6 +75,6 @@ def __getattr__(name: str) -> Any:
     return value
 
 
-def __dir__() -> List[str]:
+def __dir__() -> list[str]:
     """Return module attributes for interactive discovery."""
     return sorted(set(globals()) | set(__all__))

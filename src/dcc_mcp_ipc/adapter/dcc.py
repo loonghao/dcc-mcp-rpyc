@@ -1,4 +1,4 @@
-﻿"""DCC adapter classes for DCC-MCP-IPC.
+"""DCC adapter classes for DCC-MCP-IPC.
 
 This module provides DCC-specific adapter classes for connecting to DCC applications.
 """
@@ -6,11 +6,9 @@ This module provides DCC-specific adapter classes for connecting to DCC applicat
 # Import built-in modules
 import logging
 from typing import Any
-from typing import Dict
 from typing import Optional
 
 # Import third-party modules
-from dcc_mcp_core import ActionResultModel
 from dcc_mcp_core import error_result
 from dcc_mcp_core import success_result
 
@@ -80,7 +78,7 @@ class DCCAdapter(ApplicationAdapter):
             logger.error(f"Failed to initialize {self.dcc_name} client: {e}")
             self.client = None
 
-    def get_application_info(self) -> Dict[str, Any]:
+    def get_application_info(self) -> dict[str, Any]:
         """Get information about the DCC application.
 
         Returns:
@@ -106,7 +104,7 @@ class DCCAdapter(ApplicationAdapter):
                 error=str(e),
             ).to_dict()
 
-    def get_scene_info(self) -> Dict[str, Any]:
+    def get_scene_info(self) -> dict[str, Any]:
         """Get information about the current scene.
 
         Returns:
@@ -132,7 +130,7 @@ class DCCAdapter(ApplicationAdapter):
                 error=str(e),
             ).to_dict()
 
-    def get_session_info(self) -> Dict[str, Any]:
+    def get_session_info(self) -> dict[str, Any]:
         """Get information about the current session.
 
         Returns:
@@ -158,7 +156,7 @@ class DCCAdapter(ApplicationAdapter):
                 error=str(e),
             ).to_dict()
 
-    def create_primitive(self, primitive_type: str, **kwargs) -> Dict[str, Any]:
+    def create_primitive(self, primitive_type: str, **kwargs) -> dict[str, Any]:
         """Create a primitive object in the DCC application.
 
         Args:
@@ -194,7 +192,7 @@ class DCCAdapter(ApplicationAdapter):
                 context={"primitive_type": primitive_type, "kwargs": kwargs},
             ).to_dict()
 
-    def execute_command(self, command: str, *args, **kwargs) -> Dict[str, Any]:
+    def execute_command(self, command: str, *args, **kwargs) -> dict[str, Any]:
         """Execute a command in the DCC application.
 
         Args:
@@ -231,7 +229,7 @@ class DCCAdapter(ApplicationAdapter):
                 context={"command": command, "args": args, "kwargs": kwargs},
             ).to_dict()
 
-    def execute_script(self, script: str, script_type: str = "python") -> Dict[str, Any]:
+    def execute_script(self, script: str, script_type: str = "python") -> dict[str, Any]:
         """Execute a script in the DCC application.
 
         Args:

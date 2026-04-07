@@ -9,10 +9,7 @@ import logging
 import time
 from typing import Callable
 from typing import ClassVar
-from typing import Dict
 from typing import Optional
-from typing import Tuple
-from typing import Type
 
 # Import local modules
 from dcc_mcp_ipc.client.dcc import BaseDCCClient
@@ -36,10 +33,10 @@ class ClientRegistry:
 
     """
 
-    _registry: ClassVar[Dict[str, Type[BaseDCCClient]]] = {}
+    _registry: ClassVar[dict[str, type[BaseDCCClient]]] = {}
 
     @classmethod
-    def register(cls, dcc_name: str, client_class: Type[BaseDCCClient]):
+    def register(cls, dcc_name: str, client_class: type[BaseDCCClient]):
         """Register a client class for a DCC.
 
         Args:
@@ -53,7 +50,7 @@ class ClientRegistry:
         logger.info(f"Registered client class {class_name} for {dcc_name}")
 
     @classmethod
-    def get_client_class(cls, dcc_name: str) -> Type[BaseDCCClient]:
+    def get_client_class(cls, dcc_name: str) -> type[BaseDCCClient]:
         """Get the client class for a DCC.
 
         Args:
@@ -90,7 +87,7 @@ class ConnectionPool:
             cleanup_interval: Interval in seconds to clean up idle connections
 
         """
-        self.pool: Dict[Tuple[str, str, int], Tuple[BaseDCCClient, float]] = {}
+        self.pool: dict[tuple[str, str, int], tuple[BaseDCCClient, float]] = {}
         self.max_idle_time = max_idle_time
         self.cleanup_interval = cleanup_interval
         self.last_cleanup = time.time()
@@ -103,7 +100,7 @@ class ConnectionPool:
         auto_connect: bool = True,
         connection_timeout: float = 5.0,
         registry_path: Optional[str] = None,
-        client_class: Optional[Type[BaseDCCClient]] = None,
+        client_class: Optional[type[BaseDCCClient]] = None,
         client_factory: Optional[Callable[..., BaseDCCClient]] = None,
         use_zeroconf: bool = False,
     ) -> BaseDCCClient:
@@ -299,7 +296,7 @@ def get_client(
     auto_connect: bool = True,
     connection_timeout: float = 5.0,
     registry_path: Optional[str] = None,
-    client_class: Optional[Type[BaseDCCClient]] = None,
+    client_class: Optional[type[BaseDCCClient]] = None,
     client_factory: Optional[Callable[..., BaseDCCClient]] = None,
     use_zeroconf: bool = False,
 ) -> BaseDCCClient:

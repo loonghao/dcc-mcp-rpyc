@@ -49,9 +49,10 @@ def mock_dcc_client():
 def test_dcc_adapter_basic():
     """Test basic functionality of DCCAdapter."""
     # Mock all dependencies
-    with patch("dcc_mcp_ipc.adapter.base.get_action_adapter") as mock_get_adapter, patch(
-        "dcc_mcp_ipc.adapter.dcc.get_client"
-    ) as mock_get_client:
+    with (
+        patch("dcc_mcp_ipc.adapter.base.get_action_adapter") as mock_get_adapter,
+        patch("dcc_mcp_ipc.adapter.dcc.get_client") as mock_get_client,
+    ):
         # Set mock objects
         mock_action_adapter = MagicMock()
         mock_get_adapter.return_value = mock_action_adapter
@@ -74,9 +75,10 @@ def test_dcc_adapter_basic():
 def test_get_application_info():
     """Test getting application information."""
     # Mock dependencies
-    with patch("dcc_mcp_ipc.adapter.base.get_action_adapter"), patch(
-        "dcc_mcp_ipc.adapter.dcc.get_client"
-    ) as mock_get_client:
+    with (
+        patch("dcc_mcp_ipc.adapter.base.get_action_adapter"),
+        patch("dcc_mcp_ipc.adapter.dcc.get_client") as mock_get_client,
+    ):
         # Set mock client
         mock_client = MagicMock()
         mock_client.get_dcc_info.return_value = {"name": "test_dcc", "version": "1.0.0", "platform": "test"}
@@ -116,9 +118,10 @@ def test_get_application_info_not_connected():
 def test_execute_command():
     """Test executing a command."""
     # Mock dependencies
-    with patch("dcc_mcp_ipc.adapter.base.get_action_adapter"), patch(
-        "dcc_mcp_ipc.adapter.dcc.get_client"
-    ) as mock_get_client:
+    with (
+        patch("dcc_mcp_ipc.adapter.base.get_action_adapter"),
+        patch("dcc_mcp_ipc.adapter.dcc.get_client") as mock_get_client,
+    ):
         # Set mock client
         mock_client = MagicMock()
         mock_client.execute_command.return_value = {"result": "test_result"}

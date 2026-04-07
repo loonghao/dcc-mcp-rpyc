@@ -46,8 +46,9 @@ class TestEnsureConnection:
     def test_connects_when_not_connected(self):
         """Test that ensure_connection tries to connect if not already connected."""
         client = make_client(connected=False)
-        with patch.object(client, "is_connected", return_value=False), patch.object(
-            client, "connect", return_value=True
+        with (
+            patch.object(client, "is_connected", return_value=False),
+            patch.object(client, "connect", return_value=True),
         ):
             client.connection = MagicMock()
             with client.ensure_connection() as conn:
@@ -56,8 +57,9 @@ class TestEnsureConnection:
     def test_raises_if_connect_fails(self):
         """Test that ensure_connection raises ConnectionError if connect returns False."""
         client = make_client(connected=False)
-        with patch.object(client, "is_connected", return_value=False), patch.object(
-            client, "connect", return_value=False
+        with (
+            patch.object(client, "is_connected", return_value=False),
+            patch.object(client, "connect", return_value=False),
         ):
             with pytest.raises(ConnectionError):
                 with client.ensure_connection():
@@ -82,7 +84,7 @@ class TestExecuteWithConnection:
         client.connection = mock_conn
 
         with patch.object(client, "is_connected", return_value=True):
-            result = client.execute_with_connection(lambda c: c.root.ping())
+            client.execute_with_connection(lambda c: c.root.ping())
 
         mock_conn.root.ping.assert_called_once()
 
@@ -91,9 +93,7 @@ class TestExecuteWithConnection:
         client = make_client(connected=True)
         with patch.object(client, "is_connected", return_value=True):
             with pytest.raises(RuntimeError, match="remote error"):
-                client.execute_with_connection(
-                    lambda c: (_ for _ in ()).throw(RuntimeError("remote error"))
-                )
+                client.execute_with_connection(lambda c: (_ for _ in ()).throw(RuntimeError("remote error")))
 
 
 class TestDCCMethods:
@@ -151,8 +151,9 @@ class TestDCCMethods:
     def test_create_primitive_exception_returns_error_dict(self):
         """Test create_primitive returns ActionResultModel on exception."""
         client = make_client(connected=False)
-        with patch.object(client, "is_connected", return_value=False), patch.object(
-            client, "connect", return_value=False
+        with (
+            patch.object(client, "is_connected", return_value=False),
+            patch.object(client, "connect", return_value=False),
         ):
             result = client.create_primitive("cube")
 
@@ -171,8 +172,9 @@ class TestDCCMethods:
     def test_execute_command_exception_returns_error_dict(self):
         """Test execute_command returns ActionResultModel on exception."""
         client = make_client(connected=False)
-        with patch.object(client, "is_connected", return_value=False), patch.object(
-            client, "connect", return_value=False
+        with (
+            patch.object(client, "is_connected", return_value=False),
+            patch.object(client, "connect", return_value=False),
         ):
             result = client.execute_command("badCmd")
 
@@ -190,8 +192,9 @@ class TestDCCMethods:
     def test_execute_script_exception_returns_error_dict(self):
         """Test execute_script returns ActionResultModel on exception."""
         client = make_client(connected=False)
-        with patch.object(client, "is_connected", return_value=False), patch.object(
-            client, "connect", return_value=False
+        with (
+            patch.object(client, "is_connected", return_value=False),
+            patch.object(client, "connect", return_value=False),
         ):
             result = client.execute_script("bad_script")
 
@@ -252,9 +255,10 @@ class TestClose:
     def test_close_when_connected(self):
         """Test close disconnects when connected."""
         client = make_client(connected=True)
-        with patch.object(client, "is_connected", return_value=True), patch.object(
-            client, "disconnect"
-        ) as mock_disconnect:
+        with (
+            patch.object(client, "is_connected", return_value=True),
+            patch.object(client, "disconnect") as mock_disconnect,
+        ):
             client.close()
 
         mock_disconnect.assert_called_once()
@@ -262,9 +266,10 @@ class TestClose:
     def test_close_when_not_connected(self):
         """Test close is a no-op when not connected."""
         client = make_client(connected=False)
-        with patch.object(client, "is_connected", return_value=False), patch.object(
-            client, "disconnect"
-        ) as mock_disconnect:
+        with (
+            patch.object(client, "is_connected", return_value=False),
+            patch.object(client, "disconnect") as mock_disconnect,
+        ):
             client.close()
 
         mock_disconnect.assert_not_called()

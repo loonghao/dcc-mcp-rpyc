@@ -5,7 +5,6 @@ This module provides a registry for managing service discovery strategies and di
 
 # Import built-in modules
 import logging
-from typing import List
 from typing import Optional
 
 # Import local modules
@@ -67,7 +66,7 @@ class ServiceRegistry:
         """
         return self._strategies.get(name)
 
-    def list_strategies(self) -> List[str]:
+    def list_strategies(self) -> list[str]:
         """List all registered strategy names.
 
         Returns:
@@ -76,7 +75,7 @@ class ServiceRegistry:
         """
         return list(self._strategies.keys())
 
-    def discover_services(self, strategy_name: str, dcc_type: Optional[str] = None) -> List[ServiceInfo]:
+    def discover_services(self, strategy_name: str, dcc_type: Optional[str] = None) -> list[ServiceInfo]:
         """Discover services using a specific strategy.
 
         Args:
@@ -174,7 +173,7 @@ class ServiceRegistry:
                 return service
         return None
 
-    def list_services(self, dcc_type: Optional[str] = None) -> List[ServiceInfo]:
+    def list_services(self, dcc_type: Optional[str] = None) -> list[ServiceInfo]:
         """List all discovered services, optionally filtered by DCC type.
 
         Args:

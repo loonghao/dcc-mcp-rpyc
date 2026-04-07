@@ -18,10 +18,10 @@ from dcc_mcp_ipc.client.base import close_all_connections
 from dcc_mcp_ipc.client.base import get_client
 from dcc_mcp_ipc.discovery import ServiceInfo
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_connected_client(app_name="test_app"):
     """Return a client instance with a mock connection."""
@@ -35,6 +35,7 @@ def _make_connected_client(app_name="test_app"):
 # ---------------------------------------------------------------------------
 # __init__ - auto-connect paths (lines 68-73)
 # ---------------------------------------------------------------------------
+
 
 class TestBaseClientInit:
     """Tests for __init__ auto-connect behavior."""
@@ -58,6 +59,7 @@ class TestBaseClientInit:
 # ---------------------------------------------------------------------------
 # _discover_service - ZeroConf path (lines 87-104)
 # ---------------------------------------------------------------------------
+
 
 class TestDiscoverServiceZeroConf:
     """Tests for the ZeroConf discovery branch."""
@@ -97,6 +99,7 @@ class TestDiscoverServiceZeroConf:
 # ---------------------------------------------------------------------------
 # connect - is_connected False branch (lines 162-165)
 # ---------------------------------------------------------------------------
+
 
 class TestConnect:
     """Tests for the connect method edge cases."""
@@ -146,6 +149,7 @@ class TestConnect:
 # disconnect
 # ---------------------------------------------------------------------------
 
+
 class TestDisconnect:
     """Tests for the disconnect method."""
 
@@ -172,6 +176,7 @@ class TestDisconnect:
 # reconnect
 # ---------------------------------------------------------------------------
 
+
 class TestReconnect:
     """Tests for the reconnect method."""
 
@@ -188,6 +193,7 @@ class TestReconnect:
 # ---------------------------------------------------------------------------
 # is_connected
 # ---------------------------------------------------------------------------
+
 
 class TestIsConnected:
     """Tests for is_connected."""
@@ -213,6 +219,7 @@ class TestIsConnected:
 # ---------------------------------------------------------------------------
 # execute_remote_command
 # ---------------------------------------------------------------------------
+
 
 class TestExecuteRemoteCommand:
     """Tests for execute_remote_command."""
@@ -240,6 +247,7 @@ class TestExecuteRemoteCommand:
 # execute_python
 # ---------------------------------------------------------------------------
 
+
 class TestExecutePython:
     """Tests for execute_python."""
 
@@ -265,6 +273,7 @@ class TestExecutePython:
 # import_module
 # ---------------------------------------------------------------------------
 
+
 class TestImportModule:
     """Tests for import_module."""
 
@@ -274,7 +283,9 @@ class TestImportModule:
             client.import_module("os")
 
     def test_success(self):
+        # Import built-in modules
         import sys
+
         client, mock_conn = _make_connected_client()
         mock_conn.root.exposed_get_module.return_value = sys
         result = client.import_module("sys")
@@ -290,6 +301,7 @@ class TestImportModule:
 # ---------------------------------------------------------------------------
 # call_function
 # ---------------------------------------------------------------------------
+
 
 class TestCallFunction:
     """Tests for call_function."""
@@ -316,6 +328,7 @@ class TestCallFunction:
 # get_application_info
 # ---------------------------------------------------------------------------
 
+
 class TestGetApplicationInfo:
     """Tests for get_application_info."""
 
@@ -340,6 +353,7 @@ class TestGetApplicationInfo:
 # ---------------------------------------------------------------------------
 # get_environment_info
 # ---------------------------------------------------------------------------
+
 
 class TestGetEnvironmentInfo:
     """Tests for get_environment_info."""
@@ -366,6 +380,7 @@ class TestGetEnvironmentInfo:
 # list_actions
 # ---------------------------------------------------------------------------
 
+
 class TestListActions:
     """Tests for list_actions."""
 
@@ -390,6 +405,7 @@ class TestListActions:
 # ---------------------------------------------------------------------------
 # call_action
 # ---------------------------------------------------------------------------
+
 
 class TestCallAction:
     """Tests for call_action."""
@@ -417,6 +433,7 @@ class TestCallAction:
 # root property
 # ---------------------------------------------------------------------------
 
+
 class TestRootProperty:
     """Tests for the root property."""
 
@@ -436,12 +453,15 @@ class TestRootProperty:
 # get_client and close_all_connections
 # ---------------------------------------------------------------------------
 
+
 class TestGetClientAndCloseAll:
     """Tests for get_client factory and close_all_connections."""
 
     def setup_method(self):
         """Clear the client registry before each test."""
+        # Import local modules
         import dcc_mcp_ipc.client.base as base_mod
+
         base_mod._clients.clear()
 
     def test_get_client_creates_new(self):
@@ -467,7 +487,9 @@ class TestGetClientAndCloseAll:
         mock_con.assert_called_once()
 
     def test_close_all_connections(self):
+        # Import local modules
         import dcc_mcp_ipc.client.base as base_mod
+
         mock_client_1 = MagicMock()
         mock_client_2 = MagicMock()
         base_mod._clients[("app1", "h", 1)] = mock_client_1
@@ -480,7 +502,9 @@ class TestGetClientAndCloseAll:
         assert len(base_mod._clients) == 0
 
     def test_close_all_handles_disconnect_error(self):
+        # Import local modules
         import dcc_mcp_ipc.client.base as base_mod
+
         mock_client = MagicMock()
         mock_client.disconnect.side_effect = RuntimeError("cannot disconnect")
         base_mod._clients[("app_x", "h", 1)] = mock_client

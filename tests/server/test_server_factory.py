@@ -21,6 +21,7 @@ class TestCreateDCCServer:
     @patch("dcc_mcp_ipc.server.factory.create_raw_threaded_server")
     @patch("dcc_mcp_ipc.server.factory.DCCServer")
     def test_create_basic(self, MockDCCServer, mock_raw):
+        # Import local modules
         from dcc_mcp_ipc.server.base import BaseRPyCService
 
         mock_threaded = MagicMock()
@@ -37,13 +38,14 @@ class TestCreateDCCServer:
     @patch("dcc_mcp_ipc.server.factory.create_raw_threaded_server")
     @patch("dcc_mcp_ipc.server.factory.DCCServer")
     def test_create_with_custom_port(self, MockDCCServer, mock_raw):
+        # Import local modules
         from dcc_mcp_ipc.server.base import BaseRPyCService
 
         mock_raw.return_value = MagicMock()
         mock_dcc = MagicMock()
         MockDCCServer.return_value = mock_dcc
 
-        result = create_dcc_server("blender", BaseRPyCService, host="0.0.0.0", port=18813)
+        create_dcc_server("blender", BaseRPyCService, host="0.0.0.0", port=18813)
 
         call_kwargs = MockDCCServer.call_args[1]
         assert call_kwargs["host"] == "0.0.0.0"
@@ -52,6 +54,7 @@ class TestCreateDCCServer:
     @patch("dcc_mcp_ipc.server.factory.create_raw_threaded_server")
     @patch("dcc_mcp_ipc.server.factory.DCCServer")
     def test_create_with_registry_path(self, MockDCCServer, mock_raw):
+        # Import local modules
         from dcc_mcp_ipc.server.base import BaseRPyCService
 
         mock_raw.return_value = MagicMock()
@@ -99,6 +102,7 @@ class TestCleanupServer:
 
     @patch("dcc_mcp_ipc.server.factory.unregister_dcc_service")
     def test_cleanup_registry_unregister_timeout(self, mock_unreg):
+        # Import built-in modules
         import time
 
         def slow_unreg(*args):

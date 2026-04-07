@@ -8,9 +8,7 @@ including creation, starting, stopping, and checking the status of servers.
 import logging
 import threading
 from typing import Any
-from typing import Dict
 from typing import Optional
-from typing import Type
 from typing import Union
 
 # Import third-party modules
@@ -33,10 +31,10 @@ _servers = {}
 
 
 def create_server(
-    service_class: Type[service.Service] = BaseRPyCService,
+    service_class: type[service.Service] = BaseRPyCService,
     host: str = "localhost",
     port: int = 0,
-    protocol_config: Optional[Dict[str, Any]] = None,
+    protocol_config: Optional[dict[str, Any]] = None,
     server_type: str = "threaded",
     name: Optional[Optional[str]] = None,
     use_zeroconf: bool = False,
