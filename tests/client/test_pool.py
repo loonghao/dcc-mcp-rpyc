@@ -380,6 +380,121 @@ def test_connection_pool_key_case_insensitive():
     assert ("maya", "localhost", 8000) in pool.pool
 
 
+def test_connection_pool_zeroconf_discovery_exception_falls_back_to_file():
+    """ZeroConf exception triggers warning and falls back to file discovery (lines 143-144)."""
+    mock_file_client = MagicMock(spec=BaseDCCClient)
+    mock_factory = MagicMock(return_value=mock_file_client)
+
+    pool = ConnectionPool()
+    with patch("dcc_mcp_ipc.client.pool.ZeroConfDiscoveryStrategy") as MockZC:
+        MockZC.return_value.discover_services.side_effect = RuntimeError("zeroconf unavailable")
+        with patch("dcc_mcp_ipc.client.pool.ServiceRegistry") as MockReg:
+            mock_reg = MagicMock()
+            MockReg.return_value = mock_reg
+            # Simulate file strategy returning no service (host/port remain None)
+            mock_reg.get_strategy.return_value = None
+            mock_reg.get_service.return_value = None
+            with patch("dcc_mcp_ipc.client.pool.FileDiscoveryStrategy"):
+                result = pool.get_client("maya", use_zeroconf=True, client_factory=mock_factory)
+
+    assert result is mock_file_client
+
+
+def test_connection_pool_zeroconf_empty_services_falls_back(monkeypatch):
+    """ZeroConf returns empty services → goto_create_client stays False (lines 131->147)."""
+    pool = ConnectionPool()
+    mock_factory = MagicMock(return_value=MagicMock(spec=BaseDCCClient))
+
+    with patch("dcc_mcp_ipc.client.pool.ZeroConfDiscoveryStrategy") as MockZC:
+        MockZC.return_value.discover_services.return_value = []
+        with patch("dcc_mcp_ipc.client.pool.ServiceRegistry") as MockReg:
+            mock_reg = MagicMock()
+            MockReg.return_value = mock_reg
+            mock_reg.get_strategy.return_value = None
+            mock_reg.get_service.return_value = None
+            with patch("dcc_mcp_ipc.client.pool.FileDiscoveryStrategy"):
+                pool.get_client("houdini", use_zeroconf=True, client_factory=mock_factory)
+
+    mock_factory.assert_called_once()
+
+
+def test_connection_pool_file_discovery_returns_service(monkeypatch):
+    """File discovery path when host/port are None and no ZeroConf (lines 149-163)."""
+    pool = ConnectionPool()
+    mock_factory = MagicMock(return_value=MagicMock(spec=BaseDCCClient))
+
+    # Import local modules
+    from dcc_mcp_ipc.discovery import ServiceInfo
+
+    discovered = ServiceInfo(name="blender", host="10.0.0.2", port=7890, dcc_type="blender")
+
+    with patch("dcc_mcp_ipc.client.pool.ServiceRegistry") as MockReg:
+        mock_reg = MagicMock()
+        MockReg.return_value = mock_reg
+        mock_reg.get_strategy.return_value = None  # force creation of file strategy
+        mock_reg.get_service.return_value = discovered
+        with patch("dcc_mcp_ipc.client.pool.FileDiscoveryStrategy"):
+            pool.get_client("blender", client_factory=mock_factory)
+
+    args, kwargs = mock_factory.call_args
+    assert kwargs.get("host") == "10.0.0.2"
+    assert kwargs.get("port") == 7890
+
+
+def test_connection_pool_file_discovery_no_service_found():
+    """File discovery finds nothing → host/port remain None (lines 149-163 no-match path)."""
+    pool = ConnectionPool()
+    mock_factory = MagicMock(return_value=MagicMock(spec=BaseDCCClient))
+
+    with patch("dcc_mcp_ipc.client.pool.ServiceRegistry") as MockReg:
+        mock_reg = MagicMock()
+        MockReg.return_value = mock_reg
+        mock_reg.get_strategy.return_value = None
+        mock_reg.get_service.return_value = None
+        with patch("dcc_mcp_ipc.client.pool.FileDiscoveryStrategy"):
+            result = pool.get_client("nuke", client_factory=mock_factory)
+
+    assert result is not None
+
+
+def test_connection_pool_reconnect_raises_logs_warning():
+    """connect() raises on existing disconnected client → warning logged (lines 178-179)."""
+    mock_client = MagicMock(spec=BaseDCCClient)
+    mock_client.is_connected.return_value = False
+    mock_client.connect.side_effect = RuntimeError("timeout")
+
+    pool = ConnectionPool()
+    pool.pool[("maya", "localhost", 8000)] = (mock_client, time.time())
+
+    result = pool.get_client("maya", "localhost", 8000, auto_connect=True)
+
+    assert result is mock_client
+    mock_client.connect.assert_called_once()
+
+
+def test_connection_pool_client_class_without_use_zeroconf():
+    """client_class that doesn't accept use_zeroconf → falls back to call without it (lines 210-213)."""
+
+    class LegacyClient:
+        def __init__(self, dcc_name, host, port, auto_connect, connection_timeout, registry_path):
+            self.dcc_name = dcc_name
+            self.host = host
+            self.port = port
+
+    pool = ConnectionPool()
+    client = pool.get_client(
+        "legacy_dcc",
+        "localhost",
+        9000,
+        auto_connect=False,
+        client_class=LegacyClient,
+    )
+
+    assert isinstance(client, LegacyClient)
+    assert client.host == "localhost"
+    assert client.port == 9000
+
+
 # Test global functions
 def test_global_get_client():
     """Test global get client function."""

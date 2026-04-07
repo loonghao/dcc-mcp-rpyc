@@ -277,3 +277,159 @@ def test_make_service_key():
     info = ServiceInfo(name="test", host="192.168.1.10", port=9999, dcc_type="houdini")
     key = FileDiscoveryStrategy._make_service_key(info)
     assert key == "houdini:192.168.1.10:9999"
+
+
+class TestFileStrategyErrorPaths:
+    """Tests covering exception/error branches in FileDiscoveryStrategy."""
+
+    def test_get_default_config_dir_exception_fallback_nt(self, monkeypatch):
+        """_get_default_config_dir() falls back to APPDATA when get_config_dir raises (lines 30-38)."""
+        import os
+        import tempfile
+
+        # Import local modules
+        import dcc_mcp_ipc.discovery.file_strategy as mod
+
+        tmp = tempfile.mkdtemp()
+        monkeypatch.setenv("APPDATA", tmp)
+        monkeypatch.setattr("os.name", "nt")
+
+        with patch("dcc_mcp_ipc.discovery.file_strategy.get_config_dir", side_effect=RuntimeError("unavailable")):
+            result = mod._get_default_config_dir()
+
+        assert result.startswith(tmp)
+        assert os.path.isdir(result)
+
+    def test_get_default_config_dir_exception_fallback_posix(self, monkeypatch):
+        """_get_default_config_dir() falls back to XDG_CONFIG_HOME on non-Windows (lines 35-38)."""
+        import os
+        import tempfile
+
+        # Import local modules
+        import dcc_mcp_ipc.discovery.file_strategy as mod
+
+        tmp = tempfile.mkdtemp()
+        monkeypatch.setattr("os.name", "posix")
+        monkeypatch.setenv("XDG_CONFIG_HOME", tmp)
+
+        with patch("dcc_mcp_ipc.discovery.file_strategy.get_config_dir", side_effect=RuntimeError("unavailable")):
+            result = mod._get_default_config_dir()
+
+        assert result.startswith(tmp)
+
+    def test_load_registry_json_error(self, tmp_path):
+        """_load_registry() logs error when file contains invalid JSON (lines 71-72)."""
+        bad_file = tmp_path / "bad.json"
+        bad_file.write_text("NOT_JSON")
+        strategy = FileDiscoveryStrategy(registry_path=str(bad_file))
+        # Should not raise; _services remains empty
+        assert strategy._services == {}
+
+    def test_save_registry_permission_error(self, tmp_path):
+        """_save_registry() logs error on write failure (lines 83-84)."""
+        registry_file = tmp_path / "registry.json"
+        registry_file.write_text("{}")
+        strategy = FileDiscoveryStrategy(registry_path=str(registry_file))
+        service = ServiceInfo(name="test", host="localhost", port=8001, dcc_type="maya")
+        strategy._services["key"] = {"host": "h"}
+
+        with patch("builtins.open", side_effect=PermissionError("read-only")):
+            strategy._save_registry()  # must not raise
+
+    def test_discover_invalid_service_data_skipped(self, tmp_path):
+        """Non-dict service entry is skipped with warning (lines 103-104)."""
+        import json as json_mod
+        import time
+
+        registry_file = tmp_path / "registry.json"
+        data = {
+            "invalid_entry": "not_a_dict",  # triggers line 103
+            "maya:localhost:9001": {
+                "name": "maya-ok",
+                "host": "localhost",
+                "port": 9001,
+                "dcc_type": "maya",
+                "timestamp": time.time(),
+                "metadata": {},
+            },
+        }
+        registry_file.write_text(json_mod.dumps(data))
+        strategy = FileDiscoveryStrategy(registry_path=str(registry_file))
+        services = strategy.discover_services()
+        assert len(services) == 1
+        assert services[0].name == "maya-ok"
+
+    def test_discover_service_info_creation_error(self, tmp_path):
+        """ServiceInfo construction error is caught per entry (lines 129-130)."""
+        import json as json_mod
+        import time
+
+        registry_file = tmp_path / "registry.json"
+        data = {
+            "maya:localhost:9002": {
+                "name": "maya-test",
+                "host": "localhost",
+                "port": 9002,
+                "dcc_type": "maya",
+                "timestamp": time.time(),
+                "metadata": {},
+            },
+        }
+        registry_file.write_text(json_mod.dumps(data))
+        strategy = FileDiscoveryStrategy(registry_path=str(registry_file))
+
+        # Simulate ServiceInfo constructor raising
+        with patch("dcc_mcp_ipc.discovery.file_strategy.ServiceInfo", side_effect=ValueError("bad data")):
+            services = strategy.discover_services()
+
+        assert services == []
+
+    def test_register_service_exception(self, tmp_path):
+        """register_service() logs error and returns False on exception (lines 187-189)."""
+        registry_file = tmp_path / "registry.json"
+        registry_file.write_text("{}")
+        strategy = FileDiscoveryStrategy(registry_path=str(registry_file))
+        service = ServiceInfo(name="s", host="h", port=1, dcc_type="t")
+
+        with patch.object(strategy, "_save_registry", side_effect=RuntimeError("disk full")):
+            result = strategy.register_service(service)
+
+        assert result is False
+
+    def test_unregister_legacy_dcc_type_key(self, tmp_path):
+        """unregister_service() falls back to legacy dcc_type key (line 212)."""
+        import json as json_mod
+        import time
+
+        registry_file = tmp_path / "registry.json"
+        # Store with legacy key (just dcc_type, no host:port)
+        data = {
+            "maya": {
+                "name": "legacy-maya",
+                "host": "127.0.0.1",
+                "port": 18812,
+                "dcc_type": "maya",
+                "timestamp": time.time(),
+                "metadata": {},
+            }
+        }
+        registry_file.write_text(json_mod.dumps(data))
+        strategy = FileDiscoveryStrategy(registry_path=str(registry_file))
+
+        # unregister using the new-format ServiceInfo; composite key won't match legacy key
+        service = ServiceInfo(name="legacy-maya", host="127.0.0.1", port=18812, dcc_type="maya")
+        result = strategy.unregister_service(service)
+
+        assert result is True  # Should have found and removed the legacy key
+
+    def test_unregister_service_exception(self, tmp_path):
+        """unregister_service() logs error and returns False on exception (lines 228-230)."""
+        registry_file = tmp_path / "registry.json"
+        registry_file.write_text("{}")
+        strategy = FileDiscoveryStrategy(registry_path=str(registry_file))
+        service = ServiceInfo(name="s", host="h", port=1, dcc_type="t")
+
+        with patch.object(strategy, "_load_registry", side_effect=RuntimeError("fs error")):
+            result = strategy.unregister_service(service)
+
+        assert result is False
