@@ -17,13 +17,11 @@ Design principles:
 # Import built-in modules
 from abc import ABC
 from abc import abstractmethod
+from dataclasses import dataclass
+from dataclasses import field
 from enum import Enum
 from typing import Any
 from typing import Optional
-
-# Import third-party modules
-from pydantic import BaseModel
-from pydantic import Field
 
 
 class SnapshotFormat(str, Enum):
@@ -44,7 +42,8 @@ class ViewportType(str, Enum):
     CAMERA = "camera"
 
 
-class SnapshotConfig(BaseModel):
+@dataclass
+class SnapshotConfig:
     """Configuration for a snapshot capture request.
 
     Attributes:
@@ -67,7 +66,8 @@ class SnapshotConfig(BaseModel):
     viewport: ViewportType = ViewportType.PERSPECTIVE
 
 
-class SnapshotResult(BaseModel):
+@dataclass
+class SnapshotResult:
     """Result of a snapshot capture operation.
 
     Attributes:
@@ -87,7 +87,7 @@ class SnapshotResult(BaseModel):
     height: int = 0
     data_size: int = 0
     error: Optional[str] = None
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
 class BaseSnapshot(ABC):
@@ -191,7 +191,7 @@ class BaseSnapshot(ABC):
         data = self.capture_viewport(config)
         return base64.b64encode(data).decode("ascii")
 
-    def get_snapshot_info(self) -> dict[str, Any]:
+    def get_snapshot_info(self) -> dict:
         """Return information about the snapshot capabilities.
 
         Returns a dict describing what this snapshot implementation supports,
@@ -216,3 +216,15 @@ class SnapshotError(Exception):
     def __init__(self, message: str, cause: Optional[Exception] = None) -> None:
         super().__init__(message)
         self.cause = cause
+
+
+# Suppress unused import warning - Any is available for subclass use
+__all__ = [
+    "Any",
+    "BaseSnapshot",
+    "SnapshotConfig",
+    "SnapshotError",
+    "SnapshotFormat",
+    "SnapshotResult",
+    "ViewportType",
+]

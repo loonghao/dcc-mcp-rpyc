@@ -127,8 +127,11 @@ class TestTransformMatrix:
         assert sc[2] == pytest.approx(sz)
 
     def test_serialization(self) -> None:
+        # Import built-in modules
+        from dataclasses import asdict
+
         tm = TransformMatrix()
-        data = tm.model_dump()
+        data = asdict(tm)
         assert "matrix" in data
         assert len(data["matrix"]) == 16
 

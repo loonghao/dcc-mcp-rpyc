@@ -11,7 +11,6 @@ from typing import Optional
 
 # Import third-party modules
 from dcc_mcp_core import ActionResultModel
-from dcc_mcp_core import from_exception
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -279,9 +278,14 @@ def handle_error(error: Exception, context: Optional[dict[str, Any]] = None) -> 
     if isinstance(error, DCCMCPError):
         return error.to_action_result(context)
 
-    # Use from_exception factory from dcc-mcp-core for non-DCCMCPError exceptions
+    # Use ActionResultModel for non-DCCMCPError exceptions
     error_context = context or {}
     error_context["error_type"] = type(error).__name__
     error_context["traceback"] = traceback.format_exc()
 
-    return from_exception(error, context=error_context)
+    return ActionResultModel(
+        success=False,
+        message=str(error),
+        error=str(error),
+        context=error_context,
+    )
