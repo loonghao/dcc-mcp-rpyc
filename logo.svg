@@ -1,35 +1,102 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<svg width="240" height="240" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1E293B;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#0F172A;stop-opacity:1" />
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0D1B2A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1B2B3A;stop-opacity:1" />
     </linearGradient>
-    <linearGradient id="dcc-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#F97316;stop-opacity:1" />
-      <stop offset="33%" style="stop-color:#10B981;stop-opacity:1" />
-      <stop offset="66%" style="stop-color:#EF4444;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#8B5CF6;stop-opacity:1" />
+    <linearGradient id="ring-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00D4FF;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#7C3AED;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#F97316;stop-opacity:1" />
     </linearGradient>
-    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
-      <path d="M0,0 L0,6 L9,3 z" fill="#3B82F6" />
-    </marker>
+    <linearGradient id="core-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00D4FF;stop-opacity:0.9" />
+      <stop offset="100%" style="stop-color:#7C3AED;stop-opacity:0.9" />
+    </linearGradient>
+    <linearGradient id="node-a" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F97316" />
+      <stop offset="100%" style="stop-color:#EF4444" />
+    </linearGradient>
+    <linearGradient id="node-b" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#10B981" />
+      <stop offset="100%" style="stop-color:#06B6D4" />
+    </linearGradient>
+    <linearGradient id="node-c" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6" />
+      <stop offset="100%" style="stop-color:#7C3AED" />
+    </linearGradient>
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+    </filter>
   </defs>
 
-  <!-- 背景 -->
-  <rect width="200" height="200" rx="24" fill="url(#bg-gradient)" />
+  <!-- Background rounded rect -->
+  <rect width="240" height="240" rx="28" fill="url(#bg-grad)" />
 
-  <!-- RPyC图形 -->
-  <circle cx="70" cy="100" r="28" fill="#3B82F6" />
-  <text x="70" y="105" font-family="Arial, sans-serif" font-weight="bold" font-size="14" text-anchor="middle" fill="white">RPyC</text>
+  <!-- Subtle grid lines -->
+  <g opacity="0.06" stroke="#00D4FF" stroke-width="0.5">
+    <line x1="0" y1="60" x2="240" y2="60"/>
+    <line x1="0" y1="120" x2="240" y2="120"/>
+    <line x1="0" y1="180" x2="240" y2="180"/>
+    <line x1="60" y1="0" x2="60" y2="240"/>
+    <line x1="120" y1="0" x2="120" y2="240"/>
+    <line x1="180" y1="0" x2="180" y2="240"/>
+  </g>
 
-  <!-- DCC图形 -->
-  <circle cx="140" cy="100" r="28" fill="url(#dcc-gradient)" />
-  <text x="140" y="105" font-family="Arial, sans-serif" font-weight="bold" font-size="14" text-anchor="middle" fill="white">DCC</text>
+  <!-- Outer decorative ring -->
+  <circle cx="120" cy="108" r="72" fill="none" stroke="url(#ring-grad)" stroke-width="1.5" stroke-dasharray="8 4" opacity="0.5"/>
 
-  <!-- 连接箭头 -->
-  <line x1="98" y1="100" x2="112" y2="100" stroke="#3B82F6" stroke-width="3" marker-end="url(#arrow)" />
+  <!-- Connection lines (DCC nodes to center) -->
+  <g stroke="#3B82F6" stroke-width="1.5" opacity="0.6" filter="url(#glow)">
+    <!-- Top left node to center -->
+    <line x1="72" y1="62" x2="107" y2="95"/>
+    <!-- Top right node to center -->
+    <line x1="168" y1="62" x2="133" y2="95"/>
+    <!-- Bottom node to center -->
+    <line x1="120" y1="158" x2="120" y2="128"/>
+  </g>
 
-  <!-- 项目名称 -->
-  <text x="100" y="170" font-family="Arial, sans-serif" font-weight="bold" font-size="16" text-anchor="middle" fill="white">DCC-MCP-RPyC</text>
+  <!-- DCC node: Blender (top left) -->
+  <g filter="url(#shadow)">
+    <circle cx="66" cy="56" r="22" fill="url(#node-a)" />
+    <text x="66" y="52" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="8" text-anchor="middle" fill="white" letter-spacing="0.5">BLENDER</text>
+    <!-- Blender-like icon: triangle -->
+    <polygon points="66,58 59,68 73,68" fill="white" opacity="0.85"/>
+  </g>
+
+  <!-- DCC node: Maya (top right) -->
+  <g filter="url(#shadow)">
+    <circle cx="174" cy="56" r="22" fill="url(#node-b)" />
+    <text x="174" y="52" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="8" text-anchor="middle" fill="white" letter-spacing="0.5">MAYA</text>
+    <!-- Maya-like icon: M shape -->
+    <text x="174" y="68" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="14" text-anchor="middle" fill="white" opacity="0.85">M</text>
+  </g>
+
+  <!-- DCC node: Houdini (bottom) -->
+  <g filter="url(#shadow)">
+    <circle cx="120" cy="168" r="22" fill="url(#node-c)" />
+    <text x="120" y="164" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="7.5" text-anchor="middle" fill="white" letter-spacing="0.5">HOUDINI</text>
+    <!-- Houdini-like icon: H -->
+    <text x="120" y="180" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="900" font-size="14" text-anchor="middle" fill="white" opacity="0.85">H</text>
+  </g>
+
+  <!-- Central hub: MCP core -->
+  <g filter="url(#glow)">
+    <circle cx="120" cy="108" r="26" fill="url(#core-grad)" opacity="0.15"/>
+    <circle cx="120" cy="108" r="22" fill="#0D1B2A" stroke="url(#core-grad)" stroke-width="2"/>
+    <text x="120" y="105" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="800" font-size="9" text-anchor="middle" fill="#00D4FF" letter-spacing="1">MCP</text>
+    <text x="120" y="117" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="7" text-anchor="middle" fill="#7C3AED" letter-spacing="0.5">IPC</text>
+  </g>
+
+  <!-- Bottom label -->
+  <text x="120" y="212" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="700" font-size="13" text-anchor="middle" fill="#CBD5E1" letter-spacing="2">DCC-MCP-IPC</text>
+  <text x="120" y="228" font-family="'Helvetica Neue', Arial, sans-serif" font-weight="400" font-size="8" text-anchor="middle" fill="#475569" letter-spacing="1">Multi-Protocol IPC Layer</text>
 </svg>
