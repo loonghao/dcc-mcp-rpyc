@@ -16,6 +16,8 @@ from dcc_mcp_ipc.transport.factory import register_transport
 from dcc_mcp_ipc.transport.ipc_transport import IpcClientTransport
 from dcc_mcp_ipc.transport.ipc_transport import IpcServerTransport
 from dcc_mcp_ipc.transport.ipc_transport import IpcTransportConfig
+from dcc_mcp_ipc.transport.websocket import WebSocketTransport
+from dcc_mcp_ipc.transport.websocket import WebSocketTransportConfig
 
 __all__ = [
     "BaseTransport",
@@ -25,6 +27,8 @@ __all__ = [
     "TransportConfig",
     "TransportError",
     "TransportState",
+    "WebSocketTransport",
+    "WebSocketTransportConfig",
     "create_transport",
     "get_transport",
     "register_transport",

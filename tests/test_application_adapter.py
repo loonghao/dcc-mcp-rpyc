@@ -97,7 +97,14 @@ class TestGenericApplicationAdapter:
         """Test successful module import."""
         result = adapter.import_module("os")
         assert result.success is True
-        assert result.context["module"].__name__ == "os"
+        # dcc-mcp-core 0.12+ serialises non-JSON-able objects to str repr
+        module_val = result.context["module"]
+        assert module_val is not None
+        # Either the module object itself or its string representation
+        if hasattr(module_val, "__name__"):
+            assert module_val.__name__ == "os"
+        else:
+            assert "os" in str(module_val)
 
     def test_import_module_failure(self, adapter):
         """Test module import failure."""

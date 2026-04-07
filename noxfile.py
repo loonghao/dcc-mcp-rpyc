@@ -7,7 +7,7 @@ import nox
 
 ROOT = os.path.dirname(__file__)
 
-# Ensure maya_umbrella is importable.
+# Ensure the repository root is importable for local nox actions.
 if ROOT not in sys.path:
     sys.path.append(ROOT)
 

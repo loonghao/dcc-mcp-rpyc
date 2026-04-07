@@ -1,9 +1,5 @@
 """Tests for the transport base module."""
 
-# Import built-in modules
-from unittest.mock import MagicMock
-from unittest.mock import patch
-
 # Import third-party modules
 import pytest
 

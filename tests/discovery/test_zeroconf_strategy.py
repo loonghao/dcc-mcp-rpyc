@@ -310,3 +310,195 @@ def test_del_method():
 
     # Verify
     mock_zeroconf.close.assert_called_once()
+
+
+# =============================================================================
+# _ensure_zeroconf Tests
+# =============================================================================
+
+
+@pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
+class TestEnsureZeroconf:
+    """Tests for the _ensure_zeroconf method."""
+
+    def test_returns_false_when_unavailable(self):
+        """Test _ensure_zeroconf returns False when zeroconf is unavailable."""
+        with patch("dcc_mcp_ipc.discovery.zeroconf_strategy.ZEROCONF_AVAILABLE", False):
+            strategy = ZeroConfDiscoveryStrategy()
+            result = strategy._ensure_zeroconf()
+            assert result is False
+
+    def test_initializes_on_first_call(self):
+        """Test that _ensure_zeroconf initializes ZeroConf on first call."""
+        strategy = ZeroConfDiscoveryStrategy()
+        assert strategy._zeroconf is None
+
+        result = strategy._ensure_zeroconf()
+        assert result is True
+        assert strategy._zeroconf is not None
+
+        # Clean up
+        strategy._zeroconf.close()
+
+    def test_returns_existing_instance(self):
+        """Test that _ensure_zeroconf reuses existing ZeroConf instance."""
+        mock_zc = MagicMock()
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        result = strategy._ensure_zeroconf()
+        assert result is True
+        assert strategy._zeroconf is mock_zc
+
+    def test_returns_false_on_init_error(self):
+        """Test that _ensure_zeroconf returns False when init fails."""
+        with patch("dcc_mcp_ipc.discovery.zeroconf_strategy.Zeroconf",
+                   side_effect=OSError("network error")):
+            strategy = ZeroConfDiscoveryStrategy()
+            # Reset to None so it tries to initialize
+            strategy._zeroconf = None
+            result = strategy._ensure_zeroconf()
+            assert result is False
+
+
+# =============================================================================
+# ServiceListener Filter Tests
+# =============================================================================
+
+
+@pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
+class TestServiceListenerFiltering:
+    """Tests for DCC name filtering in ServiceListener."""
+
+    @patch("dcc_mcp_ipc.discovery.zeroconf_strategy.socket.inet_ntoa")
+    def test_filters_by_dcc_name(self, mock_inet_ntoa):
+        """Test that listener filters services by dcc_name."""
+        mock_inet_ntoa.return_value = "127.0.0.1"
+        listener = ServiceListener(dcc_name="blender")
+        mock_zc = MagicMock()
+
+        # Add a maya service (should be filtered out)
+        mock_info = MagicMock()
+        mock_info.properties = {b"dcc_name": b"maya", b"service_name": b"maya_service"}
+        type_a = 1
+        mock_info.addresses_by_version = {type_a: [b"\x7f\x00\x00\x01"]}
+        mock_info.port = 8000
+        mock_zc.get_service_info.return_value = mock_info
+
+        listener.add_service(mock_zc, "_dcc-mcp._tcp.local.", "maya_svc._dcc-mcp._tcp.local.")
+        assert len(listener.services) == 0
+
+    @patch("dcc_mcp_ipc.discovery.zeroconf_strategy.socket.inet_ntoa")
+    def test_accepts_matching_dcc_name(self, mock_inet_ntoa):
+        """Test that listener accepts services matching dcc_name."""
+        mock_inet_ntoa.return_value = "10.0.0.1"
+        listener = ServiceListener(dcc_name="houdini")
+        mock_zc = MagicMock()
+
+        mock_info = MagicMock()
+        mock_info.properties = {b"dcc_name": b"houdini", b"service_name": b"houdini_svc"}
+        type_a = 1
+        mock_info.addresses_by_version = {type_a: [b"\x0a\x00\x00\x01"]}
+        mock_info.port = 9000
+        mock_zc.get_service_info.return_value = mock_info
+
+        listener.add_service(mock_zc, "_dcc-mcp._tcp.local.", "h_svc._dcc-mcp._tcp.local.")
+        assert len(listener.services) == 1
+
+
+# =============================================================================
+# Error Handling Tests
+# =============================================================================
+
+
+@pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
+class TestErrorHandling:
+    """Tests for error handling in discovery operations."""
+
+    def test_discover_services_unavailable(self):
+        """Test discover_services returns empty list when zeroconf unavailable."""
+        with patch.object(ZeroConfDiscoveryStrategy, "_ensure_zeroconf", return_value=False):
+            strategy = ZeroConfDiscoveryStrategy()
+            result = strategy.discover_services()
+            assert result == []
+
+    def test_register_service_unavailable(self, sample_service_info):
+        """Test register_service returns False when zeroconf unavailable."""
+        with patch.object(ZeroConfDiscoveryStrategy, "_ensure_zeroconf", return_value=False):
+            strategy = ZeroConfDiscoveryStrategy()
+            result = strategy.register_service(sample_service_info)
+            assert result is False
+
+    def test_unregister_service_unavailable(self, sample_service_info):
+        """Test unregister_service returns False when zeroconf unavailable."""
+        with patch.object(ZeroConfDiscoveryStrategy, "_ensure_zeroconf", return_value=False):
+            strategy = ZeroConfDiscoveryStrategy()
+            result = strategy.unregister_service(sample_service_info)
+            assert result is False
+
+    def test_register_service_error(self, sample_service_info):
+        """Test register_service handles exceptions gracefully."""
+        mock_zc = MagicMock()
+        mock_zc.register_service.side_effect = RuntimeError("registration error")
+
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        result = strategy.register_service(sample_service_info)
+        assert result is False
+
+    def test_unregister_service_error(self, sample_service_info):
+        """Test unregister_service handles exceptions gracefully."""
+        mock_zc = MagicMock()
+        mock_zc.unregister_service.side_effect = RuntimeError("unregister error")
+
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        result = strategy.unregister_service(sample_service_info)
+        assert result is False
+
+    def test_get_local_ip_fallback(self):
+        """Test get_local_ip falls back to 127.0.0.1 on error."""
+        with patch("socket.socket", side_effect=OSError("no network")):
+            ip = get_local_ip()
+            assert ip == "127.0.0.1"
+
+
+# =============================================================================
+# Service Registration Details Tests
+# =============================================================================
+
+
+@pytest.mark.skipif(not ZEROCONF_AVAILABLE, reason="ZeroConf is not available")
+class TestRegistrationDetails:
+    """Tests for service registration details."""
+
+    def test_localhost_resolved_to_loopback(self, sample_service_info):
+        """Test that 'localhost' host is resolved to 127.0.0.1."""
+        mock_zc = MagicMock()
+
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        local_service = ServiceInfo(
+            name="local_test", host="localhost", port=8000,
+            dcc_type="maya", metadata={}
+        )
+
+        result = strategy.register_service(local_service)
+
+        assert result is True
+        # Check that register_service was called
+        mock_zc.register_service.assert_called_once()
+
+
+@pytest.mark.skipif(ZEROCONF_AVAILABLE, reason="Only runs when ZeroConf is NOT available")
+def test_zeroconf_not_available():
+    """Test behavior when ZeroConf is not installed."""
+    strategy = ZeroConfDiscoveryStrategy()
+    assert strategy._zeroconf is None
+    assert strategy.discover_services() == []
+    assert strategy.register_service(
+        ServiceInfo(name="test", host="127.0.0.1", port=8000, dcc_type="maya")
+    ) is False

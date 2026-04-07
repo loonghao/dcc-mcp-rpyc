@@ -275,21 +275,22 @@ print(dcc_info)  # {"name": "mock_dcc", "version": "1.0.0", "platform": "windows
 ### Creating a DCC Adapter
 
 ```python
-from dcc_mcp_ipc.dcc_adapter import DCCAdapter
+from dcc_mcp_ipc.adapter import DCCAdapter
 from dcc_mcp_ipc.client import BaseDCCClient
 
 class MayaAdapter(DCCAdapter):
-    def _create_client(self) -> BaseDCCClient:
-        return BaseDCCClient(
+    def _initialize_client(self) -> None:
+        self.client = BaseDCCClient(
             dcc_name="maya",
             host=self.host,
             port=self.port,
-            timeout=self.timeout
+            connection_timeout=self.connection_timeout,
         )
 
-    def create_sphere(self, radius=1.0):
+    def create_sphere(self, radius: float = 1.0):
         self.ensure_connected()
-        return self.dcc_client.execute_dcc_command(f"sphere -r {radius};")
+        assert self.client is not None
+        return self.client.execute_dcc_command(f"sphere -r {radius};")
 ```
 
 ## Development
