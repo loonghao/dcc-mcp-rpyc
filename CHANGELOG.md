@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0](https://github.com/loonghao/dcc-mcp-ipc/compare/1.0.0...2.0.0) (2026-04-07)
+
+
+### ⚠ BREAKING CHANGES
+
+* migrate to dcc-mcp-core v0.12.0 Rust/PyO3 API
+
+### Features
+
+* align with dcc-mcp-core latest API ([4892169](https://github.com/loonghao/dcc-mcp-ipc/commit/4892169247403dc0d83beaae0e8bbbdc9417ba0c))
+* migrate to dcc-mcp-core v0.12.0 Rust/PyO3 API ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+* **skills:** add SkillManager for zero-code SKILL.md-based MCP tool registration ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+* squash-merge auto-improve branch improvements ([e57dad6](https://github.com/loonghao/dcc-mcp-ipc/commit/e57dad67d93883e78ed1e2dba626d8fbb4b4eda6))
+* **transport:** add Rust-native IpcClientTransport and IpcServerTransport ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+
+
+### Bug Fixes
+
+* **compat:** fix Python 3.9 incompatible union type syntax ([cea4c35](https://github.com/loonghao/dcc-mcp-ipc/commit/cea4c35a2f6240cdc5b597b047e62012a17d885b))
+* **deps:** replace pydantic with stdlib dataclasses in scene/snapshot modules ([64b6310](https://github.com/loonghao/dcc-mcp-ipc/commit/64b6310fbeb17b9a39e508d1532dcdd7301955be))
+* **deps:** trim dependencies to rpyc+dcc-mcp-core; make zeroconf optional extra ([cd4e8f0](https://github.com/loonghao/dcc-mcp-ipc/commit/cd4e8f07bfebc46296e904f194ccab051cbd2c62))
+* **lint:** fix all ruff/isort CI failures ([4e348dc](https://github.com/loonghao/dcc-mcp-ipc/commit/4e348dcfa592939ed97cd1af25e953408926ff42))
+
+
+### Code Refactoring
+
+* **action_adapter:** rewrite ActionAdapter with ActionRegistry+ActionDispatcher ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+* update all imports and replace model_dump() -&gt; to_dict() globally ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+
+
+### Documentation
+
+* add VitePress site and update README ([#41](https://github.com/loonghao/dcc-mcp-ipc/issues/41)) ([532d010](https://github.com/loonghao/dcc-mcp-ipc/commit/532d0108a8f02ce2acfd8157d741b99691c48aef))
+* update README/README_zh and CHANGELOG for v2.0.0 ([da8fcc7](https://github.com/loonghao/dcc-mcp-ipc/commit/da8fcc750ff0ee3934d348af559add3d54162535))
+
 ## [Unreleased] — 2.0.0
 
 ### BREAKING CHANGES

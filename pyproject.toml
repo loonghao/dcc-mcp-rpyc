@@ -4,7 +4,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 name = "dcc-mcp-ipc"
-version = "1.0.0"
+version = "2.0.0"
 description = "Multi-protocol IPC adapter layer for DCC software integration with Model Context Protocol"
 authors = ["Long Hao <hal.long@outlook.com>"]
 readme = "README.md"
