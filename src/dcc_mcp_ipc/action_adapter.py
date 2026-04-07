@@ -181,7 +181,7 @@ class ActionAdapter:
         registered = 0
         for spec in actions:
             handler = spec.pop("handler", None)
-            name = spec.get("name", "")
+            name = spec.pop("name", "")
             if not handler or not name:
                 logger.warning("Skipping action spec missing name or handler: %s", spec)
                 continue
