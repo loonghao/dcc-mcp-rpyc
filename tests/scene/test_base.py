@@ -473,6 +473,7 @@ class TestBaseSceneInfo:
 
         assert isinstance(result, SceneInfo)
         assert result.dcc_type == "test"
+        assert result.object_count == 1
         assert len(result.objects) == 1
         assert result.objects[0].name == "test_obj"
         assert len(result.cameras) == 1

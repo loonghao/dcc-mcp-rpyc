@@ -1,7 +1,7 @@
 """Transport factory for creating and managing transport instances.
 
 This module provides a registry-based factory for creating transport instances
-by protocol name, making it easy to switch between RPyC, HTTP, and WebSocket
+by protocol name. Built-in registration currently covers RPyC, HTTP, and IPC
 transports without changing upper-level code.
 """
 

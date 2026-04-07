@@ -346,10 +346,12 @@ class BaseSceneInfo(ABC):
 
         """
         try:
+            objects = self.get_objects()
             return SceneInfo(
                 dcc_type=self._dcc_type(),
                 scene_name=self._get_scene_name(),
-                objects=self.get_objects(),
+                object_count=len(objects),
+                objects=objects,
                 hierarchy=self.get_hierarchy() if self.config.include_hierarchy else None,
                 materials=self.get_materials() if self.config.include_materials else [],
                 cameras=self.get_cameras(),

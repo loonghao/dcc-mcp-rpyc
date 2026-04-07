@@ -563,4 +563,5 @@ if REQUESTS_AVAILABLE:
             result = si.get_full_scene_info()
             assert isinstance(result, SceneInfo)
             assert result.dcc_type == "unreal"
+            assert result.object_count == len(result.objects)
             assert len(result.objects) > 0

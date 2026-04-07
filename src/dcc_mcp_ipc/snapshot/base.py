@@ -20,7 +20,6 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from dataclasses import field
 from enum import Enum
-from typing import Any
 from typing import Optional
 
 
@@ -218,9 +217,7 @@ class SnapshotError(Exception):
         self.cause = cause
 
 
-# Suppress unused import warning - Any is available for subclass use
 __all__ = [
-    "Any",
     "BaseSnapshot",
     "SnapshotConfig",
     "SnapshotError",

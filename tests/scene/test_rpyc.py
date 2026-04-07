@@ -458,6 +458,7 @@ class TestRpycFullSceneInfo:
 
         assert isinstance(result, SceneInfo)
         assert result.dcc_type == "maya"
+        assert result.object_count == 1
         assert len(result.objects) == 1
         assert result.objects[0].name == "pCube1"
         assert result.hierarchy is not None
