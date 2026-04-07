@@ -1,5 +1,8 @@
 """Tests for the transport factory module."""
 
+# Import built-in modules
+from unittest.mock import patch
+
 # Import third-party modules
 import pytest
 
@@ -146,3 +149,56 @@ class TestBuiltinRegistration:
             assert isinstance(transport, IpcClientTransport)
         except ImportError:
             pass
+
+
+class TestRegisterBuiltinsImportErrors:
+    """Test that _register_builtins gracefully handles missing optional dependencies."""
+
+    def test_rpyc_import_error_is_silent(self):
+        """If rpyc is not installed, RPyC transport registration is silently skipped (lines 118-119)."""
+        import sys
+
+        # Import local modules
+        from dcc_mcp_ipc.transport import factory as factory_mod
+
+        saved_registry = dict(factory_mod._transport_registry)
+        try:
+            with patch.dict(sys.modules, {"dcc_mcp_ipc.transport.rpyc_transport": None}):
+                factory_mod._transport_registry.clear()
+                factory_mod._register_builtins()
+                # rpyc should not be registered when the import fails
+                assert "rpyc" not in factory_mod._transport_registry
+        finally:
+            factory_mod._transport_registry.update(saved_registry)
+
+    def test_http_import_error_is_silent(self):
+        """If requests is not installed, HTTP transport registration is silently skipped (lines 126-127)."""
+        import sys
+
+        # Import local modules
+        from dcc_mcp_ipc.transport import factory as factory_mod
+
+        saved_registry = dict(factory_mod._transport_registry)
+        try:
+            with patch.dict(sys.modules, {"dcc_mcp_ipc.transport.http": None}):
+                factory_mod._transport_registry.clear()
+                factory_mod._register_builtins()
+                assert "http" not in factory_mod._transport_registry
+        finally:
+            factory_mod._transport_registry.update(saved_registry)
+
+    def test_ipc_import_error_is_silent(self):
+        """If dcc-mcp-core Rust extension is missing, IPC transport registration is silently skipped (lines 134-135)."""
+        import sys
+
+        # Import local modules
+        from dcc_mcp_ipc.transport import factory as factory_mod
+
+        saved_registry = dict(factory_mod._transport_registry)
+        try:
+            with patch.dict(sys.modules, {"dcc_mcp_ipc.transport.ipc_transport": None}):
+                factory_mod._transport_registry.clear()
+                factory_mod._register_builtins()
+                assert "ipc" not in factory_mod._transport_registry
+        finally:
+            factory_mod._transport_registry.update(saved_registry)

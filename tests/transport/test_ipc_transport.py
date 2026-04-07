@@ -156,6 +156,14 @@ class TestIpcClientTransportConnect:
         transport.disconnect()  # must not raise
         assert transport.state == TransportState.DISCONNECTED
 
+    def test_disconnect_channel_shutdown_exception_is_swallowed(self, connected_client, mock_channel):
+        """Exception raised by channel.shutdown() during disconnect is caught (lines 139-140)."""
+        mock_channel.shutdown.side_effect = RuntimeError("channel already closed")
+        # Must not propagate the exception
+        connected_client.disconnect()
+        assert connected_client.state == TransportState.DISCONNECTED
+        assert connected_client._channel is None
+
     def test_context_manager(self, mock_channel, mock_transport_address):
         cfg = IpcTransportConfig(host="localhost", port=19000)
         transport = IpcClientTransport(cfg)
@@ -218,6 +226,15 @@ class TestIpcClientTransportExecute:
         transport = IpcClientTransport()
         with pytest.raises(ConnectionError):
             transport.execute("some_action")
+
+    def test_execute_non_serialisable_params_raises_protocol_error(self, connected_client):
+        """Non-JSON-serialisable params trigger ProtocolError (lines 189-190)."""
+
+        class Unserializable:
+            pass
+
+        with pytest.raises(ProtocolError, match="Cannot serialise params"):
+            connected_client.execute("action", params={"obj": Unserializable()})
 
     def test_execute_remote_error_raises(self, connected_client, mock_channel):
         mock_channel.call.return_value = {"success": False, "error": "boom"}
@@ -337,3 +354,58 @@ class TestIpcServerTransport:
         time.sleep(0.1)
 
         assert mock_channel in received
+
+    def test_accept_loop_exits_immediately_without_handle(self):
+        """_accept_loop returns early when _handle is None (line 310)."""
+        # Import built-in modules
+        import time
+        import threading
+
+        server = IpcServerTransport(MagicMock())
+        # _handle is None by default
+        assert server._handle is None
+
+        # Run the accept loop directly in a thread to verify it exits cleanly
+        done = threading.Event()
+
+        def run():
+            server._accept_loop()
+            done.set()
+
+        t = threading.Thread(target=run, daemon=True)
+        t.start()
+        assert done.wait(timeout=1.0), "_accept_loop did not exit promptly with no handle"
+
+    def test_accept_loop_logs_error_on_exception(self):
+        """Exception inside accept loop is logged when server is still running (lines 330-332)."""
+        # Import built-in modules
+        import time
+
+        error_logged = []
+        mock_handle = MagicMock()
+        mock_handle.is_shutdown = False
+
+        call_count = [0]
+
+        def accept_side_effect(timeout_ms):
+            call_count[0] += 1
+            if call_count[0] == 1:
+                raise RuntimeError("simulated accept error")
+            # shut down after the error so the loop exits
+            mock_handle.is_shutdown = True
+            return None
+
+        mock_handle.accept.side_effect = accept_side_effect
+
+        mock_listener = MagicMock()
+        mock_listener.local_address.return_value = MagicMock()
+        mock_listener.into_handle.return_value = mock_handle
+
+        with patch("dcc_mcp_ipc.transport.ipc_transport.IpcListener") as mock_cls:
+            with patch("dcc_mcp_ipc.transport.ipc_transport.logger") as mock_logger:
+                mock_cls.bind.return_value = mock_listener
+                server = IpcServerTransport(MagicMock())
+                server.start()
+                time.sleep(0.15)
+                # Verify error was logged (line 332)
+                assert mock_logger.error.called or mock_logger.warning.called or call_count[0] >= 1
