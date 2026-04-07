@@ -11,6 +11,8 @@ from typing import Optional
 
 # Import third-party modules
 from dcc_mcp_core import ActionResultModel
+from dcc_mcp_core import error_result
+from dcc_mcp_core import success_result
 
 # Import local modules
 from dcc_mcp_ipc.adapter.base import ApplicationAdapter
@@ -86,19 +88,22 @@ class DCCAdapter(ApplicationAdapter):
 
         """
         if not self.ensure_connected():
-            return ActionResultModel(
-                success=False, message=f"Not connected to {self.dcc_name}", error="Connection error"
+            return error_result(
+                message=f"Not connected to {self.dcc_name}",
+                error="Connection error",
             ).to_dict()
 
         try:
             result = self.client.get_dcc_info()
-            return ActionResultModel(
-                success=True, message=f"Successfully retrieved {self.dcc_name} information", context=result
+            return success_result(
+                message=f"Successfully retrieved {self.dcc_name} information",
+                context=result,
             ).to_dict()
         except Exception as e:
             logger.error(f"Error getting {self.dcc_name} info: {e}")
-            return ActionResultModel(
-                success=False, message=f"Failed to retrieve {self.dcc_name} information", error=str(e)
+            return error_result(
+                message=f"Failed to retrieve {self.dcc_name} information",
+                error=str(e),
             ).to_dict()
 
     def get_scene_info(self) -> Dict[str, Any]:
@@ -109,19 +114,22 @@ class DCCAdapter(ApplicationAdapter):
 
         """
         if not self.ensure_connected():
-            return ActionResultModel(
-                success=False, message=f"Not connected to {self.dcc_name}", error="Connection error"
+            return error_result(
+                message=f"Not connected to {self.dcc_name}",
+                error="Connection error",
             ).to_dict()
 
         try:
             result = self.client.get_scene_info()
-            return ActionResultModel(
-                success=True, message="Successfully retrieved scene information", context=result
+            return success_result(
+                message="Successfully retrieved scene information",
+                context=result,
             ).to_dict()
         except Exception as e:
             logger.error(f"Error getting scene info: {e}")
-            return ActionResultModel(
-                success=False, message="Failed to retrieve scene information", error=str(e)
+            return error_result(
+                message="Failed to retrieve scene information",
+                error=str(e),
             ).to_dict()
 
     def get_session_info(self) -> Dict[str, Any]:
@@ -132,19 +140,22 @@ class DCCAdapter(ApplicationAdapter):
 
         """
         if not self.ensure_connected():
-            return ActionResultModel(
-                success=False, message=f"Not connected to {self.dcc_name}", error="Connection error"
+            return error_result(
+                message=f"Not connected to {self.dcc_name}",
+                error="Connection error",
             ).to_dict()
 
         try:
             result = self.client.get_session_info()
-            return ActionResultModel(
-                success=True, message="Successfully retrieved session information", context=result
+            return success_result(
+                message="Successfully retrieved session information",
+                context=result,
             ).to_dict()
         except Exception as e:
             logger.error(f"Error getting session info: {e}")
-            return ActionResultModel(
-                success=False, message="Failed to retrieve session information", error=str(e)
+            return error_result(
+                message="Failed to retrieve session information",
+                error=str(e),
             ).to_dict()
 
     def create_primitive(self, primitive_type: str, **kwargs) -> Dict[str, Any]:
@@ -159,8 +170,9 @@ class DCCAdapter(ApplicationAdapter):
 
         """
         if not self.ensure_connected():
-            return ActionResultModel(
-                success=False, message=f"Not connected to {self.dcc_name}", error="Connection error"
+            return error_result(
+                message=f"Not connected to {self.dcc_name}",
+                error="Connection error",
             ).to_dict()
 
         try:
@@ -170,13 +182,13 @@ class DCCAdapter(ApplicationAdapter):
             if isinstance(result, dict) and "success" in result:
                 return result
 
-            return ActionResultModel(
-                success=True, message=f"Successfully created {primitive_type}", context=result
+            return success_result(
+                message=f"Successfully created {primitive_type}",
+                context=result,
             ).to_dict()
         except Exception as e:
             logger.error(f"Error creating primitive {primitive_type}: {e}")
-            return ActionResultModel(
-                success=False,
+            return error_result(
                 message=f"Failed to create {primitive_type}",
                 error=str(e),
                 context={"primitive_type": primitive_type, "kwargs": kwargs},
@@ -195,8 +207,9 @@ class DCCAdapter(ApplicationAdapter):
 
         """
         if not self.ensure_connected():
-            return ActionResultModel(
-                success=False, message=f"Not connected to {self.dcc_name}", error="Connection error"
+            return error_result(
+                message=f"Not connected to {self.dcc_name}",
+                error="Connection error",
             ).to_dict()
 
         try:
@@ -206,13 +219,13 @@ class DCCAdapter(ApplicationAdapter):
             if isinstance(result, dict) and "success" in result:
                 return result
 
-            return ActionResultModel(
-                success=True, message=f"Successfully executed command: {command}", context=result
+            return success_result(
+                message=f"Successfully executed command: {command}",
+                context=result,
             ).to_dict()
         except Exception as e:
             logger.error(f"Error executing command {command}: {e}")
-            return ActionResultModel(
-                success=False,
+            return error_result(
                 message=f"Failed to execute command: {command}",
                 error=str(e),
                 context={"command": command, "args": args, "kwargs": kwargs},
@@ -230,8 +243,9 @@ class DCCAdapter(ApplicationAdapter):
 
         """
         if not self.ensure_connected():
-            return ActionResultModel(
-                success=False, message=f"Not connected to {self.dcc_name}", error="Connection error"
+            return error_result(
+                message=f"Not connected to {self.dcc_name}",
+                error="Connection error",
             ).to_dict()
 
         try:
@@ -245,13 +259,13 @@ class DCCAdapter(ApplicationAdapter):
             if isinstance(result, dict) and "success" in result:
                 return result
 
-            return ActionResultModel(
-                success=True, message=f"Successfully executed {script_type} script", context=result
+            return success_result(
+                message=f"Successfully executed {script_type} script",
+                context=result,
             ).to_dict()
         except Exception as e:
             logger.error(f"Error executing {script_type} script: {e}")
-            return ActionResultModel(
-                success=False,
+            return error_result(
                 message=f"Failed to execute {script_type} script",
                 error=str(e),
                 context={"script_type": script_type, "script_length": len(script)},

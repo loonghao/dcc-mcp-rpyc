@@ -17,6 +17,8 @@ from typing import Optional
 
 # Import third-party modules
 from dcc_mcp_core import ActionResultModel
+from dcc_mcp_core import error_result
+from dcc_mcp_core import success_result
 
 # Import local modules
 from dcc_mcp_ipc.action_adapter import get_action_adapter
@@ -158,14 +160,14 @@ class ApplicationAdapter(ABC):
             if isinstance(result, dict) and "success" in result:
                 return result
 
-            # Otherwise, wrap it in an ActionResultModel
-            return ActionResultModel(
-                success=True, message=f"Successfully executed action {action_name}", context={"result": result}
+            # Otherwise, wrap it in a success result
+            return success_result(
+                message=f"Successfully executed action {action_name}",
+                context={"result": result},
             ).to_dict()
         except Exception as e:
             logger.error(f"Error executing action {action_name}: {e}")
-            return ActionResultModel(
-                success=False,
+            return error_result(
                 message=f"Failed to execute action {action_name}",
                 error=str(e),
                 context={"action_name": action_name, "kwargs": kwargs},

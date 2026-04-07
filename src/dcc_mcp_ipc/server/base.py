@@ -13,6 +13,8 @@ from typing import Optional
 
 # Import third-party modules
 import rpyc
+from dcc_mcp_core import unwrap_parameters
+from dcc_mcp_core import wrap_value
 
 # Import local modules
 from dcc_mcp_ipc.server.decorators import with_environment_info
@@ -140,7 +142,11 @@ class ApplicationRPyCService(BaseRPyCService, ABC):
 
         """
         try:
-            return self.execute_python(code, context)
+            # Unwrap any type-wrapped values passed from the client side
+            if context:
+                context = unwrap_parameters(context)
+            result = self.execute_python(code, context)
+            return wrap_value(result)
         except Exception as e:
             logger.error(f"Error executing Python code: {e}")
             logger.exception("Detailed exception information:")
@@ -183,7 +189,10 @@ class ApplicationRPyCService(BaseRPyCService, ABC):
 
         """
         try:
-            return self.call_function(module_name, function_name, *args, **kwargs)
+            # Unwrap any type-wrapped kwargs from the client side
+            unwrapped_kwargs = unwrap_parameters(kwargs) if kwargs else kwargs
+            result = self.call_function(module_name, function_name, *args, **unwrapped_kwargs)
+            return wrap_value(result)
         except Exception as e:
             logger.error(f"Error calling function {module_name}.{function_name}: {e}")
             logger.exception("Detailed exception information:")
