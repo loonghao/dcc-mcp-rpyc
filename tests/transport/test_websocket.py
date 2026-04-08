@@ -833,6 +833,36 @@ class TestWebSocketDisconnectWithThreads:
         t.disconnect()
         assert t._writer_thread is None
 
+    def test_disconnect_calls_join_when_reader_is_alive(self):
+        """disconnect() calls join() when _reader_thread.is_alive() returns True (line 212)."""
+        t = _make_transport(host="localhost", port=8765)
+        fake_ws = _FakeWS()
+        _connect_no_threads(t, fake_ws)
+
+        mock_thread = MagicMock(spec=threading.Thread)
+        mock_thread.is_alive.return_value = True
+        t._reader_thread = mock_thread
+
+        t.disconnect()
+
+        mock_thread.join.assert_called_once_with(timeout=2.0)
+        assert t._reader_thread is None
+
+    def test_disconnect_calls_join_when_writer_is_alive(self):
+        """disconnect() calls join() when _writer_thread.is_alive() returns True."""
+        t = _make_transport(host="localhost", port=8765)
+        fake_ws = _FakeWS()
+        _connect_no_threads(t, fake_ws)
+
+        mock_thread = MagicMock(spec=threading.Thread)
+        mock_thread.is_alive.return_value = True
+        t._writer_thread = mock_thread
+
+        t.disconnect()
+
+        mock_thread.join.assert_called_once_with(timeout=2.0)
+        assert t._writer_thread is None
+
 
 class TestWebSocketExecuteWithContainerError:
     """Test execute() when response container has an error key."""

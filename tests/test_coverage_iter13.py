@@ -9,7 +9,7 @@ Covers the 30 remaining missing statements across:
   - skills/scanner.py    (stop_watching no-watcher, reload no-watcher, register failure)
   - discovery/registry.py (ensure_strategy invalid type)
   - client/base.py       (file-based discovery success path)
-  - application/adapter.py (adapter line 76 – initialize_action_paths)
+  - application/adapter.py (adapter line 76 - initialize_action_paths)
   - client/async_base.py  (close when connection already None)
 """
 
@@ -251,8 +251,6 @@ class TestWebSocketTransportMissingBranches:
         # Simulate reader loop where state has already changed to DISCONNECTED
         # when the exception fires — the `if self._state == TransportState.CONNECTED`
         # branch evaluates to False → goes straight to break (376→378)
-        raised = threading.Event()
-        error_logged = []
 
         def fake_recv_message(ws):
             # First call: change state then raise

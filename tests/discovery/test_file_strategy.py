@@ -330,7 +330,6 @@ class TestFileStrategyErrorPaths:
         registry_file = tmp_path / "registry.json"
         registry_file.write_text("{}")
         strategy = FileDiscoveryStrategy(registry_path=str(registry_file))
-        service = ServiceInfo(name="test", host="localhost", port=8001, dcc_type="maya")
         strategy._services["key"] = {"host": "h"}
 
         with patch("builtins.open", side_effect=PermissionError("read-only")):

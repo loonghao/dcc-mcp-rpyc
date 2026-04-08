@@ -436,7 +436,7 @@ def test_connection_pool_file_discovery_returns_service(monkeypatch):
         with patch("dcc_mcp_ipc.client.pool.FileDiscoveryStrategy"):
             pool.get_client("blender", client_factory=mock_factory)
 
-    args, kwargs = mock_factory.call_args
+    _, kwargs = mock_factory.call_args
     assert kwargs.get("host") == "10.0.0.2"
     assert kwargs.get("port") == 7890
 

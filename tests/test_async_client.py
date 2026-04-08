@@ -392,7 +392,8 @@ class TestAsyncBaseIsConnected:
 
 
 class TestAsyncDCCClientMissingPaths:
-    """Cover uncovered lines in async_dcc.py:
+    """Cover uncovered lines in async_dcc.py.
+
     - line 105: get_scene_info (delegates to call_action)
     - lines 124-127: execute_dcc_command (ensure_connected + run_in_executor)
     """

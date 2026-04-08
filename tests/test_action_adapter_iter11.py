@@ -118,7 +118,6 @@ class TestRegisterActionsBatch:
         """First spec fails, second succeeds → count=1."""
         adapter = _make_adapter()
         call_count = [0]
-        original_register = adapter.registry.register
 
         def selective_fail(*args, **kwargs):
             call_count[0] += 1
@@ -330,7 +329,7 @@ class TestDCCAdapterExecuteCommandEdgeCases:
         assert result["message"] == "done"
 
     def test_execute_command_client_raises(self):
-        """lines 237-239: exception wrapped in failure result."""
+        """Lines 237-239: exception wrapped in failure result."""
         adapter = _create_dcc_adapter()
         adapter.client.execute_command.side_effect = RuntimeError("cmd failed")
         result = adapter.execute_command("my_cmd", arg="val")

@@ -381,7 +381,6 @@ class TestIpcServerTransport:
         # Import built-in modules
         import time
 
-        error_logged = []
         mock_handle = MagicMock()
         mock_handle.is_shutdown = False
 

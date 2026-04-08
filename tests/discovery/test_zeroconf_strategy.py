@@ -665,3 +665,27 @@ class TestZeroConfStrategyMissingPaths:
 
         # Must not raise
         strategy.__del__()
+
+    def test_unregister_localhost_host_resolved_to_loopback(self):
+        """unregister_service resolves 'localhost' host to 127.0.0.1 (line 318)."""
+        mock_zc = MagicMock()
+        strategy = ZeroConfDiscoveryStrategy()
+        strategy._zeroconf = mock_zc
+
+        local_service = ServiceInfo(
+            name="local_svc",
+            host="localhost",
+            port=9090,
+            dcc_type="blender",
+            metadata={},
+        )
+
+        result = strategy.unregister_service(local_service)
+
+        assert result is True
+        mock_zc.unregister_service.assert_called_once()
+        # The ServiceInfo passed to zeroconf should use 127.0.0.1
+        call_args = mock_zc.unregister_service.call_args[0][0]
+        import socket as _socket
+
+        assert call_args.addresses == [_socket.inet_aton("127.0.0.1")]

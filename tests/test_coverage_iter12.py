@@ -164,7 +164,6 @@ class TestWithResultConversionFallback:
         # Patch ActionResultModel so the isinstance check still works for the first guard
         # but the constructor call raises when trying to wrap the result
         import dcc_mcp_ipc.utils.decorators as dec_module
-        original_arm = dec_module.ActionResultModel
 
         call_count = {"n": 0}
 
@@ -206,7 +205,7 @@ class TestDCCServerPaths:
 
     def test_start_non_threaded_calls_server_start(self):
         """Cover the non-threaded branch (lines 184-186)."""
-        server, mock_svc = self._make_server()
+        server, _ = self._make_server()
         mock_threaded_server = MagicMock()
         mock_threaded_server.port = 12345
 
