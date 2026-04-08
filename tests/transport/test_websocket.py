@@ -879,3 +879,94 @@ class TestWebSocketExecuteWithContainerError:
             t.execute("action_with_conn_error")
 
         t.disconnect()
+
+
+class TestWebSocketTemporaryCoverageConsolidation:
+    """Stable behavior tests moved out of temporary ``iter11`` coverage files."""
+
+    def test_disconnect_with_missing_ws_skips_close(self):
+        """disconnect() should not attempt to close a missing websocket handle."""
+        t = _make_transport(host="localhost", port=8765)
+        fake_ws = _FakeWS()
+        _connect_no_threads(t, fake_ws)
+        t._ws = None
+
+        with patch.object(t, "_close_connection") as mock_close:
+            t.disconnect()
+
+        mock_close.assert_not_called()
+
+    def test_reader_loop_dispatch_error_sets_transport_state_to_error(self):
+        """Dispatch failures in the reader loop should mark the transport as errored."""
+        t = _make_transport(host="localhost", port=8765)
+        fake_ws = _FakeWS(['{"type": "event", "event": "test", "data": {}}'])
+        _connect_no_threads(t, fake_ws)
+
+        with patch.object(t, "_dispatch_message", side_effect=RuntimeError("dispatch error")):
+            reader = threading.Thread(target=t._reader_loop, daemon=True)
+            reader.start()
+            reader.join(timeout=2.0)
+
+        assert t.state == TransportState.ERROR
+        t._state = TransportState.DISCONNECTED
+        t._pending.clear()
+
+    def test_writer_loop_send_error_breaks_loop(self):
+        """A send failure should terminate the writer loop instead of hanging."""
+        t = _make_transport(host="localhost", port=8765)
+        fake_ws = _FakeWS()
+        _connect_no_threads(t, fake_ws)
+
+        original_send = t._send_message
+        t._send_message = lambda ws, msg: (_ for _ in ()).throw(OSError("broken pipe"))  # type: ignore[method-assign]
+
+        writer = threading.Thread(target=t._writer_loop, daemon=True)
+        writer.start()
+        t._send_queue.put('{"action": "test"}')
+        writer.join(timeout=2.0)
+
+        assert not writer.is_alive(), "Writer should exit after a send error"
+        t._send_message = original_send  # type: ignore[method-assign]
+        t._state = TransportState.DISCONNECTED
+
+    def test_open_connection_passes_extra_headers_as_list(self):
+        """Configured extra headers should be converted to the list format expected by websockets."""
+        config = WebSocketTransportConfig(
+            host="localhost",
+            port=8765,
+            extra_headers={"X-Api-Key": "secret", "X-Session": "sess-1"},
+        )
+        t = WebSocketTransport(config)
+
+        mock_ws = MagicMock()
+        captured_calls = []
+
+        def mock_connect(url, additional_headers=None, **kwargs):
+            captured_calls.append({"url": url, "headers": additional_headers})
+            return mock_ws
+
+        with patch("websockets.sync.client.connect", mock_connect):
+            result = t._open_connection()
+
+        assert result is mock_ws
+        assert captured_calls[0]["headers"] is not None
+        assert ("X-Api-Key", "secret") in captured_calls[0]["headers"]
+        assert ("X-Session", "sess-1") in captured_calls[0]["headers"]
+
+    def test_open_connection_without_extra_headers_passes_none(self):
+        """Empty extra headers should keep the websocket connect call clean."""
+        t = WebSocketTransport(WebSocketTransportConfig(host="localhost", port=8765, extra_headers={}))
+
+        mock_ws = MagicMock()
+        captured_calls = []
+
+        def mock_connect(url, additional_headers=None, **kwargs):
+            captured_calls.append(additional_headers)
+            return mock_ws
+
+        with patch("websockets.sync.client.connect", mock_connect):
+            result = t._open_connection()
+
+        assert result is mock_ws
+        assert captured_calls == [None]
+

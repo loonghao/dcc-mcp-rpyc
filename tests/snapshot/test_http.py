@@ -373,3 +373,89 @@ class TestHTTPHealthCheckFallback:
         result = snap.health_check()
         assert result is False
 
+
+class TestHTTPCaptureUnrealEdgeCases:
+    """Behavior-focused Unreal fallback tests consolidated from temporary coverage files."""
+
+    def test_unreal_capture_non_string_return_value_falls_back_to_text(self, mock_session) -> None:
+        """A non-string ``ReturnValue`` should fall back to decoding ``response.text``."""
+        # Import built-in modules
+        import base64
+
+        img_bytes = b"fallback_image_data"
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"ReturnValue": 12345}
+        mock_response.text = base64.b64encode(img_bytes).decode("ascii")
+        mock_response.raise_for_status = MagicMock()
+        mock_session.post.return_value = mock_response
+
+        snap = HTTPSnapshot(
+            base_url="http://localhost:30010",
+            dcc_type="unreal",
+            session=mock_session,
+        )
+
+        assert snap.capture_viewport() == img_bytes
+
+    def test_unreal_capture_lowercase_error_key_raises_snapshot_error(self, mock_session) -> None:
+        """Unreal responses with a lowercase ``error`` key should still be rejected."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"error": "Object not found"}
+        mock_response.raise_for_status = MagicMock()
+        mock_session.post.return_value = mock_response
+
+        snap = HTTPSnapshot(
+            base_url="http://localhost:30010",
+            dcc_type="unreal",
+            session=mock_session,
+        )
+
+        with pytest.raises(SnapshotError, match="UE Remote Control error"):
+            snap.capture_viewport()
+
+    def test_unreal_capture_missing_return_value_uses_text_fallback(self, mock_session) -> None:
+        """Responses without ``ReturnValue`` or ``error`` should still use the text payload."""
+        # Import built-in modules
+        import base64
+
+        img_bytes = b"plain_text_fallback"
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"something_else": "value"}
+        mock_response.text = base64.b64encode(img_bytes).decode("ascii")
+        mock_response.raise_for_status = MagicMock()
+        mock_session.post.return_value = mock_response
+
+        snap = HTTPSnapshot(
+            base_url="http://localhost:30010",
+            dcc_type="unreal",
+            session=mock_session,
+        )
+
+        assert snap.capture_viewport() == img_bytes
+
+
+class TestHTTPSnapshotOptionalRequestsDependency:
+    """Tests for the optional ``requests`` dependency import fallback."""
+
+    def test_init_without_requests_raises(self) -> None:
+        """Re-importing the module without ``requests`` should make instantiation fail fast."""
+        # Import built-in modules
+        import importlib
+        import sys
+
+        with patch.dict(sys.modules, {"requests": None}):
+            if "dcc_mcp_ipc.snapshot.http" in sys.modules:
+                del sys.modules["dcc_mcp_ipc.snapshot.http"]
+
+            try:
+                from dcc_mcp_ipc.snapshot import http as http_mod
+
+                if not http_mod.REQUESTS_AVAILABLE:
+                    with pytest.raises((AttributeError, TypeError)):
+                        http_mod.HTTPSnapshot(base_url="http://localhost:8080")
+            finally:
+                if "dcc_mcp_ipc.snapshot.http" in sys.modules:
+                    del sys.modules["dcc_mcp_ipc.snapshot.http"]
+                importlib.import_module("dcc_mcp_ipc.snapshot.http")
+
+

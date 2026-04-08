@@ -53,16 +53,17 @@ These items were intentionally **not** refactored in this round because they nee
 **Suggested follow-up**
 - Document and normalize hierarchy path semantics before exposing this as a stable public contract.
 
-### 6. Iteration-specific coverage files should be consolidated into stable test modules
+### 6. Remaining iteration-specific coverage files should be consolidated into stable test modules
 
-- `tests/test_action_adapter_iter11.py`, `tests/snapshot/test_http_iter11.py`, and `tests/transport/test_websocket_iter11.py` are clearly tied to a single coverage pass.
-- These modules duplicate helpers and embed line-number-oriented coverage commentary that will age quickly as source files move.
-- They are still functionally useful, so deleting them immediately would be risky without first merging the scenarios into the primary test files.
+- `tests/test_action_adapter_iter11.py`, `tests/test_coverage_iter12.py`, and `tests/test_coverage_iter13.py` are still tied to one-off coverage passes.
+- The earlier `tests/snapshot/test_http_iter11.py` and `tests/transport/test_websocket_iter11.py` cases were merged into their main test modules in this cleanup round.
+- The remaining files still duplicate helpers or encode line-number-driven coverage commentary that will age quickly as source files move.
 
 **Suggested follow-up**
-- Merge the surviving behavior-focused cases into the main test modules.
-- Remove line-number-driven narration while preserving scenario intent.
-- Delete the temporary `iter11` files only after coverage stays stable.
+- Split the `action_adapter` iteration cases across `tests/test_action_adapter_coverage.py`, adapter tests, and a small package-export test module.
+- Merge the surviving `iter12`/`iter13` behavior cases into the owning stable modules and drop line-number narration.
+- Delete the temporary iteration files only after coverage stays stable.
+
 
 ### 7. `TransformMatrix.model_dump()` may be a legacy external-compatibility surface
 
