@@ -155,7 +155,7 @@ class ActionAdapter:
         try:
             return self.registry.search_actions(
                 category=category,
-                tags=tags,
+                tags=tags,  # type: ignore[arg-type]
                 dcc_name=self.dcc_name,
             )
         except Exception as exc:

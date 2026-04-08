@@ -249,7 +249,7 @@ class HTTPTransport(BaseTransport):
             Response from the Unreal Remote Control API.
 
         """
-        body = {
+        body: dict[str, Any] = {
             "objectPath": object_path,
             "functionName": function_name,
         }

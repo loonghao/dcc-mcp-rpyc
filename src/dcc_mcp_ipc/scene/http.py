@@ -104,7 +104,7 @@ class HTTPSceneInfo(BaseSceneInfo):
             return self._unreal_get_objects(filter_)
         elif self._dcc_type_val == "unity":
             return self._unity_get_objects(filter_)
-        raise SceneError(f"Unsupported DCC type for HTTP: {self._dcc_type_val}", dcc_type=self._dcc_type)
+        raise SceneError(f"Unsupported DCC type for HTTP: {self._dcc_type_val}", dcc_type=self._dcc_type_val)
 
     def get_hierarchy(self) -> SceneHierarchy:
         """Get scene hierarchy."""

@@ -60,7 +60,7 @@ class DCCMCPError(Exception):
             Dictionary representation of the error
 
         """
-        result = {
+        result: dict[str, Any] = {
             "error_code": self.error_code,
             "message": self.message,
         }
@@ -131,7 +131,7 @@ class ConnectionError(DCCMCPError):
             cause: Optional original exception that caused this error
 
         """
-        details = {}
+        details: dict[str, Any] = {}
         if host:
             details["host"] = host
         if port:
@@ -241,7 +241,7 @@ class ActionError(DCCMCPError):
             cause: Optional original exception that caused this error
 
         """
-        details = {"action_name": action_name}
+        details: dict[str, Any] = {"action_name": action_name}
         if args:
             details["args"] = args
 
