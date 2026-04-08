@@ -49,10 +49,13 @@ from dcc_mcp_ipc import (
 | `dcc_mcp_ipc.adapter` | `DCCAdapter`, `ApplicationAdapter`, `get_adapter` |
 | `dcc_mcp_ipc.client` | `BaseDCCClient`, `ConnectionPool`, `ClientRegistry`, `get_client` |
 | `dcc_mcp_ipc.client.async_dcc` | `AsyncDCCClient` |
-| `dcc_mcp_ipc.server` | `DCCServer`, `BaseRPyCService`, `create_dcc_server`, `start_server`, `stop_server`, `is_server_running` |
+| `dcc_mcp_ipc.server` | `DCCServer`, `BaseRPyCService`, `ApplicationRPyCService`, `DCCRPyCService`, `create_dcc_server`, `start_server`, `stop_server`, `is_server_running` |
 | `dcc_mcp_ipc.server.factory` | `create_service_factory`, `create_shared_service_instance`, `create_raw_threaded_server` |
-| `dcc_mcp_ipc.transport` | `TransportFactory`, `IpcClientTransport`, `IpcServerTransport` |
+| `dcc_mcp_ipc.transport` | `create_transport`, `get_transport`, `register_transport`, `IpcClientTransport`, `IpcServerTransport`, `WebSocketTransport` |
+| `dcc_mcp_ipc.transport.http` | `HTTPTransport`, `HTTPTransportConfig` |
+| `dcc_mcp_ipc.transport.rpyc_transport` | `RPyCTransport`, `RPyCTransportConfig` |
 | `dcc_mcp_ipc.discovery` | `ServiceDiscoveryFactory`, `ServiceRegistry`, `ServiceInfo`, `FileDiscoveryStrategy`, `ZeroConfDiscoveryStrategy` |
+
 | `dcc_mcp_ipc.skills` | `SkillManager` |
 | `dcc_mcp_ipc.testing.mock_services` | `MockDCCService` |
 | `dcc_mcp_ipc.utils.rpyc_utils` | `deliver_parameters`, `execute_remote_command` |

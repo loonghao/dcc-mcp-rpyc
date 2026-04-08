@@ -1,33 +1,29 @@
 # Transport Layer
 
-DCC-MCP-IPC supports multiple transport protocols. The `TransportFactory` selects the right transport from a protocol string.
+DCC-MCP-IPC ships four concrete transport implementations. The `dcc_mcp_ipc.transport` package exports factory helpers for the built-in protocols and direct classes for IPC/WebSocket usage.
 
 ## Available Transports
 
-| Protocol | Class | Use Case |
-|----------|-------|----------|
-| `rpyc` | `RpycTransport` | DCCs with embedded Python (Maya, Houdini, Blender, 3ds Max, Nuke) |
-| `ipc` | `IpcClientTransport` / `IpcServerTransport` | Rust-native framed channel; lowest latency |
-| `http` | `HttpTransport` | REST-based DCCs (Unreal Engine, Unity) |
-| `websocket` | `WebSocketTransport` | WebSocket-capable services |
+| Protocol | Class | Factory Registration | Use Case |
+|----------|-------|----------------------|----------|
+| `rpyc` | `RPyCTransport` | Built in | DCCs with embedded Python (Maya, Houdini, Blender, 3ds Max, Nuke) |
+| `ipc` | `IpcClientTransport` / `IpcServerTransport` | Built in | Rust-native framed channel; lowest latency |
+| `http` | `HTTPTransport` | Built in | REST-based DCCs (Unreal Engine, Unity) |
+| `websocket` | `WebSocketTransport` | Manual registration or direct instantiation | WebSocket-capable services |
 
 ## RPyC Transport
 
 The default transport for Python-embedded DCCs.
 
 ```python
-from dcc_mcp_ipc.server import create_dcc_server, DCCRPyCService
-from dcc_mcp_ipc.client import BaseDCCClient
+from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransport
+from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransportConfig
 
-# Server side
-server = create_dcc_server(dcc_name="maya", service_class=MayaService, port=18812)
-server.start(threaded=True)
-
-# Client side
-client = BaseDCCClient("maya", host="localhost", port=18812)
-client.connect()
-result = client.call("get_scene_info")
-client.disconnect()
+config = RPyCTransportConfig(host="localhost", port=18812)
+transport = RPyCTransport(config)
+transport.connect()
+result = transport.execute("get_scene_info")
+transport.disconnect()
 ```
 
 ## Rust-native IPC Transport
@@ -46,13 +42,11 @@ from dcc_mcp_ipc.transport.ipc_transport import (
 # Server side (inside DCC plugin / Rust process)
 def handle_channel(channel):
     msg = channel.recv()
-    # process and respond
-    channel.send({"result": "ok"})
+    channel.send({"success": True, "echo": msg})
 
 addr = TransportAddress.default_local("maya", os.getpid())
 server = IpcServerTransport(addr, handler=handle_channel)
-bound_addr = server.start()
-print(f"IPC server listening at: {bound_addr}")
+server.start()
 
 # Client side
 config = IpcTransportConfig(host="localhost", port=19000)
@@ -64,12 +58,14 @@ transport.disconnect()
 
 ## HTTP Transport
 
-For DCCs that expose a REST API (e.g., Unreal Engine's Remote Control API, Unity's Editor API):
+For DCCs that expose a REST API (for example Unreal Engine Remote Control):
 
 ```python
-from dcc_mcp_ipc.transport.http import HttpTransport
+from dcc_mcp_ipc.transport.http import HTTPTransport
+from dcc_mcp_ipc.transport.http import HTTPTransportConfig
 
-transport = HttpTransport(host="localhost", port=30010)
+config = HTTPTransportConfig(host="localhost", port=30010, base_path="/remote")
+transport = HTTPTransport(config)
 transport.connect()
 result = transport.execute("get_scene_info")
 transport.disconnect()
@@ -79,23 +75,35 @@ transport.disconnect()
 
 ```python
 from dcc_mcp_ipc.transport.websocket import WebSocketTransport
+from dcc_mcp_ipc.transport.websocket import WebSocketTransportConfig
 
-transport = WebSocketTransport(host="localhost", port=8765)
+config = WebSocketTransportConfig(host="localhost", port=8765, path="/ws")
+transport = WebSocketTransport(config)
 transport.connect()
 result = transport.execute("list_actors")
 transport.disconnect()
 ```
 
-## Transport Factory
+## Factory Helpers
 
 ```python
-from dcc_mcp_ipc.transport import TransportFactory
+from dcc_mcp_ipc.transport import create_transport, get_transport, register_transport
+from dcc_mcp_ipc.transport.rpyc_transport import RPyCTransportConfig
+from dcc_mcp_ipc.transport.websocket import WebSocketTransport
+from dcc_mcp_ipc.transport.websocket import WebSocketTransportConfig
 
-# protocol → transport instance
-transport = TransportFactory.create("rpyc", host="localhost", port=18812)
-transport = TransportFactory.create("ipc", host="localhost", port=19000)
-transport = TransportFactory.create("http", host="localhost", port=30010)
+transport = create_transport("rpyc", config=RPyCTransportConfig(host="localhost", port=18812))
+cached_http = get_transport("http", host="localhost", port=30010)
+
+# WebSocket is available as a class but is not auto-registered.
+register_transport("websocket", WebSocketTransport)
+ws_transport = create_transport(
+    "websocket",
+    config=WebSocketTransportConfig(host="localhost", port=8765),
+)
 ```
+
+`create_transport()` and `get_transport()` auto-register the built-in `rpyc`, `http`, and `ipc` protocols on import. Register additional transports explicitly when you need factory-based construction for custom implementations.
 
 ## Choosing a Transport
 
@@ -104,11 +112,12 @@ Is the DCC's scripting API accessible via Python in the same process?
     → RPyC transport (most DCCs)
 
 Does the DCC expose a REST API?
-    → HTTP transport (Unreal Engine Remote Control, Unity Editor API)
+    → HTTP transport (for example Unreal Engine Remote Control)
 
 Do you need minimum latency with a Rust-based plugin?
     → IPC transport
 
-Does the DCC use WebSockets for its API?
+Does the DCC use WebSockets for streaming or event push?
     → WebSocket transport
 ```
+

@@ -228,9 +228,8 @@ class TestApplicationRPyCService:
         ]
 
         for method_name in required_dcc_methods:
-            # If the method is not implemented, skip it
             if not hasattr(service, method_name):
-                print(f"Warning: Optional method {method_name} is not implemented")
                 continue
 
             assert callable(getattr(service, method_name)), f"Method is not callable: {method_name}"
+

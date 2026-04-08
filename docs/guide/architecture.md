@@ -22,7 +22,7 @@
 │  ┌────────────┴─────────────────────────────────────┐   │
 │  │  SkillManager                                    │   │
 │  │  ┌─────────────────┐  ┌────────────────────────┐ │   │
-│  │  │  SkillScanner   │  │  SkillWatcher (FSEvents)│ │   │
+│  │  │  SkillScanner   │  │ SkillWatcher (OS events)│ │   │
 │  │  └─────────────────┘  └────────────────────────┘ │   │
 │  └──────────────────────────────────────────────────┘   │
 └─────────────────────────┬───────────────────────────────┘
@@ -40,19 +40,19 @@
 
 ```
 src/dcc_mcp_ipc/
-├── __init__.py              # Lazy-import public API (37 exports)
-├── action_adapter.py         # ActionAdapter + get_action_adapter()
-├── adapter/                  # DCCAdapter, ApplicationAdapter
-├── client/                   # BaseDCCClient, ConnectionPool, AsyncDCCClient
-├── server/                   # DCCServer, BaseRPyCService, factories
-├── transport/                # Transport factory + RPyC/HTTP/WS/IPC impl.
-├── discovery/                # ServiceDiscoveryFactory, ZeroConf, file-based
-├── skills/                   # SkillManager, SkillScanner
-├── scene/                    # Scene interface (RPyC + HTTP)
-├── snapshot/                 # Snapshot interface (RPyC + HTTP)
-├── application/              # ApplicationAdapter/Service/Client
-├── testing/                  # MockDCCService
-└── utils/                    # Errors, DI, decorators, rpyc_utils
+├── __init__.py              # Lazy-import public API (21 exports)
+├── action_adapter.py        # ActionAdapter + get_action_adapter()
+├── adapter/                 # DCCAdapter, ApplicationAdapter
+├── client/                  # BaseDCCClient, ConnectionPool, AsyncDCCClient
+├── server/                  # DCCServer, RPyC services, lifecycle helpers
+├── transport/               # Factory helpers + RPyC/HTTP/WebSocket/IPC impl.
+├── discovery/               # ServiceDiscoveryFactory, ZeroConf, file-based
+├── skills/                  # SkillManager built on SkillScanner/SkillWatcher
+├── scene/                   # Scene interface (RPyC + HTTP)
+├── snapshot/                # Snapshot interface (RPyC + HTTP)
+├── application/             # ApplicationAdapter/Service/Client
+├── testing/                 # MockDCCService
+└── utils/                   # Errors, DI, decorators, rpyc_utils
 ```
 
 ## Layers
@@ -79,12 +79,13 @@ The `ActionAdapter` is the central registry for callable operations:
 
 | Transport | Protocol | Target DCCs |
 |-----------|----------|-------------|
-| `RpycTransport` | RPyC (TCP) | Maya, Houdini, Blender, 3ds Max, Nuke |
-| `IpcClientTransport` / `IpcServerTransport` | Rust FramedChannel (named pipe / Unix socket) | Rust-based DCC plugins |
-| `HttpTransport` | REST over HTTP | Unreal Engine, Unity |
+| `RPyCTransport` | RPyC (TCP) | Maya, Houdini, Blender, 3ds Max, Nuke |
+| `IpcClientTransport` / `IpcServerTransport` | Rust FramedChannel (named pipe / TCP) | Rust-based DCC plugins |
+| `HTTPTransport` | REST over HTTP | Unreal Engine, Unity |
 | `WebSocketTransport` | WebSocket | Any WebSocket-capable DCC |
 
-The `TransportFactory` resolves the correct transport from a protocol string.
+The transport package exposes `create_transport()`, `get_transport()`, and `register_transport()` helpers. Built-in registration currently covers `rpyc`, `http`, and `ipc`; `WebSocketTransport` is available directly and can be registered explicitly when factory-based construction is desired.
+
 
 ### 4. Discovery Layer (`discovery/`)
 

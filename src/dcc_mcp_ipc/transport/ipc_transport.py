@@ -9,18 +9,19 @@ Use :class:`IpcServerTransport` inside a DCC plugin:
 
     addr = TransportAddress.default_local("maya", os.getpid())
     server = IpcServerTransport(addr)
-    server.start()           # blocks in a background thread
+    server.start()           # returns immediately; accept loop runs in a background thread
 
 Client side
 -----------
 Use :class:`IpcClientTransport` from an MCP server or test:
 
-    config = IpcTransportConfig(host="localhost", port=0)
-    transport = IpcClientTransport(addr)
+    config = IpcTransportConfig(host="localhost", port=19000)
+    transport = IpcClientTransport(config)
     transport.connect()
     result = transport.execute("get_scene_info")
     transport.disconnect()
 """
+
 
 # Import built-in modules
 import dataclasses

@@ -52,3 +52,24 @@ These items were intentionally **not** refactored in this round because they nee
 
 **Suggested follow-up**
 - Document and normalize hierarchy path semantics before exposing this as a stable public contract.
+
+### 6. Iteration-specific coverage files should be consolidated into stable test modules
+
+- `tests/test_action_adapter_iter11.py`, `tests/snapshot/test_http_iter11.py`, and `tests/transport/test_websocket_iter11.py` are clearly tied to a single coverage pass.
+- These modules duplicate helpers and embed line-number-oriented coverage commentary that will age quickly as source files move.
+- They are still functionally useful, so deleting them immediately would be risky without first merging the scenarios into the primary test files.
+
+**Suggested follow-up**
+- Merge the surviving behavior-focused cases into the main test modules.
+- Remove line-number-driven narration while preserving scenario intent.
+- Delete the temporary `iter11` files only after coverage stays stable.
+
+### 7. `TransformMatrix.model_dump()` may be a legacy external-compatibility surface
+
+- In-repo search found the definition in `scene/base.py` but no internal call sites.
+- The method name suggests carry-over compatibility for older callers, but removing it without upstream checks could break downstream projects.
+
+**Suggested follow-up**
+- Search dependent repositories before removing or renaming it.
+- If no external consumers exist, deprecate it in docs/tests and converge on a single serialization helper.
+
